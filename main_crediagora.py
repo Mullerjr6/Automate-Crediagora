@@ -1184,15 +1184,15 @@ def abrir_tela_exportacao(driver):
 
 def selecionar_layout(driver, nome_exportacao):
     """
-    Preenche exatamente o campo correto:
+    Preenche e seleciona o layout correto no autocomplete.
 
-    <input type="text"
-           name="layoutArquivo"
-           class="txt100 ac_field"
-           id="_id_layoutArquivo"
-           autocomplete="off">
+    Campo correto:
+    <input type="text" name="layoutArquivo" class="txt100 ac_field"
+           id="_id_layoutArquivo" autocomplete="off">
 
-    Esta versão evita preencher campo errado.
+    A função evita campo.click(), pois o painel do autocomplete pode interceptar
+    o clique. Ela foca via JavaScript, digita com send_keys e seleciona a opção
+    correta do autocomplete.
     """
     log(f"Preenchendo layout: {nome_exportacao}")
 
@@ -1206,16 +1206,16 @@ def selecionar_layout(driver, nome_exportacao):
         (By.XPATH, "//input[@name='layoutArquivo']"),
     ]
 
-    ultimo_erro = None
     campo = None
+    ultimo_erro = None
 
     def procurar_campo_no_contexto(nome_contexto):
         nonlocal ultimo_erro
 
         for by, seletor in seletores_campo:
             try:
-                elemento = WebDriverWait(driver, 12).until(
-                    EC.element_to_be_clickable((by, seletor))
+                elemento = WebDriverWait(driver, 15).until(
+                    EC.presence_of_element_located((by, seletor))
                 )
 
                 driver.execute_script(
@@ -1233,10 +1233,8 @@ def selecionar_layout(driver, nome_exportacao):
 
         return None
 
-    # 1) Tenta no contexto atual
     campo = procurar_campo_no_contexto("contexto atual")
 
-    # 2) Se não achar, procura dentro dos iframes
     if campo is None:
         try:
             driver.switch_to.default_content()
@@ -1276,60 +1274,149 @@ def selecionar_layout(driver, nome_exportacao):
         except Exception:
             pass
 
-        raise Exception(
-            "Não encontrei o campo correto _id_layoutArquivo / layoutArquivo. "
-            "Parei aqui para evitar preencher campo errado."
-        )
+        raise Exception(f"Não encontrei o campo layoutArquivo. Último erro: {ultimo_erro}")
 
-    # 3) Limpa e preenche
     try:
-        campo.clear()
+        driver.switch_to.active_element.send_keys(Keys.ESCAPE)
+        time.sleep(0.3)
     except Exception:
         pass
 
-    campo.click()
-    time.sleep(0.3)
-    campo.send_keys(nome_exportacao)
-    time.sleep(1)
-
-    # 4) Confirma o autocomplete.
-    # Alguns sites precisam TAB, outros ENTER. Tentamos de forma segura.
     try:
-        campo.send_keys(Keys.ARROW_DOWN)
-        time.sleep(0.5)
-        campo.send_keys(Keys.ENTER)
-        time.sleep(1)
-    except Exception:
-        pass
+        driver.execute_script("""
+            const campo = arguments[0];
+            campo.removeAttribute('readonly');
+            campo.removeAttribute('disabled');
+            campo.focus();
+            campo.value = '';
+            campo.dispatchEvent(new Event('input', { bubbles: true }));
+            campo.dispatchEvent(new Event('change', { bubbles: true }));
+        """, campo)
 
-    # 5) Validação simples: garante que o campo recebeu texto ou que o autocomplete aceitou
+        time.sleep(0.3)
+        campo.send_keys(nome_exportacao)
+        time.sleep(1.5)
+
+    except Exception as erro:
+        log(f"Falha ao digitar no campo com send_keys; tentando JS puro. Detalhe: {erro}")
+
+        driver.execute_script("""
+            const campo = arguments[0];
+            const valor = arguments[1];
+            campo.removeAttribute('readonly');
+            campo.removeAttribute('disabled');
+            campo.focus();
+            campo.value = valor;
+            campo.dispatchEvent(new Event('input', { bubbles: true }));
+            campo.dispatchEvent(new Event('keyup', { bubbles: true }));
+            campo.dispatchEvent(new Event('change', { bubbles: true }));
+        """, campo, nome_exportacao)
+
+        time.sleep(1.5)
+
+    def normalizar(txt):
+        return (txt or "").strip().lower()
+
+    texto_alvo = normalizar(nome_exportacao)
+    selecionou = False
+    ultimo_erro_opcao = None
+
+    seletores_opcoes = [
+        ".paneAv *",
+        ".ui-autocomplete *",
+        ".automaticotrue *",
+        "li",
+        "a",
+        "div",
+        "span",
+    ]
+
+    for seletor in seletores_opcoes:
+        try:
+            opcoes = driver.find_elements(By.CSS_SELECTOR, seletor)
+
+            for opcao in opcoes:
+                try:
+                    txt = normalizar(opcao.text)
+
+                    if not txt:
+                        continue
+
+                    if texto_alvo in txt:
+                        driver.execute_script(
+                            "arguments[0].scrollIntoView({block: 'center', inline: 'center'});",
+                            opcao
+                        )
+                        time.sleep(0.2)
+
+                        try:
+                            opcao.click()
+                        except Exception:
+                            driver.execute_script("arguments[0].click();", opcao)
+
+                        selecionou = True
+                        log(f"Opção do autocomplete selecionada: {opcao.text}")
+                        time.sleep(1)
+                        break
+
+                except Exception as erro:
+                    ultimo_erro_opcao = erro
+                    continue
+
+            if selecionou:
+                break
+
+        except Exception as erro:
+            ultimo_erro_opcao = erro
+            continue
+
+    if not selecionou:
+        log(f"Não encontrei opção visível do autocomplete. Tentando confirmar com teclado. Detalhe: {ultimo_erro_opcao}")
+
+        try:
+            campo.send_keys(Keys.ARROW_DOWN)
+            time.sleep(0.5)
+            campo.send_keys(Keys.ENTER)
+            time.sleep(1)
+            selecionou = True
+        except Exception as erro:
+            log(f"Falha ao confirmar autocomplete com teclado: {erro}")
+
     try:
         valor_atual = campo.get_attribute("value")
         log(f"Valor atual no campo layoutArquivo: {valor_atual}")
-    except Exception:
-        pass
 
-    log(f"Layout preenchido: {nome_exportacao}")
+        if not valor_atual:
+            raise Exception("O campo layoutArquivo ficou vazio após o preenchimento.")
+
+    except Exception as erro:
+        screenshot = PASTA_DOWNLOAD / f"erro_valor_layout_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png"
+        html = PASTA_DOWNLOAD / f"erro_valor_layout_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.html"
+
+        try:
+            driver.save_screenshot(str(screenshot))
+            log(f"Print do erro salvo em: {screenshot}")
+        except Exception:
+            pass
+
+        try:
+            html.write_text(driver.page_source, encoding="utf-8")
+            log(f"HTML do erro salvo em: {html}")
+        except Exception:
+            pass
+
+        raise Exception(f"Falha ao validar valor do campo layoutArquivo: {erro}")
+
+    log(f"Layout preenchido e selecionado: {nome_exportacao}")
 
 
 def clicar_primeiro_download(driver):
     """
     Clica no arquivo mais recente da lista de exportações.
 
-    O botão correto tem formato parecido com:
-    <a title="usuário: junior.muller"
-       href="layoutArquivo.do?action=exibirDigitalizacao&codigo=&idDigitalizacao=19402557">
-       <i class="fal fa-file-alt"></i>
-    </a>
-
-    Como define o mais recente:
-    1. Procura todas as linhas que possuem link com:
-       layoutArquivo.do?action=exibirDigitalizacao
-    2. Dentro da mesma linha, tenta encontrar uma data no formato:
-       dd/mm/aaaa, dd/mm/aaaa hh:mm ou dd/mm/aaaa hh:mm:ss
-    3. Ordena pela maior data/hora
-    4. Clica no link da linha mais recente
-    5. Se não conseguir identificar datas, clica no primeiro link encontrado
+    Procura links de arquivo que contenham idDigitalizacao ou exibirDigitalizacao.
+    Se conseguir ler datas nas linhas, escolhe a maior data. Caso contrário,
+    clica no primeiro link encontrado.
     """
     log("Localizando arquivo mais recente para download...")
 
@@ -1355,10 +1442,7 @@ def clicar_primeiro_download(driver):
         data = match.group(1)
         hora = match.group(2)
 
-        if hora:
-            data_texto = f"{data} {hora}"
-        else:
-            data_texto = data
+        data_texto = f"{data} {hora}" if hora else data
 
         for formato in formatos_data:
             try:
@@ -1371,9 +1455,28 @@ def clicar_primeiro_download(driver):
     def tentar_no_contexto(nome_contexto):
         links = driver.find_elements(
             By.XPATH,
-            "//a[contains(@href, 'layoutArquivo.do') "
-            "and contains(@href, 'exibirDigitalizacao')]"
+            "//a[contains(@href, 'idDigitalizacao') "
+            "or contains(@href, 'exibirDigitalizacao') "
+            "or contains(@href, 'layoutArquivo.do')]"
         )
+
+        links_filtrados = []
+        for link in links:
+            try:
+                href = link.get_attribute("href") or ""
+                html = link.get_attribute("outerHTML") or ""
+
+                if (
+                    "idDigitalizacao" in href
+                    or "exibirDigitalizacao" in href
+                    or "fa-file-alt" in html
+                    or "file-alt" in html
+                ):
+                    links_filtrados.append(link)
+            except Exception:
+                continue
+
+        links = links_filtrados
 
         log(f"Links de arquivo encontrados em {nome_contexto}: {len(links)}")
 
@@ -1479,9 +1582,97 @@ def clicar_primeiro_download(driver):
         pass
 
     raise Exception(
-        "Não encontrei o link correto de download "
-        "layoutArquivo.do?action=exibirDigitalizacao."
+        "Não encontrei o link correto de download com idDigitalizacao/exibirDigitalizacao."
     )
+
+
+
+def clicar_executar_exportacao(driver):
+    """
+    Clica no botão Executar da tela de exportação.
+    Tenta seletores específicos antes de usar texto genérico.
+    """
+    log("Clicando em Executar.")
+
+    seletores = [
+        (By.XPATH, "//button[normalize-space(.)='Executar']"),
+        (By.XPATH, "//input[@type='button' and translate(@value, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz')='executar']"),
+        (By.XPATH, "//input[@type='submit' and translate(@value, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz')='executar']"),
+        (By.XPATH, "//a[normalize-space(.)='Executar']"),
+        (By.XPATH, "//*[normalize-space(.)='Executar' and (self::button or self::input or self::a or contains(@class,'btn'))]"),
+        (By.XPATH, "//*[contains(translate(normalize-space(.), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'executar')]"),
+    ]
+
+    ultimo_erro = None
+
+    def tentar_contexto(nome_contexto):
+        nonlocal ultimo_erro
+
+        for by, seletor in seletores:
+            try:
+                elemento = WebDriverWait(driver, 10).until(
+                    EC.presence_of_element_located((by, seletor))
+                )
+
+                driver.execute_script(
+                    "arguments[0].scrollIntoView({block: 'center', inline: 'center'});",
+                    elemento
+                )
+                time.sleep(0.3)
+
+                try:
+                    elemento.click()
+                except Exception:
+                    driver.execute_script("arguments[0].click();", elemento)
+
+                log(f"Executar clicado em {nome_contexto} usando seletor: {seletor}")
+                time.sleep(2)
+                return True
+
+            except Exception as erro:
+                ultimo_erro = erro
+                continue
+
+        return False
+
+    if tentar_contexto("contexto atual"):
+        return
+
+    try:
+        driver.switch_to.default_content()
+        iframes = driver.find_elements(By.TAG_NAME, "iframe")
+
+        for indice, iframe in enumerate(iframes):
+            try:
+                driver.switch_to.default_content()
+                driver.switch_to.frame(iframe)
+
+                if tentar_contexto(f"iframe {indice}"):
+                    return
+
+            except Exception as erro:
+                ultimo_erro = erro
+                continue
+
+    except Exception as erro:
+        ultimo_erro = erro
+
+    screenshot = PASTA_DOWNLOAD / f"erro_executar_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png"
+    html = PASTA_DOWNLOAD / f"erro_executar_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.html"
+
+    try:
+        driver.save_screenshot(str(screenshot))
+        log(f"Print do erro salvo em: {screenshot}")
+    except Exception:
+        pass
+
+    try:
+        html.write_text(driver.page_source, encoding="utf-8")
+        log(f"HTML do erro salvo em: {html}")
+    except Exception:
+        pass
+
+    raise Exception(f"Não consegui clicar no botão Executar. Último erro: {ultimo_erro}")
 
 
 def baixar_exportacao(driver, nome_exportacao):
@@ -1490,14 +1681,18 @@ def baixar_exportacao(driver, nome_exportacao):
     abrir_tela_exportacao(driver)
     selecionar_layout(driver, nome_exportacao)
 
-    log("Clicando em Executar...")
-    clicar_por_texto(driver, "Executar")
+    clicar_executar_exportacao(driver)
     time.sleep(3)
 
     log("Aguardando lista de arquivos...")
-    esperar(driver, 60).until(
+    esperar(driver, 90).until(
         EC.presence_of_element_located(
-            (By.XPATH, "//*[contains(text(), 'Data') or contains(text(), 'Código') or contains(text(), 'Codigo')]")
+            (
+                By.XPATH,
+                "//*[contains(text(), 'Data') or contains(text(), 'Código') or contains(text(), 'Codigo')]"
+                " | //a[contains(@href, 'layoutArquivo.do') and contains(@href, 'exibirDigitalizacao')]"
+                " | //a[contains(@href, 'idDigitalizacao')]"
+            )
         )
     )
 
@@ -1954,6 +2149,7 @@ def copiar_dados_excel_origem_para_destino(
             linhas_coladas += 1
 
         ultima_linha_colada = linha_destino - 1
+        
 
         log(f"Linhas novas coladas: {linhas_coladas}")
 
@@ -2006,6 +2202,10 @@ def main():
             ultima_coluna_dados=ULTIMA_COLUNA_DADOS_VENDAS,
             ultima_coluna_total=ULTIMA_COLUNA_TOTAL_VENDAS
         )
+        if "esperar_arquivo_excel_liberar" in globals():
+            log("Aguardando arquivo de vendas ser liberado para edição...")
+            esperar_arquivo_excel_liberar(ARQUIVO_FAT_VENDAS, timeout=120)
+            log("Arquivo de vendas liberado. Você pode abrir a planilha agora.")
 
         log("========== EXPORTAÇÃO VENDAS CONCLUÍDA ==========")
 
@@ -2029,6 +2229,11 @@ def main():
             ultima_coluna_dados=ULTIMA_COLUNA_DADOS_RECEITA,
             ultima_coluna_total=ULTIMA_COLUNA_TOTAL_RECEITA
         )
+
+        if "esperar_arquivo_excel_liberar" in globals():
+            log("Aguardando arquivo de receita ser liberado para edição...")
+            esperar_arquivo_excel_liberar(ARQUIVO_FAT_RECEITA, timeout=120)
+            log("Arquivo de receita liberado. Você pode abrir a planilha agora.")
 
         log("========== RECEITA GERADA CONCLUÍDA ==========")
 
@@ -2063,3 +2268,10 @@ if __name__ == "__main__":
     main()
 
 log("Script finalizado.")
+
+log("Observação: Se os arquivos Excel não abrirem ou apresentarem erro de leitura, "
+    "certifique-se de fechar as planilhas no Excel e aguardar alguns segundos para que o OneDrive/SharePoint sincronize as alterações. "
+    "Se necessário, reinicie o processo para garantir que os arquivos sejam atualizados corretamente.") 
+criar_backup(ARQUIVO_FAT_VENDAS)
+criar_backup(ARQUIVO_FAT_RECEITA)
+log("Backups dos arquivos de destino criados para segurança.")
