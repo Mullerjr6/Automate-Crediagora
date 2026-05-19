@@ -81,17 +81,32 @@ ULTIMA_COLUNA_DADOS_RECEITA = "V"
 ULTIMA_COLUNA_TOTAL_RECEITA = "Y"
 
 
+# Pasta de backup e logs
+PASTA_BACKUP = PASTA_TABELA_FAT / "backup"
+PASTA_LOGS = PASTA_TABELA_FAT / "logs_automacao"
+
+# Lista que guarda todos os logs desta execução
+LOGS_ATIVACAO = []
+
 # ============================================================
 # FUNÇÕES DE APOIO
 # ============================================================
 
 def log(msg):
     agora = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-    print(f"[{agora}] {msg}")
+    texto = f"[{agora}] {msg}"
+    print(texto)
+
+    try:
+        LOGS_ATIVACAO.append(texto)
+    except Exception:
+        pass
 
 
 def criar_pastas():
     PASTA_DOWNLOAD.mkdir(parents=True, exist_ok=True)
+    PASTA_BACKUP.mkdir(parents=True, exist_ok=True)
+    PASTA_LOGS.mkdir(parents=True, exist_ok=True)
 
 
 def validar_caminhos():
@@ -301,20 +316,62 @@ def esperar_download_novo(pasta, inicio=None, timeout=300):
     )
 
 
-def criar_backup(arquivo):
+def criar_backup(arquivo, identificador="manual"):
     arquivo = Path(arquivo)
 
     esperar_arquivo_excel_liberar(arquivo, timeout=120)
 
-    pasta_backup = arquivo.parent / "backup"
-    pasta_backup.mkdir(exist_ok=True)
+    PASTA_BACKUP.mkdir(parents=True, exist_ok=True)
 
     data_hora = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    destino = pasta_backup / f"{arquivo.stem}_backup_{data_hora}{arquivo.suffix}"
+    destino = PASTA_BACKUP / f"{arquivo.stem}_backup_{identificador}_{data_hora}{arquivo.suffix}"
 
     shutil.copy2(arquivo, destino)
+    log(f"Backup criado: {destino}")
 
     return destino
+
+
+def criar_backups_iniciais():
+    """
+    Cria backup dos arquivos antigos antes de iniciar o processo no site.
+    """
+    log("Criando backups iniciais dos arquivos antigos...")
+
+    arquivos_para_backup = [
+        ("vendas", ARQUIVO_FAT_VENDAS),
+        ("receita", ARQUIVO_FAT_RECEITA),
+    ]
+
+    for nome, arquivo in arquivos_para_backup:
+        if not Path(arquivo).exists():
+            raise FileNotFoundError(f"Arquivo para backup inicial não encontrado: {arquivo}")
+
+        criar_backup(arquivo, identificador=f"inicial_{nome}")
+
+    log("Backups iniciais concluídos.")
+
+
+def salvar_log_ativacao(status="execucao"):
+    """
+    Salva um arquivo TXT com todo o log gerado nesta execução.
+    """
+    try:
+        PASTA_LOGS.mkdir(parents=True, exist_ok=True)
+
+        data_hora = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        arquivo_log = PASTA_LOGS / f"log_automacao_crediagora_{status}_{data_hora}.txt"
+
+        with open(arquivo_log, "w", encoding="utf-8") as arquivo:
+            arquivo.write("\n".join(LOGS_ATIVACAO))
+            arquivo.write("\n")
+
+        print(f"Log da execução salvo em: {arquivo_log}")
+        return arquivo_log
+
+    except Exception as erro:
+        print(f"Não foi possível salvar o log da execução: {erro}")
+        return None
 
 # ============================================================
 # LOGIN E NAVEGAÇÃO
@@ -1184,15 +1241,17 @@ def abrir_tela_exportacao(driver):
 
 def selecionar_layout(driver, nome_exportacao):
     """
-    Preenche e seleciona o layout correto no autocomplete.
+    Preenche e SELECIONA o layout correto no autocomplete.
 
     Campo correto:
     <input type="text" name="layoutArquivo" class="txt100 ac_field"
            id="_id_layoutArquivo" autocomplete="off">
 
-    A função evita campo.click(), pois o painel do autocomplete pode interceptar
-    o clique. Ela foca via JavaScript, digita com send_keys e seleciona a opção
-    correta do autocomplete.
+    Correção:
+    - Não usa campo.click(), pois o painel paneAv pode interceptar o clique.
+    - Foca o campo via JavaScript.
+    - Digita o texto com send_keys para disparar o autocomplete do site.
+    - Seleciona a opção correta dentro do painel de autocomplete.
     """
     log(f"Preenchendo layout: {nome_exportacao}")
 
@@ -1233,8 +1292,10 @@ def selecionar_layout(driver, nome_exportacao):
 
         return None
 
+    # 1) Procura no contexto atual
     campo = procurar_campo_no_contexto("contexto atual")
 
+    # 2) Procura dentro dos iframes, se necessário
     if campo is None:
         try:
             driver.switch_to.default_content()
@@ -1276,12 +1337,14 @@ def selecionar_layout(driver, nome_exportacao):
 
         raise Exception(f"Não encontrei o campo layoutArquivo. Último erro: {ultimo_erro}")
 
+    # 3) Limpa painéis antigos, mas NÃO remove novos painéis depois que digitar
     try:
         driver.switch_to.active_element.send_keys(Keys.ESCAPE)
         time.sleep(0.3)
     except Exception:
         pass
 
+    # 4) Foca via JS, limpa e digita com send_keys para disparar autocomplete real do site
     try:
         driver.execute_script("""
             const campo = arguments[0];
@@ -1294,6 +1357,7 @@ def selecionar_layout(driver, nome_exportacao):
         """, campo)
 
         time.sleep(0.3)
+
         campo.send_keys(nome_exportacao)
         time.sleep(1.5)
 
@@ -1314,6 +1378,8 @@ def selecionar_layout(driver, nome_exportacao):
 
         time.sleep(1.5)
 
+    # 5) Seleciona a opção correta do autocomplete.
+    #    Isso é importante: só preencher texto pode não configurar o valor interno do site.
     def normalizar(txt):
         return (txt or "").strip().lower()
 
@@ -1370,6 +1436,7 @@ def selecionar_layout(driver, nome_exportacao):
             ultimo_erro_opcao = erro
             continue
 
+    # 6) Se não conseguiu clicar na opção, usa teclado como fallback
     if not selecionou:
         log(f"Não encontrei opção visível do autocomplete. Tentando confirmar com teclado. Detalhe: {ultimo_erro_opcao}")
 
@@ -1382,6 +1449,7 @@ def selecionar_layout(driver, nome_exportacao):
         except Exception as erro:
             log(f"Falha ao confirmar autocomplete com teclado: {erro}")
 
+    # 7) Validação final
     try:
         valor_atual = campo.get_attribute("value")
         log(f"Valor atual no campo layoutArquivo: {valor_atual}")
@@ -1414,9 +1482,20 @@ def clicar_primeiro_download(driver):
     """
     Clica no arquivo mais recente da lista de exportações.
 
-    Procura links de arquivo que contenham idDigitalizacao ou exibirDigitalizacao.
-    Se conseguir ler datas nas linhas, escolhe a maior data. Caso contrário,
-    clica no primeiro link encontrado.
+    O botão correto tem formato parecido com:
+    <a title="usuário: junior.muller"
+       href="layoutArquivo.do?action=exibirDigitalizacao&codigo=&idDigitalizacao=19402557">
+       <i class="fal fa-file-alt"></i>
+    </a>
+
+    Como define o mais recente:
+    1. Procura todas as linhas que possuem link com:
+       layoutArquivo.do?action=exibirDigitalizacao
+    2. Dentro da mesma linha, tenta encontrar uma data no formato:
+       dd/mm/aaaa, dd/mm/aaaa hh:mm ou dd/mm/aaaa hh:mm:ss
+    3. Ordena pela maior data/hora
+    4. Clica no link da linha mais recente
+    5. Se não conseguir identificar datas, clica no primeiro link encontrado
     """
     log("Localizando arquivo mais recente para download...")
 
@@ -1442,7 +1521,10 @@ def clicar_primeiro_download(driver):
         data = match.group(1)
         hora = match.group(2)
 
-        data_texto = f"{data} {hora}" if hora else data
+        if hora:
+            data_texto = f"{data} {hora}"
+        else:
+            data_texto = data
 
         for formato in formatos_data:
             try:
@@ -1455,28 +1537,9 @@ def clicar_primeiro_download(driver):
     def tentar_no_contexto(nome_contexto):
         links = driver.find_elements(
             By.XPATH,
-            "//a[contains(@href, 'idDigitalizacao') "
-            "or contains(@href, 'exibirDigitalizacao') "
-            "or contains(@href, 'layoutArquivo.do')]"
+            "//a[contains(@href, 'layoutArquivo.do') "
+            "and contains(@href, 'exibirDigitalizacao')]"
         )
-
-        links_filtrados = []
-        for link in links:
-            try:
-                href = link.get_attribute("href") or ""
-                html = link.get_attribute("outerHTML") or ""
-
-                if (
-                    "idDigitalizacao" in href
-                    or "exibirDigitalizacao" in href
-                    or "fa-file-alt" in html
-                    or "file-alt" in html
-                ):
-                    links_filtrados.append(link)
-            except Exception:
-                continue
-
-        links = links_filtrados
 
         log(f"Links de arquivo encontrados em {nome_contexto}: {len(links)}")
 
@@ -1582,7 +1645,8 @@ def clicar_primeiro_download(driver):
         pass
 
     raise Exception(
-        "Não encontrei o link correto de download com idDigitalizacao/exibirDigitalizacao."
+        "Não encontrei o link correto de download "
+        "layoutArquivo.do?action=exibirDigitalizacao."
     )
 
 
@@ -2108,9 +2172,6 @@ def copiar_dados_excel_origem_para_destino(
     if "esperar_arquivo_excel_liberar" in globals():
         esperar_arquivo_excel_liberar(arquivo_destino, timeout=120)
 
-    backup = criar_backup(arquivo_destino)
-    log(f"Backup criado: {backup}")
-
     linhas_origem = ler_linhas_exportacao(arquivo_origem)
 
     wb_destino = None
@@ -2180,6 +2241,7 @@ def copiar_dados_excel_origem_para_destino(
 def main():
     criar_pastas()
     validar_caminhos()
+    criar_backups_iniciais()
 
     driver = iniciar_chrome()
 
@@ -2253,21 +2315,26 @@ def main():
 
     finally:
         try:
+            log("Processo concluído. Verifique os arquivos atualizados:")
+            log(f"- Vendas: {ARQUIVO_FAT_VENDAS}")
+            log(f"- Receita: {ARQUIVO_FAT_RECEITA}")
+        except Exception:
+            pass
+
+        try:
             time.sleep(3)
             driver.quit()
         except Exception:
             pass
-    try:
-        log("Processo concluído. Verifique os arquivos atualizados:")
-        log(f"- Vendas: {ARQUIVO_FAT_VENDAS}")
-        log(f"- Receita: {ARQUIVO_FAT_RECEITA}")
-    except Exception:
-        pass
+
+        try:
+            salvar_log_ativacao(status="execucao")
+        except Exception:
+            pass
 
 if __name__ == "__main__":
     main()
 
-log("Script finalizado.")
 
 log("Observação: Se os arquivos Excel não abrirem ou apresentarem erro de leitura, "
     "certifique-se de fechar as planilhas no Excel e aguardar alguns segundos para que o OneDrive/SharePoint sincronize as alterações. "
