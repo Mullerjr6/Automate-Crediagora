@@ -1,0 +1,158 @@
+[21/05/2026 15:47:22] Validando caminhos...
+[21/05/2026 15:47:22] fat_vendas encontrado: C:\Users\CREDIAGORA\TJI PROMOTORA DE VENDAS EIRELI\Crediagora-doc - dados\tabela fat\fat_vendas_Teste.xlsx
+[21/05/2026 15:47:22] fat_receita_gerada encontrado: C:\Users\CREDIAGORA\TJI PROMOTORA DE VENDAS EIRELI\Crediagora-doc - dados\tabela fat\fat_receita_gerada_CPC_Teste.xlsx
+[21/05/2026 15:47:22] Criando backups dos arquivos atuais antes da atualização...
+[21/05/2026 15:47:22] Arquivo liberado para edição: C:\Users\CREDIAGORA\TJI PROMOTORA DE VENDAS EIRELI\Crediagora-doc - dados\tabela fat\fat_vendas_Teste.xlsx
+[21/05/2026 15:47:22] Backup criado: C:\Users\CREDIAGORA\Desktop\Automacoes\crediagora\backups\fat_vendas_Teste_backup_exportacao_vendas_2026-05-21_15-47-22.xlsx
+[21/05/2026 15:47:22] Arquivo liberado para edição: C:\Users\CREDIAGORA\TJI PROMOTORA DE VENDAS EIRELI\Crediagora-doc - dados\tabela fat\fat_receita_gerada_CPC_Teste.xlsx
+[21/05/2026 15:47:22] Backup criado: C:\Users\CREDIAGORA\Desktop\Automacoes\crediagora\backups\fat_receita_gerada_CPC_Teste_backup_receita_gerada_2026-05-21_15-47-22.xlsx
+[21/05/2026 15:47:22] Backups dos arquivos de vendas e receita criados com sucesso.
+[21/05/2026 15:47:23] Abrindo site...
+[21/05/2026 15:47:25] Preenchendo usuário...
+[21/05/2026 15:47:25] Preenchendo senha...
+[21/05/2026 15:47:25] Tentando entrar no sistema...
+[21/05/2026 15:47:29] Clique em 'Entrar' realizado pelo texto.
+[21/05/2026 15:47:29] Aguardando tela principal...
+[21/05/2026 15:47:30] Login realizado com sucesso.
+[21/05/2026 15:47:30] Clicando em Vendas...
+[21/05/2026 15:47:32] Clicando em Empréstimo...
+[21/05/2026 15:47:35] Confirmando carregamento da tela de Empréstimo...
+[21/05/2026 15:47:43] Tela de Empréstimo confirmada no iframe 0.
+[21/05/2026 15:47:43] Tela de Empréstimo carregada com sucesso.
+[21/05/2026 15:47:43] ========== INICIANDO EXPORTAÇÃO VENDAS ==========
+[21/05/2026 15:47:43] Limpando pasta de downloads...
+[21/05/2026 15:47:43] Limpeza concluída. Arquivos apagados: 0
+[21/05/2026 15:47:43] Abrindo Click para ações...
+[21/05/2026 15:48:20] Iframes encontrados na tela: 1
+[21/05/2026 15:48:21] Click para ações clicado em iframe 0 usando seletor: acoes_ver
+[21/05/2026 15:48:22] Abrindo Exportações...
+[21/05/2026 15:48:22] Exportações clicado usando seletor: div.exportacoes.btnFiltros[descricao='Exportações']
+[21/05/2026 15:48:24] Abrindo Exportar Layout Arquivo...
+[21/05/2026 15:48:25] Exportar Layout Arquivo clicado em contexto atual usando seletor: a.acaoConsulta.exportacao[campo='layoutArquivo'][autocomplete='LayoutArquivo']
+[21/05/2026 15:48:27] Preenchendo layout: Exportação vendas
+[21/05/2026 15:48:28] Campo layoutArquivo encontrado em contexto atual usando seletor: _id_layoutArquivo
+[21/05/2026 15:48:30] Opção do autocomplete selecionada: Exportação Exportação Vendas
+[21/05/2026 15:48:31] Valor atual no campo layoutArquivo: Exportação vendas
+[21/05/2026 15:48:31] Layout preenchido e selecionado: Exportação vendas
+[21/05/2026 15:48:31] Clicando em Executar.
+[21/05/2026 15:48:32] Executar clicado em contexto atual usando seletor: //button[normalize-space(.)='Executar']
+[21/05/2026 15:48:37] Aguardando lista de arquivos...
+[21/05/2026 15:48:37] Clicando no download mais recente...
+[21/05/2026 15:48:37] Localizando arquivo mais recente para download...
+[21/05/2026 15:48:37] Tentativa 1 de localizar link de download...
+[21/05/2026 15:48:38] Links de arquivo encontrados em contexto atual: 21
+[21/05/2026 15:48:39] Arquivo mais recente definido pela data da linha: 21/05/2026 15:34:12
+[21/05/2026 15:48:39] Href escolhido: https://crediagora.panoramaemprestimos.com.br/clienteInterno.do?action=exibirDigitalizacao&idDigitalizacao=19441617
+[21/05/2026 15:48:39] Title escolhido: 
+[21/05/2026 15:48:39] Texto da linha escolhida: Exportação Exportação Vendas
+
+
+A exportação iniciada em 21/05/2026 15:34:12 foi concluída.
+
+Para acessar clique no link abaixo:
+
+exportacao-489-20260521153412contrato.csv
+
+aviso automático
+[21/05/2026 15:48:40] Clique no arquivo mais recente realizado.
+[21/05/2026 15:48:41] Aguardando download finalizar...
+[21/05/2026 15:48:44] Download confirmado: C:\Users\CREDIAGORA\Downloads\crediagora\exportacao-489-20260521153412contrato.csv
+[21/05/2026 15:48:44] Arquivo baixado para Exportação vendas: C:\Users\CREDIAGORA\Downloads\crediagora\exportacao-489-20260521153412contrato.csv
+[21/05/2026 15:48:44] Abrindo origem: C:\Users\CREDIAGORA\Downloads\crediagora\exportacao-489-20260521153412contrato.csv
+[21/05/2026 15:48:44] Abrindo destino: C:\Users\CREDIAGORA\TJI PROMOTORA DE VENDAS EIRELI\Crediagora-doc - dados\tabela fat\fat_vendas_Teste.xlsx
+[21/05/2026 15:48:44] Colunas de fórmula: ['U', 'V']
+[21/05/2026 15:48:44] Colar dados até a coluna: T
+[21/05/2026 15:48:44] Limpar/reescrever até a coluna: V
+[21/05/2026 15:48:44] Arquivo liberado para edição: C:\Users\CREDIAGORA\TJI PROMOTORA DE VENDAS EIRELI\Crediagora-doc - dados\tabela fat\fat_vendas_Teste.xlsx
+[21/05/2026 15:48:44] Arquivo de origem é CSV. Lendo com pandas...
+[21/05/2026 15:48:44] CSV lido com sucesso. Linhas: 890 | Colunas: 21
+[21/05/2026 15:49:41] Fórmula modelo encontrada em U2: =WEEKDAY(L2,2)
+[21/05/2026 15:49:42] Fórmula modelo encontrada em V2: =VLOOKUP(U2,[1]de_para!A:B,2,0)
+[21/05/2026 15:49:42] Iniciando limpeza otimizada do mês vigente...
+[21/05/2026 15:49:47] Linhas do mês vigente encontradas para remoção: 890
+[21/05/2026 15:49:47] Linhas antigas mantidas: 148464
+[21/05/2026 15:50:14] Fórmulas aplicadas na coluna U, da linha 2 até 148465.
+[21/05/2026 15:50:26] Fórmulas aplicadas na coluna V, da linha 2 até 148465.
+[21/05/2026 15:50:26] Linhas removidas do mês vigente: 890
+[21/05/2026 15:50:26] Primeira linha para colagem: 148466
+[21/05/2026 15:50:26] Linhas novas coladas: 890
+[21/05/2026 15:50:26] Fórmulas aplicadas na coluna U, da linha 148466 até 149355.
+[21/05/2026 15:50:26] Fórmulas aplicadas na coluna V, da linha 148466 até 149355.
+[21/05/2026 15:50:26] Arquivo liberado para edição: C:\Users\CREDIAGORA\TJI PROMOTORA DE VENDAS EIRELI\Crediagora-doc - dados\tabela fat\fat_vendas_Teste.xlsx
+[21/05/2026 15:51:31] Arquivo salvo com sucesso: C:\Users\CREDIAGORA\TJI PROMOTORA DE VENDAS EIRELI\Crediagora-doc - dados\tabela fat\fat_vendas_Teste.xlsx
+[21/05/2026 15:51:31] Aguardando arquivo de vendas ser liberado para edição...
+[21/05/2026 15:51:31] Arquivo liberado para edição: C:\Users\CREDIAGORA\TJI PROMOTORA DE VENDAS EIRELI\Crediagora-doc - dados\tabela fat\fat_vendas_Teste.xlsx
+[21/05/2026 15:51:31] Arquivo de vendas liberado. Você pode abrir a planilha agora.
+[21/05/2026 15:51:31] ========== EXPORTAÇÃO VENDAS CONCLUÍDA ==========
+[21/05/2026 15:51:31] Voltando para a tela anterior para iniciar a próxima exportação...
+[21/05/2026 15:51:34] Navegador voltou uma página.
+[21/05/2026 15:51:42] Procurando Click para ações em iframes após voltar. Total: 1
+[21/05/2026 15:51:42] Botão Click para ações encontrado no iframe 0.
+[21/05/2026 15:51:42] Tela pronta para iniciar a próxima exportação.
+[21/05/2026 15:51:42] ========== INICIANDO RECEITA GERADA ==========
+[21/05/2026 15:51:42] Limpando pasta de downloads...
+[21/05/2026 15:51:42] Arquivo removido: exportacao-489-20260521153412contrato.csv
+[21/05/2026 15:51:42] Limpeza concluída. Arquivos apagados: 1
+[21/05/2026 15:51:42] Abrindo Click para ações...
+[21/05/2026 15:52:19] Iframes encontrados na tela: 1
+[21/05/2026 15:52:20] Click para ações clicado em iframe 0 usando seletor: acoes_ver
+[21/05/2026 15:52:21] Abrindo Exportações...
+[21/05/2026 15:52:22] Exportações clicado usando seletor: div.exportacoes.btnFiltros[descricao='Exportações']
+[21/05/2026 15:52:24] Abrindo Exportar Layout Arquivo...
+[21/05/2026 15:52:24] Exportar Layout Arquivo clicado em contexto atual usando seletor: a.acaoConsulta.exportacao[campo='layoutArquivo'][autocomplete='LayoutArquivo']
+[21/05/2026 15:52:26] Preenchendo layout: Receita gerada
+[21/05/2026 15:52:27] Campo layoutArquivo encontrado em contexto atual usando seletor: _id_layoutArquivo
+[21/05/2026 15:52:30] Valor atual no campo layoutArquivo: Receita gerada
+[21/05/2026 15:52:30] Layout preenchido e selecionado: Receita gerada
+[21/05/2026 15:52:30] Clicando em Executar.
+[21/05/2026 15:52:31] Executar clicado em contexto atual usando seletor: //button[normalize-space(.)='Executar']
+[21/05/2026 15:52:36] Aguardando lista de arquivos...
+[21/05/2026 15:52:36] Clicando no download mais recente...
+[21/05/2026 15:52:36] Localizando arquivo mais recente para download...
+[21/05/2026 15:52:36] Tentativa 1 de localizar link de download...
+[21/05/2026 15:52:42] Links de arquivo encontrados em contexto atual: 85
+[21/05/2026 15:52:45] Arquivo mais recente definido pela data da linha: 21/05/2026 15:52:30
+[21/05/2026 15:52:45] Href escolhido: https://crediagora.panoramaemprestimos.com.br/layoutArquivo.do?action=exibirDigitalizacao&codigo=&idDigitalizacao=19441736
+[21/05/2026 15:52:45] Title escolhido: usuário: junior.muller
+[21/05/2026 15:52:45] Texto da linha escolhida: 19441736 Exportacao exportacao-489-20260521155230contratos.csv JSON 21/05/2026 15:52:30
+[21/05/2026 15:52:46] Clique no arquivo mais recente realizado.
+[21/05/2026 15:52:47] Aguardando download finalizar...
+[21/05/2026 15:52:50] Download confirmado: C:\Users\CREDIAGORA\Downloads\crediagora\exportacao-489-20260521155230contratos.csv
+[21/05/2026 15:52:50] Arquivo baixado para Receita gerada: C:\Users\CREDIAGORA\Downloads\crediagora\exportacao-489-20260521155230contratos.csv
+[21/05/2026 15:52:50] Abrindo origem: C:\Users\CREDIAGORA\Downloads\crediagora\exportacao-489-20260521155230contratos.csv
+[21/05/2026 15:52:50] Abrindo destino: C:\Users\CREDIAGORA\TJI PROMOTORA DE VENDAS EIRELI\Crediagora-doc - dados\tabela fat\fat_receita_gerada_CPC_Teste.xlsx
+[21/05/2026 15:52:50] Colunas de fórmula: ['W', 'X', 'Y']
+[21/05/2026 15:52:50] Colar dados até a coluna: V
+[21/05/2026 15:52:50] Limpar/reescrever até a coluna: Y
+[21/05/2026 15:52:50] Arquivo liberado para edição: C:\Users\CREDIAGORA\TJI PROMOTORA DE VENDAS EIRELI\Crediagora-doc - dados\tabela fat\fat_receita_gerada_CPC_Teste.xlsx
+[21/05/2026 15:52:50] Arquivo de origem é CSV. Lendo com pandas...
+[21/05/2026 15:52:50] CSV lido com sucesso. Linhas: 890 | Colunas: 22
+[21/05/2026 15:53:34] Fórmula modelo encontrada em W2: =WEEKDAY(K2,2)
+[21/05/2026 15:53:35] Fórmula modelo encontrada em X2: =VLOOKUP(W2,de_para!A:B,2,0)
+[21/05/2026 15:53:35] Fórmula modelo encontrada em Y2: =B2
+[21/05/2026 15:53:35] Iniciando limpeza otimizada do mês vigente...
+[21/05/2026 15:53:38] Linhas do mês vigente encontradas para remoção: 508
+[21/05/2026 15:53:38] Linhas antigas mantidas: 77509
+[21/05/2026 15:53:55] Fórmulas aplicadas na coluna W, da linha 2 até 77510.
+[21/05/2026 15:54:00] Fórmulas aplicadas na coluna X, da linha 2 até 77510.
+[21/05/2026 15:54:03] Fórmulas aplicadas na coluna Y, da linha 2 até 77510.
+[21/05/2026 15:54:03] Linhas removidas do mês vigente: 508
+[21/05/2026 15:54:03] Primeira linha para colagem: 77511
+[21/05/2026 15:54:03] Linhas novas coladas: 890
+[21/05/2026 15:54:03] Fórmulas aplicadas na coluna W, da linha 77511 até 78400.
+[21/05/2026 15:54:03] Fórmulas aplicadas na coluna X, da linha 77511 até 78400.
+[21/05/2026 15:54:03] Fórmulas aplicadas na coluna Y, da linha 77511 até 78400.
+[21/05/2026 15:54:03] Arquivo liberado para edição: C:\Users\CREDIAGORA\TJI PROMOTORA DE VENDAS EIRELI\Crediagora-doc - dados\tabela fat\fat_receita_gerada_CPC_Teste.xlsx
+[21/05/2026 15:54:39] Arquivo salvo com sucesso: C:\Users\CREDIAGORA\TJI PROMOTORA DE VENDAS EIRELI\Crediagora-doc - dados\tabela fat\fat_receita_gerada_CPC_Teste.xlsx
+[21/05/2026 15:54:39] Aguardando arquivo de receita ser liberado para edição...
+[21/05/2026 15:54:39] Arquivo liberado para edição: C:\Users\CREDIAGORA\TJI PROMOTORA DE VENDAS EIRELI\Crediagora-doc - dados\tabela fat\fat_receita_gerada_CPC_Teste.xlsx
+[21/05/2026 15:54:39] Arquivo de receita liberado. Você pode abrir a planilha agora.
+[21/05/2026 15:54:39] ========== RECEITA GERADA CONCLUÍDA ==========
+[21/05/2026 15:54:39] ========== PROCESSO FINALIZADO COM SUCESSO ==========
+[21/05/2026 15:54:39] Aguardando arquivos Excel serem liberados para edição...
+[21/05/2026 15:54:39] Arquivo liberado para edição: C:\Users\CREDIAGORA\TJI PROMOTORA DE VENDAS EIRELI\Crediagora-doc - dados\tabela fat\fat_vendas_Teste.xlsx
+[21/05/2026 15:54:39] Arquivo liberado para edição: C:\Users\CREDIAGORA\TJI PROMOTORA DE VENDAS EIRELI\Crediagora-doc - dados\tabela fat\fat_receita_gerada_CPC_Teste.xlsx
+[21/05/2026 15:54:39] Arquivos liberados. Você pode abrir as planilhas agora.
+[21/05/2026 15:54:39] Processo concluído. Verifique os arquivos atualizados:
+[21/05/2026 15:54:39] - Vendas: C:\Users\CREDIAGORA\TJI PROMOTORA DE VENDAS EIRELI\Crediagora-doc - dados\tabela fat\fat_vendas_Teste.xlsx
+[21/05/2026 15:54:39] - Receita: C:\Users\CREDIAGORA\TJI PROMOTORA DE VENDAS EIRELI\Crediagora-doc - dados\tabela fat\fat_receita_gerada_CPC_Teste.xlsx

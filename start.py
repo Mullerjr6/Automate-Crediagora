@@ -34,20 +34,17 @@ USUARIO = "junior.muller"
 SENHA = os.getenv("CREDIAGORA_SENHA", "COLOQUE_SUA_SENHA_AQUI")
 
 # Pasta onde os arquivos exportados serão baixados
-PASTA_DOWNLOAD = Path(r"C:\Users\CREDIAGORA\Downloads\crediagora")
+PASTA_DOWNLOAD = Path(r"C:\\Users\CREDIAGORA\Downloads\crediagora")
 
-# Caminho base informado por você
+# Caminho base da tabela fat no SharePoint/OneDrive
 PASTA_TABELA_FAT = Path(
-    r"C:\Users\CREDIAGORA\TJI PROMOTORA DE VENDAS EIRELI\Crediagora-doc - dados\tabela fat"
+    r"C:\\Users\CREDIAGORA\TJI PROMOTORA DE VENDAS EIRELI\Crediagora-doc - dados\tabela fat"
 )
 
 # Arquivos finais
 ARQUIVO_FAT_VENDAS = PASTA_TABELA_FAT / "fat_vendas_Teste.xlsx"
 
 # O script tenta encontrar a receita em alguns caminhos possíveis:
-# 1) dentro da própria pasta tabela fat
-# 2) dentro de uma subpasta chamada tabelas fat
-# 3) aceita tanto TESTE quanto Teste no nome
 ARQUIVOS_FAT_RECEITA_POSSIVEIS = [
     PASTA_TABELA_FAT / "fat_receita_gerada_CPC_Teste.xlsx",
     PASTA_TABELA_FAT / "fat_receita_gerada_CPC_TESTE.xlsx",
@@ -63,7 +60,6 @@ for caminho_receita in ARQUIVOS_FAT_RECEITA_POSSIVEIS:
         break
 
 if ARQUIVO_FAT_RECEITA is None:
-    # Mantém o caminho padrão para exibir erro claro depois
     ARQUIVO_FAT_RECEITA = ARQUIVOS_FAT_RECEITA_POSSIVEIS[0]
 
 # Coluna da data cpc no arquivo final
@@ -80,10 +76,11 @@ COLUNAS_FORMULA_RECEITA = ["W", "X", "Y"]
 ULTIMA_COLUNA_DADOS_RECEITA = "V"
 ULTIMA_COLUNA_TOTAL_RECEITA = "Y"
 
-
-# Pasta de backup e logs
-PASTA_BACKUP = PASTA_TABELA_FAT / "backup"
-PASTA_LOGS = PASTA_TABELA_FAT / "logs_automacao"
+# Pastas locais da automação, na mesma pasta onde este script está salvo
+PASTA_AUTOMACAO = Path(__file__).resolve().parent
+PASTA_BACKUP = PASTA_AUTOMACAO / "backups"
+PASTA_LOGS = PASTA_AUTOMACAO / "logs"
+PASTA_ERROS = PASTA_AUTOMACAO / "erros"
 
 # Lista que guarda todos os logs desta execução
 LOGS_ATIVACAO = []
@@ -107,8 +104,9 @@ def criar_pastas():
     PASTA_DOWNLOAD.mkdir(parents=True, exist_ok=True)
     PASTA_BACKUP.mkdir(parents=True, exist_ok=True)
     PASTA_LOGS.mkdir(parents=True, exist_ok=True)
+    PASTA_ERROS.mkdir(parents=True, exist_ok=True)
 
-
+log ("======= Iniciando processo de exportação: " + datetime.now().strftime("%Y-%m-%d %H:%M:%S") + " =======")
 def validar_caminhos():
     log("Validando caminhos...")
 
@@ -210,18 +208,8 @@ def preencher_campo_por_xpath(driver, xpath, texto, segundos=20, limpar=True):
 
 
 def esperar_download_novo(pasta, inicio=None, timeout=300):
-    """
-    Espera o download terminar de forma robusta.
+    
 
-    Problema corrigido:
-    O arquivo já podia estar baixado, mas o script não reconhecia.
-    Agora ele:
-    - aceita CSV, XLSX, XLSM, XLS, ZIP;
-    - ignora .crdownload e temporários;
-    - usa horário do clique como referência;
-    - confirma se o tamanho do arquivo parou de mudar;
-    - se a pasta foi limpa antes, aceita o arquivo mais recente mesmo sem bater 100% o horário.
-    """
     pasta = Path(pasta)
     pasta.mkdir(parents=True, exist_ok=True)
 
@@ -317,6 +305,10 @@ def esperar_download_novo(pasta, inicio=None, timeout=300):
 
 
 def criar_backup(arquivo, identificador="manual"):
+    """
+    Cria backup do arquivo informado na pasta local da automação:
+    C:\\Users\\CREDIAGORA\\Desktop\\Automacoes\\crediagora\\backups
+    """
     arquivo = Path(arquivo)
 
     esperar_arquivo_excel_liberar(arquivo, timeout=120)
@@ -330,31 +322,39 @@ def criar_backup(arquivo, identificador="manual"):
     log(f"Backup criado: {destino}")
 
     return destino
-
-
+log ("Pastas de backup, logs e erros criadas ou confirmadas com sucesso.")
 def criar_backups_iniciais():
     """
     Cria backup dos arquivos antigos antes de iniciar o processo no site.
+
+    Arquivos copiados para a pasta backups:
+    - Exportação vendas: fat_vendas_Teste.xlsx
+    - Receita gerada: fat_receita_gerada_CPC_Teste.xlsx / TESTE.xlsx
     """
-    log("Criando backups iniciais dos arquivos antigos...")
+    log("Criando backups dos arquivos atuais antes da atualização...")
 
     arquivos_para_backup = [
-        ("vendas", ARQUIVO_FAT_VENDAS),
-        ("receita", ARQUIVO_FAT_RECEITA),
+        ("exportacao_vendas", ARQUIVO_FAT_VENDAS),
+        ("receita_gerada", ARQUIVO_FAT_RECEITA),
     ]
 
     for nome, arquivo in arquivos_para_backup:
-        if not Path(arquivo).exists():
-            raise FileNotFoundError(f"Arquivo para backup inicial não encontrado: {arquivo}")
+        arquivo = Path(arquivo)
 
-        criar_backup(arquivo, identificador=f"inicial_{nome}")
+        if not arquivo.exists():
+            raise FileNotFoundError(f"Arquivo para backup não encontrado: {arquivo}")
 
-    log("Backups iniciais concluídos.")
+        criar_backup(arquivo, identificador=nome)
+
+    log("Backups dos arquivos de vendas e receita criados com sucesso.")
 
 
 def salvar_log_ativacao(status="execucao"):
     """
     Salva um arquivo TXT com todo o log gerado nesta execução.
+
+    O arquivo será salvo na pasta local da automação:
+    C:\\Users\\CREDIAGORA\\Desktop\\Automacoes\\crediagora\\logs
     """
     try:
         PASTA_LOGS.mkdir(parents=True, exist_ok=True)
@@ -372,6 +372,35 @@ def salvar_log_ativacao(status="execucao"):
     except Exception as erro:
         print(f"Não foi possível salvar o log da execução: {erro}")
         return None
+
+
+
+def salvar_diagnostico_erro(driver, nome_base):
+    """
+    Salva print e HTML de diagnóstico na pasta local:
+    C:\\Users\\CREDIAGORA\\Desktop\\Automacoes\\crediagora\\erros
+    """
+    PASTA_ERROS.mkdir(parents=True, exist_ok=True)
+
+    data_hora = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    nome_limpo = re.sub(r"[^a-zA-Z0-9_\\-]+", "_", str(nome_base)).strip("_")
+
+    screenshot = PASTA_ERROS / f"{nome_limpo}_{data_hora}.png"
+    html = PASTA_ERROS / f"{nome_limpo}_{data_hora}.html"
+
+    try:
+        driver.save_screenshot(str(screenshot))
+        log(f"Print do erro salvo em: {screenshot}")
+    except Exception as erro:
+        log(f"Não foi possível salvar print do erro: {erro}")
+
+    try:
+        html.write_text(driver.page_source, encoding="utf-8")
+        log(f"HTML do erro salvo em: {html}")
+    except Exception as erro:
+        log(f"Não foi possível salvar HTML do erro: {erro}")
+
+    return screenshot, html
 
 # ============================================================
 # LOGIN E NAVEGAÇÃO
@@ -466,7 +495,7 @@ def fazer_login(driver):
         )
         log("Login realizado com sucesso.")
     except Exception as erro:
-        screenshot = PASTA_DOWNLOAD / f"erro_login_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png"
+        screenshot = PASTA_ERROS / f"erro_login_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png"
         try:
             driver.save_screenshot(str(screenshot))
             log(f"Print do erro salvo em: {screenshot}")
@@ -587,7 +616,7 @@ def entrar_em_vendas_e_emprestimo(driver):
             pass
 
     if not encontrou_acoes:
-        screenshot = PASTA_DOWNLOAD / f"erro_emprestimo_nao_carregou_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png"
+        screenshot = PASTA_ERROS / f"erro_emprestimo_nao_carregou_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png"
         try:
             driver.save_screenshot(str(screenshot))
             log(f"Print do erro salvo em: {screenshot}")
@@ -706,8 +735,8 @@ def voltar_para_emprestimos(driver):
             pass
 
     if not encontrou_acoes:
-        screenshot = PASTA_DOWNLOAD / f"erro_voltar_para_acoes_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png"
-        html = PASTA_DOWNLOAD / f"erro_voltar_para_acoes_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.html"
+        screenshot = PASTA_ERROS / f"erro_voltar_para_acoes_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png"
+        html = PASTA_ERROS / f"erro_voltar_para_acoes_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.html"
 
         try:
             driver.save_screenshot(str(screenshot))
@@ -837,8 +866,8 @@ def clicar_por_texto_em_qualquer_contexto(driver, texto, segundos=40):
             ultimo_erro = erro
             time.sleep(1)
 
-    screenshot = PASTA_DOWNLOAD / f"erro_click_{texto.replace(' ', '_')}_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png"
-    html = PASTA_DOWNLOAD / f"erro_click_{texto.replace(' ', '_')}_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.html"
+    screenshot = PASTA_ERROS / f"erro_click_{texto.replace(' ', '_')}_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png"
+    html = PASTA_ERROS / f"erro_click_{texto.replace(' ', '_')}_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.html"
 
     try:
         driver.save_screenshot(str(screenshot))
@@ -982,8 +1011,8 @@ def clicar_click_para_acoes(driver):
             pass
         log(f"Falha ao procurar dentro de iframes: {erro}")
 
-    screenshot = PASTA_DOWNLOAD / f"erro_click_acoes_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png"
-    html = PASTA_DOWNLOAD / f"erro_click_acoes_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.html"
+    screenshot = PASTA_ERROS / f"erro_click_acoes_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png"
+    html = PASTA_ERROS / f"erro_click_acoes_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.html"
 
     try:
         driver.save_screenshot(str(screenshot))
@@ -1108,8 +1137,8 @@ def clicar_exportacoes(driver):
     except Exception as erro:
         ultimo_erro = erro
 
-    screenshot = PASTA_DOWNLOAD / f"erro_exportacoes_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png"
-    html = PASTA_DOWNLOAD / f"erro_exportacoes_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.html"
+    screenshot = PASTA_ERROS / f"erro_exportacoes_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png"
+    html = PASTA_ERROS / f"erro_exportacoes_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.html"
 
     try:
         driver.save_screenshot(str(screenshot))
@@ -1213,8 +1242,8 @@ def clicar_exportar_layout_arquivo(driver):
     except Exception as erro:
         ultimo_erro = erro
 
-    screenshot = PASTA_DOWNLOAD / f"erro_layout_arquivo_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png"
-    html = PASTA_DOWNLOAD / f"erro_layout_arquivo_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.html"
+    screenshot = PASTA_ERROS / f"erro_layout_arquivo_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png"
+    html = PASTA_ERROS / f"erro_layout_arquivo_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.html"
 
     try:
         driver.save_screenshot(str(screenshot))
@@ -1320,8 +1349,8 @@ def selecionar_layout(driver, nome_exportacao):
             ultimo_erro = erro
 
     if campo is None:
-        screenshot = PASTA_DOWNLOAD / f"erro_campo_layout_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png"
-        html = PASTA_DOWNLOAD / f"erro_campo_layout_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.html"
+        screenshot = PASTA_ERROS / f"erro_campo_layout_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png"
+        html = PASTA_ERROS / f"erro_campo_layout_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.html"
 
         try:
             driver.save_screenshot(str(screenshot))
@@ -1458,8 +1487,8 @@ def selecionar_layout(driver, nome_exportacao):
             raise Exception("O campo layoutArquivo ficou vazio após o preenchimento.")
 
     except Exception as erro:
-        screenshot = PASTA_DOWNLOAD / f"erro_valor_layout_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png"
-        html = PASTA_DOWNLOAD / f"erro_valor_layout_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.html"
+        screenshot = PASTA_ERROS / f"erro_valor_layout_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png"
+        html = PASTA_ERROS / f"erro_valor_layout_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.html"
 
         try:
             driver.save_screenshot(str(screenshot))
@@ -1481,66 +1510,76 @@ def selecionar_layout(driver, nome_exportacao):
 def clicar_primeiro_download(driver):
     """
     Clica no arquivo mais recente da lista de exportações.
-
-    O botão correto tem formato parecido com:
-    <a title="usuário: junior.muller"
-       href="layoutArquivo.do?action=exibirDigitalizacao&codigo=&idDigitalizacao=19402557">
-       <i class="fal fa-file-alt"></i>
-    </a>
-
-    Como define o mais recente:
-    1. Procura todas as linhas que possuem link com:
-       layoutArquivo.do?action=exibirDigitalizacao
-    2. Dentro da mesma linha, tenta encontrar uma data no formato:
-       dd/mm/aaaa, dd/mm/aaaa hh:mm ou dd/mm/aaaa hh:mm:ss
-    3. Ordena pela maior data/hora
-    4. Clica no link da linha mais recente
-    5. Se não conseguir identificar datas, clica no primeiro link encontrado
+    Procura links com idDigitalizacao, exibirDigitalizacao, layoutArquivo.do ou ícone file-alt.
     """
     log("Localizando arquivo mais recente para download...")
 
-    padrao_data = re.compile(
-        r"(\d{2}/\d{2}/\d{4})(?:\s+(\d{2}:\d{2}(?::\d{2})?))?"
-    )
-
-    formatos_data = [
-        "%d/%m/%Y %H:%M:%S",
-        "%d/%m/%Y %H:%M",
-        "%d/%m/%Y",
-    ]
+    padrao_data = re.compile(r"(\d{2}/\d{2}/\d{4})(?:\s+(\d{2}:\d{2}(?::\d{2})?))?")
+    formatos_data = ["%d/%m/%Y %H:%M:%S", "%d/%m/%Y %H:%M", "%d/%m/%Y"]
 
     def converter_data(texto_linha):
         if not texto_linha:
             return None
-
         match = padrao_data.search(texto_linha)
-
         if not match:
             return None
-
         data = match.group(1)
         hora = match.group(2)
-
-        if hora:
-            data_texto = f"{data} {hora}"
-        else:
-            data_texto = data
-
+        data_texto = f"{data} {hora}" if hora else data
         for formato in formatos_data:
             try:
                 return datetime.strptime(data_texto, formato)
             except Exception:
                 continue
-
         return None
 
-    def tentar_no_contexto(nome_contexto):
-        links = driver.find_elements(
-            By.XPATH,
-            "//a[contains(@href, 'layoutArquivo.do') "
-            "and contains(@href, 'exibirDigitalizacao')]"
-        )
+    def coletar_links():
+        xpaths = [
+            "//a[contains(@href, 'idDigitalizacao')]",
+            "//a[contains(@href, 'exibirDigitalizacao')]",
+            "//a[contains(@href, 'layoutArquivo.do')]",
+            "//a[.//i[contains(@class, 'file-alt')]]",
+            "//a[contains(@title, 'usuário') or contains(@title, 'usuario')]",
+        ]
 
+        encontrados = []
+        for xp in xpaths:
+            try:
+                encontrados.extend(driver.find_elements(By.XPATH, xp))
+            except Exception:
+                pass
+
+        unicos = []
+        chaves = set()
+
+        for link in encontrados:
+            try:
+                href = link.get_attribute("href") or ""
+                html = link.get_attribute("outerHTML") or ""
+                title = link.get_attribute("title") or ""
+                chave = href + "|" + title + "|" + html[:150]
+
+                if chave in chaves:
+                    continue
+
+                if (
+                    "idDigitalizacao" in href
+                    or "exibirDigitalizacao" in href
+                    or "layoutArquivo.do" in href
+                    or "file-alt" in html
+                    or "fa-file" in html
+                    or "usuário" in title.lower()
+                    or "usuario" in title.lower()
+                ):
+                    chaves.add(chave)
+                    unicos.append(link)
+            except Exception:
+                continue
+
+        return unicos
+
+    def tentar_no_contexto(nome_contexto):
+        links = coletar_links()
         log(f"Links de arquivo encontrados em {nome_contexto}: {len(links)}")
 
         if not links:
@@ -1555,12 +1594,10 @@ def clicar_primeiro_download(driver):
             except Exception:
                 texto_linha = link.text or ""
 
-            data_linha = converter_data(texto_linha)
-
             candidatos.append({
                 "indice": indice,
                 "link": link,
-                "data": data_linha,
+                "data": converter_data(texto_linha),
                 "texto": texto_linha,
                 "href": link.get_attribute("href"),
                 "title": link.get_attribute("title"),
@@ -1571,27 +1608,17 @@ def clicar_primeiro_download(driver):
         if candidatos_com_data:
             candidatos_com_data.sort(key=lambda c: c["data"], reverse=True)
             escolhido = candidatos_com_data[0]
-            log(
-                "Arquivo mais recente definido pela data da linha: "
-                f"{escolhido['data'].strftime('%d/%m/%Y %H:%M:%S')}"
-            )
+            log("Arquivo mais recente definido pela data da linha: " + escolhido["data"].strftime("%d/%m/%Y %H:%M:%S"))
         else:
             escolhido = candidatos[0]
-            log(
-                "Não consegui identificar a data das linhas. "
-                "Vou clicar no primeiro arquivo encontrado."
-            )
+            log("Não consegui identificar a data das linhas. Vou clicar no primeiro arquivo encontrado.")
 
         log(f"Href escolhido: {escolhido.get('href')}")
         log(f"Title escolhido: {escolhido.get('title')}")
         log(f"Texto da linha escolhida: {escolhido.get('texto')}")
 
         elemento = escolhido["link"]
-
-        driver.execute_script(
-            "arguments[0].scrollIntoView({block: 'center', inline: 'center'});",
-            elemento
-        )
+        driver.execute_script("arguments[0].scrollIntoView({block: 'center', inline: 'center'});", elemento)
         time.sleep(0.5)
 
         try:
@@ -1603,50 +1630,49 @@ def clicar_primeiro_download(driver):
         time.sleep(1)
         return True
 
-    try:
-        if tentar_no_contexto("contexto atual"):
+    def tentar_todos_contextos():
+        try:
+            if tentar_no_contexto("contexto atual"):
+                return True
+        except Exception as erro:
+            log(f"Falha ao buscar download no contexto atual: {erro}")
+
+        try:
+            driver.switch_to.default_content()
+            if tentar_no_contexto("conteúdo principal"):
+                return True
+        except Exception as erro:
+            log(f"Falha ao buscar download no conteúdo principal: {erro}")
+
+        try:
+            driver.switch_to.default_content()
+            iframes = driver.find_elements(By.TAG_NAME, "iframe")
+            log(f"Procurando links de download em iframes. Total: {len(iframes)}")
+
+            for indice, iframe in enumerate(iframes):
+                try:
+                    driver.switch_to.default_content()
+                    driver.switch_to.frame(iframe)
+                    if tentar_no_contexto(f"iframe {indice}"):
+                        return True
+                except Exception as erro:
+                    log(f"Não encontrei download no iframe {indice}: {erro}")
+                    continue
+        except Exception as erro:
+            log(f"Falha ao procurar download em iframes: {erro}")
+
+        return False
+
+    for tentativa in range(1, 6):
+        log(f"Tentativa {tentativa} de localizar link de download...")
+        if tentar_todos_contextos():
             return
-    except Exception as erro:
-        log(f"Falha ao buscar download no contexto atual: {erro}")
+        time.sleep(3)
 
-    try:
-        driver.switch_to.default_content()
-        iframes = driver.find_elements(By.TAG_NAME, "iframe")
-        log(f"Procurando links de download em iframes. Total: {len(iframes)}")
-
-        for indice, iframe in enumerate(iframes):
-            try:
-                driver.switch_to.default_content()
-                driver.switch_to.frame(iframe)
-
-                if tentar_no_contexto(f"iframe {indice}"):
-                    return
-
-            except Exception as erro:
-                log(f"Não encontrei download no iframe {indice}: {erro}")
-                continue
-
-    except Exception as erro:
-        log(f"Falha ao procurar download em iframes: {erro}")
-
-    screenshot = PASTA_DOWNLOAD / f"erro_download_arquivo_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png"
-    html = PASTA_DOWNLOAD / f"erro_download_arquivo_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.html"
-
-    try:
-        driver.save_screenshot(str(screenshot))
-        log(f"Print do erro salvo em: {screenshot}")
-    except Exception:
-        pass
-
-    try:
-        html.write_text(driver.page_source, encoding="utf-8")
-        log(f"HTML do erro salvo em: {html}")
-    except Exception:
-        pass
-
+    salvar_diagnostico_erro(driver, "erro_download_arquivo")
     raise Exception(
-        "Não encontrei o link correto de download "
-        "layoutArquivo.do?action=exibirDigitalizacao."
+        "Não encontrei o link correto de download. "
+        "Verifique o HTML salvo na pasta erros para confirmar se a página gerou a lista de arquivos."
     )
 
 
@@ -1721,8 +1747,8 @@ def clicar_executar_exportacao(driver):
     except Exception as erro:
         ultimo_erro = erro
 
-    screenshot = PASTA_DOWNLOAD / f"erro_executar_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png"
-    html = PASTA_DOWNLOAD / f"erro_executar_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.html"
+    screenshot = PASTA_ERROS / f"erro_executar_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png"
+    html = PASTA_ERROS / f"erro_executar_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.html"
 
     try:
         driver.save_screenshot(str(screenshot))
@@ -1749,13 +1775,15 @@ def baixar_exportacao(driver, nome_exportacao):
     time.sleep(3)
 
     log("Aguardando lista de arquivos...")
-    esperar(driver, 90).until(
+    esperar(driver, 120).until(
         EC.presence_of_element_located(
             (
                 By.XPATH,
                 "//*[contains(text(), 'Data') or contains(text(), 'Código') or contains(text(), 'Codigo')]"
-                " | //a[contains(@href, 'layoutArquivo.do') and contains(@href, 'exibirDigitalizacao')]"
+                " | //a[contains(@href, 'layoutArquivo.do')]"
+                " | //a[contains(@href, 'exibirDigitalizacao')]"
                 " | //a[contains(@href, 'idDigitalizacao')]"
+                " | //a[.//i[contains(@class, 'file-alt')]]"
             )
         )
     )
@@ -2334,11 +2362,10 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-log("Observação: Se os arquivos Excel não abrirem ou apresentarem erro de leitura, "
-    "certifique-se de fechar as planilhas no Excel e aguardar alguns segundos para que o OneDrive/SharePoint sincronize as alterações. "
-    "Se necessário, reinicie o processo para garantir que os arquivos sejam atualizados corretamente.") 
-criar_backup(ARQUIVO_FAT_VENDAS)
-criar_backup(ARQUIVO_FAT_RECEITA)
-log("Backups dos arquivos de destino criados para segurança.")
+log ("======= Processo de exportação finalizado: " + datetime.now().strftime("%Y-%m-%d %H:%M:%S") + " =======")
+log ("FECHANDO PROGRAMA...")
+log ('3...')
+time.sleep(1)
+log ('2...')
+time.sleep(1)
+log ('1...')
