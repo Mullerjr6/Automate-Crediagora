@@ -2363,9 +2363,6 @@ def main():
 if __name__ == "__main__":
     main()
 log ("======= Processo de exportação finalizado: " + datetime.now().strftime("%Y-%m-%d %H:%M:%S") + " =======")
+time.sleep(1)
 log ("FECHANDO PROGRAMA...")
-log ('3...')
-time.sleep(1)
-log ('2...')
-time.sleep(1)
-log ('1...')
+time .sleep(2)
