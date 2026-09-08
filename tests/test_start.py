@@ -1,13 +1,19 @@
 import contextlib
 import importlib.util
 import io
+import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
 
 RAIZ_PROJETO = Path(__file__).resolve().parents[1]
 START_PY = RAIZ_PROJETO / "CREDIAGORA" / "Script" / "start.py"
+SCRIPT_DIR = START_PY.parent
+
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
 
 
 def carregar_start():
@@ -66,6 +72,17 @@ class StartTests(unittest.TestCase):
                 modulo.validar_bloqueio_local_login()
             finally:
                 modulo.SENHA = senha_original
+
+    def test_acompanhamento_de_operacao_exibe_progresso(self):
+        modulo, _ = carregar_start()
+        modulo.LOGS_ATIVACAO.clear()
+
+        with modulo.acompanhar_operacao("Operação de teste", intervalo=0.01):
+            time.sleep(0.03)
+
+        texto = "\n".join(modulo.LOGS_ATIVACAO)
+        self.assertIn("Operação de teste em andamento", texto)
+        self.assertIn("Operação de teste concluído", texto)
 
     def test_validacao_rejeita_senha_vazia(self):
         modulo, _ = carregar_start()

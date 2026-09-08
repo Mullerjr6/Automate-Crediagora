@@ -10,6 +10,7 @@ __pycache__/
 venv/
 env/
 .env
+.playwright-cli/
 
 # Artefatos da automação
 CREDIAGORA/backups/
@@ -17,6 +18,7 @@ CREDIAGORA/logs/
 CREDIAGORA/erros/
 CREDIAGORA/chrome-profile/
 CREDIAGORA/estado_login.json
+CREDIAGORA/ercard-profile/
 CREDIAGORA/Script/__pycache__/
 
 # Downloads temporários
@@ -29,3 +31,6 @@ CREDIAGORA/Script/__pycache__/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Outro projeto/repositório mantido dentro desta pasta
+/Lojas Hoje/

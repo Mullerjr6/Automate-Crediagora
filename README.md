@@ -1,12 +1,16 @@
 # Automação Crediagora
 
-Automação em Python para acessar o Crediagora, exportar as bases de **vendas** e **receita gerada** e atualizar as planilhas `fat` no OneDrive/SharePoint.
+Automação em Python para atualizar as bases do Crediagora e, em seguida, exportar `14 - TABELA CONTRATOS` do ERCard para CSV.
 
 ## Estrutura
 
 - `CREDIAGORA/Script/start.py`: automação principal.
+- `CREDIAGORA/Script/ercard.py`: fase ERCard isolada, com portal web e RemoteApp.
 - `CREDIAGORA/Script/iniciar.bat`: executa a automação no Windows e usa `.venv` automaticamente quando existir.
+- `CREDIAGORA/Script/iniciar_ercard.bat`: executa somente a fase ERCard.
+- `CREDIAGORA/Script/configurar_ercard.bat`: solicita e registra os dois logins sem exibir as senhas.
 - `CREDIAGORA/Script/diagnostico.bat`: valida configuração sem abrir Chrome.
+- `CREDIAGORA/Script/diagnostico_ercard.bat`: valida apenas a configuração ERCard.
 - `CREDIAGORA/Script/liberar_login.bat`: libera a proteção local após o desbloqueio da conta no portal.
 - `CREDIAGORA/Script/limpar_downloads_crediagora.py`: limpa a pasta de downloads da automação.
 - `CREDIAGORA/backups/`: backups gerados antes de atualizar planilhas.
@@ -46,6 +50,19 @@ Variáveis opcionais:
 
 Há um exemplo em `config.example.ps1`.
 
+Credenciais ERCard obrigatórias:
+
+```powershell
+setx ERCARD_PORTAL_USUARIO "USUARIO_DO_PORTAL"
+setx ERCARD_PORTAL_SENHA "SENHA_DO_PORTAL"
+setx ERCARD_SISTEMA_USUARIO "USUARIO_DO_SISTEMA"
+setx ERCARD_SISTEMA_SENHA "SENHA_DO_SISTEMA"
+```
+
+As senhas nunca são exibidas nos logs. O arquivo final é salvo por padrão em `%USERPROFILE%\Desktop\Exportações`.
+
+Como alternativa aos comandos, dê dois cliques em `CREDIAGORA/Script/configurar_ercard.bat` e preencha os quatro campos solicitados.
+
 ## Uso
 
 Diagnóstico sem login/download:
@@ -64,6 +81,18 @@ Execução completa:
 
 ```powershell
 py -3 .\CREDIAGORA\Script\start.py
+```
+
+Executar somente o ERCard:
+
+```powershell
+py -3 .\CREDIAGORA\Script\start.py --somente-ercard
+```
+
+Executar somente o fluxo antigo do Crediagora:
+
+```powershell
+py -3 .\CREDIAGORA\Script\start.py --sem-ercard
 ```
 
 Rodar somente vendas:
@@ -90,3 +119,4 @@ py -3 .\CREDIAGORA\Script\start.py --headless
 - Use uma pasta de download dedicada contendo `crediagora` no caminho. O script bloqueia limpeza automática em pastas amplas como `Downloads` ou `Desktop`.
 - Em caso de erro, confira `CREDIAGORA/logs` e `CREDIAGORA/erros`.
 - Quando o portal informar bloqueio ou última tentativa, o script bloqueia novos envios localmente. Depois que o administrador desbloquear a conta, execute `CREDIAGORA/Script/liberar_login.bat` uma única vez.
+- A fase remota exige Windows com sessão de usuário desbloqueada e resolução estável. Não mova ou minimize a janela durante os diálogos RemoteApp.

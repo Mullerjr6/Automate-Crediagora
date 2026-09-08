@@ -3,10 +3,12 @@ import hashlib
 import json
 import os
 import sys
+import threading
 import time
 import shutil
 import re
 import unicodedata
+from contextlib import contextmanager
 from pathlib import Path
 from datetime import datetime
 
@@ -21,6 +23,8 @@ from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+
+from ercard import ErCardConfig, executar_fase_ercard
 
 
 # ============================================================
@@ -67,6 +71,11 @@ USUARIO, FONTE_USUARIO = carregar_credencial(
 #
 # Depois feche e abra o CMD novamente.
 SENHA, FONTE_SENHA = carregar_credencial("CREDIAGORA_SENHA")
+
+ERCARD_PORTAL_USUARIO, _ = carregar_credencial("ERCARD_PORTAL_USUARIO")
+ERCARD_PORTAL_SENHA, _ = carregar_credencial("ERCARD_PORTAL_SENHA")
+ERCARD_SISTEMA_USUARIO, _ = carregar_credencial("ERCARD_SISTEMA_USUARIO")
+ERCARD_SISTEMA_SENHA, _ = carregar_credencial("ERCARD_SISTEMA_SENHA")
 
 
 def caminho_env(nome_variavel, padrao):
@@ -174,6 +183,13 @@ MANTER_NAVEGADOR = bool_env("CREDIAGORA_MANTER_NAVEGADOR", False)
 MODO_HEADLESS = bool_env("CREDIAGORA_HEADLESS", False)
 TIMEOUT_DOWNLOAD = int_env("CREDIAGORA_DOWNLOAD_TIMEOUT", 300)
 TIMEOUT_EXCEL = int_env("CREDIAGORA_EXCEL_TIMEOUT", 120)
+ERCARD_TIMEOUT_NORMAL = int_env("ERCARD_TIMEOUT_NORMAL", 30)
+ERCARD_TIMEOUT_REMOTO = int_env("ERCARD_TIMEOUT_REMOTO", 120)
+ERCARD_TIMEOUT_EXPORTACAO = int_env("ERCARD_TIMEOUT_EXPORTACAO", 180)
+PASTA_EXPORTACOES_ERCARD = caminho_env(
+    "ERCARD_EXPORT_DIR",
+    Path.home() / "Desktop" / "Exportações"
+)
 
 PADROES_DOWNLOAD = [
     "*.xlsx",
@@ -207,6 +223,30 @@ def log(msg):
         LOGS_ATIVACAO.append(texto)
     except Exception:
         pass
+
+
+@contextmanager
+def acompanhar_operacao(descricao, intervalo=10):
+    """Exibe atividade periódica durante operações lentas e bloqueantes."""
+    inicio = time.monotonic()
+    terminou = threading.Event()
+
+    def informar_progresso():
+        while not terminou.wait(intervalo):
+            decorrido = int(time.monotonic() - inicio)
+            log(f"{descricao} em andamento... {decorrido}s decorridos.")
+
+    log(f"{descricao}...")
+    monitor = threading.Thread(target=informar_progresso, daemon=True)
+    monitor.start()
+
+    try:
+        yield
+    finally:
+        terminou.set()
+        monitor.join(timeout=1)
+        decorrido = time.monotonic() - inicio
+        log(f"{descricao} concluído em {decorrido:.1f}s.")
 
 
 def criar_pastas():
@@ -329,6 +369,19 @@ def validar_configuracao():
 
     validar_pasta_download_segura()
 
+
+def criar_configuracao_ercard():
+    return ErCardConfig(
+        portal_usuario=ERCARD_PORTAL_USUARIO,
+        portal_senha=ERCARD_PORTAL_SENHA,
+        sistema_usuario=ERCARD_SISTEMA_USUARIO,
+        sistema_senha=ERCARD_SISTEMA_SENHA,
+        pasta_exportacao=PASTA_EXPORTACOES_ERCARD,
+        pasta_erros=PASTA_ERROS,
+        timeout_normal=ERCARD_TIMEOUT_NORMAL,
+        timeout_remoto=ERCARD_TIMEOUT_REMOTO,
+        timeout_exportacao=ERCARD_TIMEOUT_EXPORTACAO,
+    )
 
 def validar_caminhos(exportacao="todas"):
     log("Validando caminhos...")
@@ -2857,17 +2910,19 @@ def copiar_dados_excel_origem_para_destino(
     wb_destino = None
 
     try:
-        wb_destino = load_workbook(arquivo_destino, keep_links=False)
+        with acompanhar_operacao("Abrindo a planilha de destino", intervalo=10):
+            wb_destino = load_workbook(arquivo_destino, keep_links=False)
         ws_destino = wb_destino.active
 
         modelos_formula = obter_modelos_formulas(ws_destino, colunas_formula)
 
-        removidas, primeira_linha_colagem = limpar_e_reconstruir_base(
-            ws_destino,
-            modelos_formula,
-            coluna_data=coluna_data,
-            ultima_coluna_total=ultima_coluna_total
-        )
+        with acompanhar_operacao("Analisando e reconstruindo a base", intervalo=10):
+            removidas, primeira_linha_colagem = limpar_e_reconstruir_base(
+                ws_destino,
+                modelos_formula,
+                coluna_data=coluna_data,
+                ultima_coluna_total=ultima_coluna_total
+            )
 
         log(f"Linhas removidas do mês vigente: {removidas}")
         log(f"Primeira linha para colagem: {primeira_linha_colagem}")
@@ -2911,7 +2966,8 @@ def copiar_dados_excel_origem_para_destino(
 
         esperar_arquivo_excel_liberar(arquivo_destino)
 
-        wb_destino.save(arquivo_destino)
+        with acompanhar_operacao("Salvando a planilha atualizada", intervalo=10):
+            wb_destino.save(arquivo_destino)
         log(f"Arquivo salvo com sucesso: {arquivo_destino}")
 
     finally:
@@ -3004,6 +3060,17 @@ def parse_args(argv=None):
         action="store_true",
         help="Não cria backup antes de atualizar as planilhas."
     )
+    grupo_ercard = parser.add_mutually_exclusive_group()
+    grupo_ercard.add_argument(
+        "--sem-ercard",
+        action="store_true",
+        help="Executa somente o fluxo Crediagora já existente."
+    )
+    grupo_ercard.add_argument(
+        "--somente-ercard",
+        action="store_true",
+        help="Executa somente a nova fase ERCard."
+    )
     return parser.parse_args(argv)
 
 
@@ -3015,6 +3082,9 @@ def main(argv=None):
     manter_downloads = MANTER_DOWNLOADS or args.manter_downloads
     manter_navegador = (MANTER_NAVEGADOR or args.manter_navegador) and not headless
     criar_backups = not args.sem_backup and not args.check_login
+    executar_crediagora = not args.somente_ercard
+    executar_ercard = not args.sem_ercard and not args.check_login
+    config_ercard = criar_configuracao_ercard()
     LOGS_ATIVACAO.clear()
 
     try:
@@ -3029,8 +3099,11 @@ def main(argv=None):
             status_log = "check"
             return 0
 
-        validar_configuracao()
-        if not args.check_login:
+        if executar_crediagora:
+            validar_configuracao()
+        if executar_ercard:
+            config_ercard.validar()
+        if executar_crediagora and not args.check_login:
             validar_caminhos(args.exportacao)
         mostrar_resumo_configuracao(
             exportacao=args.exportacao,
@@ -3041,7 +3114,7 @@ def main(argv=None):
         )
 
         if args.check:
-            log("Diagnóstico concluído. Nenhum login, download ou alteração em planilha foi executado.")
+            log("Diagnóstico concluído. Nenhum login, download ou alteração foi executado.")
             status_log = "check"
             return
 
@@ -3049,41 +3122,53 @@ def main(argv=None):
             log("Backups dispensados no diagnóstico exclusivo de login.")
 
         driver = iniciar_chrome(headless=headless, manter_navegador=manter_navegador)
-        fazer_login(driver)
+
+        if executar_crediagora:
+            fazer_login(driver)
 
         if args.check_login:
             log("Diagnóstico de login concluído com sucesso; nenhuma exportação foi iniciada.")
             status_log = "check_login"
             return
 
-        if criar_backups:
-            criar_backups_iniciais(args.exportacao)
-        else:
-            log("Backups desativados por --sem-backup.")
-
-        entrar_em_vendas_e_emprestimo(driver)
-
         arquivos_atualizados = []
 
-        if args.exportacao in ("todas", "vendas"):
-            arquivos_atualizados.append(processar_exportacao_vendas(driver))
+        if executar_crediagora:
+            if criar_backups:
+                criar_backups_iniciais(args.exportacao)
+            else:
+                log("Backups desativados por --sem-backup.")
 
-        if args.exportacao == "todas":
-            voltar_para_emprestimos(driver)
+            entrar_em_vendas_e_emprestimo(driver)
 
-        if args.exportacao in ("todas", "receita"):
-            arquivos_atualizados.append(processar_receita_gerada(driver))
+            if args.exportacao in ("todas", "vendas"):
+                arquivos_atualizados.append(processar_exportacao_vendas(driver))
 
-        log("Confirmando que os arquivos finais estão liberados para edição...")
-        for arquivo in arquivos_atualizados:
-            esperar_arquivo_excel_liberar(arquivo)
+            if args.exportacao == "todas":
+                voltar_para_emprestimos(driver)
 
-        log("Arquivos atualizados e liberados:")
-        for arquivo in arquivos_atualizados:
-            log(f"- {arquivo}")
+            if args.exportacao in ("todas", "receita"):
+                arquivos_atualizados.append(processar_receita_gerada(driver))
+
+            log("Confirmando que os arquivos finais estão liberados para edição...")
+            for arquivo in arquivos_atualizados:
+                esperar_arquivo_excel_liberar(arquivo)
+
+            log("Arquivos atualizados e liberados:")
+            for arquivo in arquivos_atualizados:
+                log(f"- {arquivo}")
+
+        if executar_ercard:
+            executar_fase_ercard(driver, config_ercard, log)
 
         log("========== PROCESSO FINALIZADO COM SUCESSO ==========")
         status_log = "sucesso"
+
+    except KeyboardInterrupt:
+        status_log = "interrompido"
+        log("========== PROCESSO INTERROMPIDO PELO USUÁRIO ==========")
+        log("A execução recebeu Ctrl+C ou foi cancelada antes de terminar.")
+        return 130
 
     except Exception as erro:
         log("========== ERRO NO PROCESSO ==========")
