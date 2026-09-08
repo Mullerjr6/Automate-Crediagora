@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Ambientes locais
+.venv/
+venv/
+env/
+.env
+
+# Artefatos da automação
+CREDIAGORA/backups/
+CREDIAGORA/logs/
+CREDIAGORA/erros/
+CREDIAGORA/chrome-profile/
+CREDIAGORA/estado_login.json
+CREDIAGORA/Script/__pycache__/
+
+# Downloads temporários
+*.crdownload
+*.download
+*.part
+*.tmp
+
+# Sistema/editores
+.DS_Store
+Thumbs.db
+desktop.ini
