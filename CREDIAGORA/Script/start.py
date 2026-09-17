@@ -7,6 +7,7 @@ import threading
 import time
 import shutil
 import re
+import subprocess
 import unicodedata
 from contextlib import contextmanager
 from pathlib import Path
@@ -25,6 +26,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 from ercard import ErCardConfig, executar_fase_ercard
+from indicadores_fpd1 import atualizar_indicadores_fpd1
 
 
 # ============================================================
@@ -184,11 +186,18 @@ MODO_HEADLESS = bool_env("CREDIAGORA_HEADLESS", False)
 TIMEOUT_DOWNLOAD = int_env("CREDIAGORA_DOWNLOAD_TIMEOUT", 300)
 TIMEOUT_EXCEL = int_env("CREDIAGORA_EXCEL_TIMEOUT", 120)
 ERCARD_TIMEOUT_NORMAL = int_env("ERCARD_TIMEOUT_NORMAL", 30)
-ERCARD_TIMEOUT_REMOTO = int_env("ERCARD_TIMEOUT_REMOTO", 120)
-ERCARD_TIMEOUT_EXPORTACAO = int_env("ERCARD_TIMEOUT_EXPORTACAO", 180)
+ERCARD_TIMEOUT_REMOTO = int_env("ERCARD_TIMEOUT_REMOTO", 20)
+ERCARD_TIMEOUT_EXPORTACAO = int_env("ERCARD_TIMEOUT_EXPORTACAO", 300)
 PASTA_EXPORTACOES_ERCARD = caminho_env(
     "ERCARD_EXPORT_DIR",
     Path.home() / "Desktop" / "Exportações"
+)
+ARQUIVO_INDICADORES_FPD1 = (
+    Path.home()
+    / "TJI PROMOTORA DE VENDAS EIRELI"
+    / "Crediagora-doc - dados"
+    / "tabela fat"
+    / "Indicadores de FPD1_teste_de_automação.xlsx"
 )
 
 PADROES_DOWNLOAD = [
@@ -378,10 +387,29 @@ def criar_configuracao_ercard():
         sistema_senha=ERCARD_SISTEMA_SENHA,
         pasta_exportacao=PASTA_EXPORTACOES_ERCARD,
         pasta_erros=PASTA_ERROS,
+        pasta_download=PASTA_DOWNLOAD,
         timeout_normal=ERCARD_TIMEOUT_NORMAL,
         timeout_remoto=ERCARD_TIMEOUT_REMOTO,
         timeout_exportacao=ERCARD_TIMEOUT_EXPORTACAO,
     )
+
+
+def ativar_ercard_se_configurado(config, somente_ercard=False):
+    try:
+        config.validar()
+    except EnvironmentError as erro:
+        instrucao = (
+            "Execute configurar_ercard.bat na pasta CREDIAGORA\\Script e abra "
+            "um novo terminal."
+        )
+        if somente_ercard:
+            raise EnvironmentError(f"{erro}. {instrucao}") from erro
+
+        log(f"[ERCARD][AVISO] {erro}.")
+        log(f"[ERCARD][AVISO] Fase ERCard ignorada. {instrucao}")
+        return False
+
+    return True
 
 def validar_caminhos(exportacao="todas"):
     log("Validando caminhos...")
@@ -431,7 +459,68 @@ def limpar_downloads():
     log(f"Limpeza concluída. Arquivos apagados: {apagados}")
 
 
+def encerrar_chrome_da_automacao():
+    if os.name != "nt":
+        return 0
+
+    script = r"""
+$alvo = $env:AUTOMACAO_CHROME_PROFILE
+$processos = Get-CimInstance Win32_Process -Filter "Name = 'chrome.exe'" |
+    Where-Object { $_.CommandLine -and $_.CommandLine.Contains($alvo) }
+if ($processos) {
+    $ids = @($processos.ProcessId)
+    Stop-Process -Id $ids -Force -ErrorAction SilentlyContinue
+    $ids.Count
+} else {
+    0
+}
+"""
+    ambiente = os.environ.copy()
+    ambiente["AUTOMACAO_CHROME_PROFILE"] = str(PASTA_PERFIL_CHROME)
+    try:
+        resultado = subprocess.run(
+            ["powershell.exe", "-NoProfile", "-Command", script],
+            capture_output=True,
+            text=True,
+            timeout=20,
+            env=ambiente,
+            check=False,
+        )
+        linhas = [linha.strip() for linha in resultado.stdout.splitlines() if linha.strip()]
+        quantidade = int(linhas[-1]) if linhas else 0
+        if quantidade:
+            log(f"Chrome antigo da automação encerrado: {quantidade} processo(s).")
+            time.sleep(2)
+        return quantidade
+    except Exception as erro:
+        log(f"Não foi possível verificar o Chrome antigo da automação: {erro}")
+        return 0
+
+
+def limpar_travas_perfil_chrome():
+    removidas = 0
+    for nome in (
+        "lockfile",
+        "SingletonLock",
+        "SingletonCookie",
+        "SingletonSocket",
+        "DevToolsActivePort",
+    ):
+        arquivo = PASTA_PERFIL_CHROME / nome
+        try:
+            if arquivo.exists() or arquivo.is_symlink():
+                arquivo.unlink()
+                removidas += 1
+        except OSError as erro:
+            log(f"Não foi possível remover a trava {nome}: {erro}")
+    if removidas:
+        log(f"Travas antigas do perfil removidas: {removidas}.")
+
+
 def iniciar_chrome(headless=False, manter_navegador=False):
+    encerrar_chrome_da_automacao()
+    limpar_travas_perfil_chrome()
+
     opcoes = Options()
 
     prefs = {
@@ -454,7 +543,28 @@ def iniciar_chrome(headless=False, manter_navegador=False):
     if manter_navegador and not headless:
         opcoes.add_experimental_option("detach", True)
 
-    driver = webdriver.Chrome(options=opcoes)
+    driver = None
+    ultimo_erro = None
+    for tentativa in range(1, 3):
+        try:
+            driver = webdriver.Chrome(options=opcoes)
+            break
+        except Exception as erro:
+            ultimo_erro = erro
+            if tentativa == 2:
+                raise
+            log("Chrome não iniciou na primeira tentativa; recuperando o perfil...")
+            encerrar_chrome_da_automacao()
+            limpar_travas_perfil_chrome()
+            time.sleep(2)
+
+    if driver is None:
+        raise RuntimeError("Chrome não pôde ser iniciado.") from ultimo_erro
+
+    # O canvas remoto mantém a resolução da sessão mesmo quando o Chrome
+    # restaura uma janela estreita. Fixar o tamanho evita cliques deslocados.
+    if not headless:
+        driver.set_window_size(1920, 1080)
 
     try:
         driver.execute_cdp_cmd(
@@ -3102,7 +3212,10 @@ def main(argv=None):
         if executar_crediagora:
             validar_configuracao()
         if executar_ercard:
-            config_ercard.validar()
+            executar_ercard = ativar_ercard_se_configurado(
+                config_ercard,
+                somente_ercard=args.somente_ercard,
+            )
         if executar_crediagora and not args.check_login:
             validar_caminhos(args.exportacao)
         mostrar_resumo_configuracao(
@@ -3159,7 +3272,21 @@ def main(argv=None):
                 log(f"- {arquivo}")
 
         if executar_ercard:
-            executar_fase_ercard(driver, config_ercard, log)
+            csv_contratos = executar_fase_ercard(driver, config_ercard, log)
+            resultado_indicadores = atualizar_indicadores_fpd1(
+                csv_contratos,
+                ARQUIVO_INDICADORES_FPD1,
+                log,
+            )
+            log(f"CSV utilizado={resultado_indicadores.csv_utilizado}")
+            log(f"XLSX atualizado={resultado_indicadores.xlsx_atualizado}")
+            log(f"Registros importados={resultado_indicadores.registros_importados}")
+            log(f"Primeira linha={resultado_indicadores.primeira_linha}")
+            log(f"Última linha={resultado_indicadores.ultima_linha}")
+            log(
+                "Fórmulas preenchidas="
+                f"AY2:CM{resultado_indicadores.ultima_linha}"
+            )
 
         log("========== PROCESSO FINALIZADO COM SUCESSO ==========")
         status_log = "sucesso"

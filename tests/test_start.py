@@ -106,6 +106,39 @@ class StartTests(unittest.TestCase):
         finally:
             modulo.PASTA_DOWNLOAD = pasta_original
 
+    def test_execucao_completa_ignora_ercard_sem_credenciais(self):
+        modulo, _ = carregar_start()
+        config = modulo.ErCardConfig("", "", "", "", Path("."), Path("."))
+
+        self.assertFalse(modulo.ativar_ercard_se_configurado(config))
+        texto = "\n".join(modulo.LOGS_ATIVACAO)
+        self.assertIn("Fase ERCard ignorada", texto)
+
+    def test_somente_ercard_exige_credenciais_com_instrucao(self):
+        modulo, _ = carregar_start()
+        config = modulo.ErCardConfig("", "", "", "", Path("."), Path("."))
+
+        with self.assertRaisesRegex(EnvironmentError, "configurar_ercard.bat"):
+            modulo.ativar_ercard_se_configurado(config, somente_ercard=True)
+
+    def test_inicio_chrome_repete_apos_falha_do_perfil(self):
+        modulo, _ = carregar_start()
+        driver = unittest.mock.MagicMock()
+
+        with unittest.mock.patch.object(
+            modulo.webdriver,
+            "Chrome",
+            side_effect=[RuntimeError("perfil ocupado"), driver],
+        ) as iniciar, unittest.mock.patch.object(
+            modulo, "encerrar_chrome_da_automacao", return_value=1
+        ), unittest.mock.patch.object(
+            modulo, "limpar_travas_perfil_chrome"
+        ), unittest.mock.patch.object(modulo.time, "sleep"):
+            resultado = modulo.iniciar_chrome()
+
+        self.assertIs(resultado, driver)
+        self.assertEqual(iniciar.call_count, 2)
+
 
 if __name__ == "__main__":
     unittest.main()
