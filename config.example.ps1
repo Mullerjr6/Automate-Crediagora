@@ -24,5 +24,5 @@ $env:ERCARD_SISTEMA_SENHA = "senha-do-er-card"
 # Opcionais da fase ERCard.
 $env:ERCARD_EXPORT_DIR = "$HOME\Desktop\Exportações"
 $env:ERCARD_TIMEOUT_NORMAL = "30"
-$env:ERCARD_TIMEOUT_REMOTO = "120"
+$env:ERCARD_TIMEOUT_REMOTO = "20"
 $env:ERCARD_TIMEOUT_EXPORTACAO = "180"
