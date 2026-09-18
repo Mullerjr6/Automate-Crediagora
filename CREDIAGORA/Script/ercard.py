@@ -620,7 +620,12 @@ def _clicar_janela_gerencial(
     )
 
 
-def _mudanca_visual_significativa(imagem_antes, imagem_depois):
+def _mudanca_visual_significativa(
+    imagem_antes,
+    imagem_depois,
+    regiao=None,
+    proporcao_minima=0.02,
+):
     try:
         import cv2
         import numpy as np
@@ -633,9 +638,17 @@ def _mudanca_visual_significativa(imagem_antes, imagem_depois):
         )
         if antes is None or depois is None or antes.shape != depois.shape:
             return True
+        if regiao is not None:
+            x, y, largura, altura = regiao
+            limite_x = min(antes.shape[1], x + largura)
+            limite_y = min(antes.shape[0], y + altura)
+            antes = antes[max(0, y):limite_y, max(0, x):limite_x]
+            depois = depois[max(0, y):limite_y, max(0, x):limite_x]
+            if antes.size == 0 or depois.size == 0:
+                return True
         diferenca = cv2.absdiff(antes, depois)
         proporcao = float((diferenca > 20).sum()) / diferenca.size
-        return proporcao >= 0.02
+        return proporcao >= proporcao_minima
     except Exception:
         return imagem_antes != imagem_depois
 
@@ -647,6 +660,9 @@ def _clicar_opcao_canvas(
     log,
     posicao_horizontal,
     nome_opcao,
+    cliques=1,
+    confirmar_mudanca=False,
+    detector_sucesso=None,
 ):
     log_ercard(log, f"Aguardando a tela de {etapa} terminar de carregar...")
     fim = time.monotonic() + timeout
@@ -695,19 +711,24 @@ def _clicar_opcao_canvas(
                 altura_imagem,
             )
             try:
-                ActionChains(driver).move_to_element_with_offset(
+                acao = ActionChains(driver).move_to_element_with_offset(
                     canvas,
                     deslocamento["x"],
                     deslocamento["y"],
-                ).click().perform()
+                )
+                acao = acao.double_click() if cliques == 2 else acao.click()
+                acao.perform()
             except Exception:
+                tipos_evento = (
+                    ["mousemove", "mousedown", "mouseup", "click"] * cliques
+                )
                 driver.execute_script(
                     """
                     const canvas = arguments[0];
                     const rect = canvas.getBoundingClientRect();
                     const clientX = rect.left + rect.width / 2 + arguments[1];
                     const clientY = rect.top + rect.height / 2 + arguments[2];
-                    for (const type of ['mousemove', 'mousedown', 'mouseup', 'click']) {
+                    for (const type of arguments[3]) {
                         canvas.dispatchEvent(new MouseEvent(type, {
                             bubbles: true, cancelable: true, view: window,
                             clientX, clientY, button: 0,
@@ -717,9 +738,39 @@ def _clicar_opcao_canvas(
                     canvas,
                     deslocamento["x"],
                     deslocamento["y"],
+                    tipos_evento,
                 )
-            log_ercard(log, f"Clique enviado para {nome_opcao} no canvas.")
-            return True
+            tipo_clique = "Duplo clique" if cliques == 2 else "Clique"
+            log_ercard(log, f"{tipo_clique} enviado para {nome_opcao} no canvas.")
+
+            if not confirmar_mudanca:
+                return True
+
+            fim_confirmacao = min(fim, time.monotonic() + 6)
+            while time.monotonic() < fim_confirmacao:
+                imagem_atual = driver.get_screenshot_as_png()
+                if detector_sucesso is not None:
+                    mudou = detector_sucesso(imagem_atual) is not None
+                else:
+                    mudou = _mudanca_visual_significativa(
+                        imagem_png,
+                        imagem_atual,
+                        regiao=(x, y, largura, altura),
+                        proporcao_minima=0.01,
+                    )
+                if mudou:
+                    log_ercard(
+                        log,
+                        f"Abertura de {nome_opcao} confirmada por mudança da tela.",
+                    )
+                    return True
+                time.sleep(0.4)
+
+            log_ercard(
+                log,
+                f"{nome_opcao} não abriu após o clique; repetindo no mesmo ícone.",
+            )
+            pronto_anterior = None
 
         if time.monotonic() >= proximo_aviso:
             restante = max(0, int(fim - time.monotonic()))
@@ -727,6 +778,11 @@ def _clicar_opcao_canvas(
             proximo_aviso = time.monotonic() + 10
         time.sleep(0.5)
 
+    if confirmar_mudanca:
+        raise ErCardError(
+            etapa,
+            f"{nome_opcao} permaneceu na tela de opções após as tentativas de clique.",
+        )
     raise ErCardError(etapa, "A tela remota não ficou pronta dentro do tempo limite.")
 
 
@@ -989,6 +1045,7 @@ def selecionar_ambiente_crediagora(driver, config, log):
                 log,
                 posicao_horizontal=0.14,
                 nome_opcao="CrediAgora",
+                confirmar_mudanca=True,
             )
         return False
 
@@ -1022,6 +1079,9 @@ def abrir_er_cartao(driver, config, log):
                 log,
                 posicao_horizontal=0.38,
                 nome_opcao="ER Cartão CrediAgora",
+                cliques=2,
+                confirmar_mudanca=True,
+                detector_sucesso=_localizar_dialogo_login,
             )
         return False
 

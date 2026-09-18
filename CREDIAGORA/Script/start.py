@@ -18,6 +18,7 @@ from openpyxl import load_workbook
 from openpyxl.formula.translate import Translator
 from openpyxl.utils import get_column_letter, range_boundaries
 from selenium import webdriver
+from selenium.common.exceptions import StaleElementReferenceException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
@@ -232,6 +233,14 @@ def log(msg):
         LOGS_ATIVACAO.append(texto)
     except Exception:
         pass
+
+
+def log_panorama(etapa, mensagem):
+    log(f"[PANORAMA][{etapa}] {mensagem}")
+
+
+def etapa_panorama(nome_exportacao):
+    return "VENDAS" if "venda" in normalizar_texto(nome_exportacao) else "RECEITA"
 
 
 @contextmanager
@@ -575,6 +584,87 @@ def iniciar_chrome(headless=False, manter_navegador=False):
         log(f"Não foi possível configurar download via CDP; seguindo com preferências do Chrome. Detalhe: {erro}")
 
     return driver
+
+
+def _dimensoes_monitor_principal():
+    if os.name != "nt":
+        return None
+
+    import ctypes
+
+    user32 = ctypes.windll.user32
+    largura = int(user32.GetSystemMetrics(0))
+    altura = int(user32.GetSystemMetrics(1))
+    if largura <= 0 or altura <= 0:
+        raise RuntimeError("Nao foi possivel obter as dimensoes do monitor principal.")
+    return largura, altura
+
+
+def maximizar_chrome_antes_login(driver):
+    """Move a janela desta automacao para o monitor principal e a maximiza."""
+    log("[PANORAMA][JANELA] Preparando o Chrome antes de iniciar o login...")
+
+    dimensoes = _dimensoes_monitor_principal()
+    if dimensoes is None:
+        driver.maximize_window()
+        log("[PANORAMA][JANELA] Chrome maximizado antes do login.")
+        return {"windowState": "maximized"}
+
+    largura_monitor, altura_monitor = dimensoes
+    janela = driver.execute_cdp_cmd("Browser.getWindowForTarget", {})
+    window_id = janela["windowId"]
+
+    # O Chrome pode restaurar o perfil em uma janela pequena ou entre monitores.
+    # Normalizar primeiro permite mover a janela antes de maximiza-la.
+    driver.execute_cdp_cmd(
+        "Browser.setWindowBounds",
+        {"windowId": window_id, "bounds": {"windowState": "normal"}},
+    )
+    driver.execute_cdp_cmd(
+        "Browser.setWindowBounds",
+        {
+            "windowId": window_id,
+            "bounds": {
+                "left": 0,
+                "top": 0,
+                "width": max(800, largura_monitor - 100),
+                "height": max(600, altura_monitor - 100),
+            },
+        },
+    )
+    driver.execute_cdp_cmd(
+        "Browser.setWindowBounds",
+        {"windowId": window_id, "bounds": {"windowState": "maximized"}},
+    )
+    time.sleep(1)
+
+    estado = driver.execute_cdp_cmd(
+        "Browser.getWindowBounds", {"windowId": window_id}
+    )["bounds"]
+    esquerda = int(estado.get("left", 0))
+    topo = int(estado.get("top", 0))
+    largura = int(estado.get("width", 0))
+    altura = int(estado.get("height", 0))
+    tolerancia = 24
+    contida_no_principal = (
+        esquerda >= -tolerancia
+        and topo >= -tolerancia
+        and esquerda + largura <= largura_monitor + tolerancia
+        and topo + altura <= altura_monitor + tolerancia
+    )
+    maximizada = estado.get("windowState") == "maximized"
+
+    if not maximizada or not contida_no_principal:
+        raise RuntimeError(
+            "A janela do Chrome nao ficou maximizada e contida no monitor principal. "
+            f"Estado detectado: {estado}; monitor: {largura_monitor}x{altura_monitor}."
+        )
+
+    log(
+        "[PANORAMA][JANELA] Chrome maximizado no monitor principal antes do login: "
+        f"posicao=({esquerda}, {topo}), tamanho={largura}x{altura}."
+    )
+    return estado
 
 
 def esperar(driver, segundos=20):
@@ -962,7 +1052,9 @@ def salvar_diagnostico_erro(driver, nome_base):
 # LOGIN E NAVEGAÇÃO
 # ============================================================
 
-def fazer_login(driver):
+def fazer_login(driver, preparar_janela=True):
+    if preparar_janela:
+        maximizar_chrome_antes_login(driver)
     log("Abrindo site...")
     driver.get(URL)
 
@@ -1134,6 +1226,368 @@ def encerrar_sessao_portal(driver):
     return False
 
 
+def tratar_popups_panorama(driver):
+    """Fecha somente alertas e botões explicitamente marcados como fechar."""
+    fechados = 0
+    handle_original = None
+    try:
+        handle_original = driver.current_window_handle
+    except Exception:
+        pass
+
+    try:
+        handles = list(driver.window_handles)
+    except Exception:
+        handles = [handle_original] if handle_original else []
+
+    seletores_fechar = (
+        ".paneAv.automaticotrue i.delete[title='confirmar leitura do aviso']",
+        ".paneAv i.delete",
+        ".ui-dialog-titlebar-close",
+        ".modal.show button.btn-close",
+        ".modal.show button.close",
+        "[role='dialog'] button[aria-label='Close']",
+        "[role='dialog'] button[aria-label='Fechar']",
+        "[role='dialog'] button[title='Fechar']",
+        "[role='dialog'] a[title='Fechar']",
+    )
+
+    for handle in handles:
+        try:
+            driver.switch_to.window(handle)
+        except Exception:
+            continue
+
+        try:
+            alerta = driver.switch_to.alert
+            texto = (alerta.text or "").strip()
+            alerta.dismiss()
+            fechados += 1
+            log_panorama("NAVEGAÇÃO", f"Alerta fechado sem confirmar ação: {texto!r}.")
+        except Exception:
+            pass
+
+        contextos = [None]
+        try:
+            driver.switch_to.default_content()
+            contextos.extend(driver.find_elements(By.TAG_NAME, "iframe"))
+        except Exception:
+            pass
+
+        for contexto in contextos:
+            try:
+                driver.switch_to.default_content()
+                if contexto is not None:
+                    driver.switch_to.frame(contexto)
+                for seletor in seletores_fechar:
+                    for botao in driver.find_elements(By.CSS_SELECTOR, seletor):
+                        if botao.is_displayed() and botao.is_enabled():
+                            clicar_elemento_seguro(driver, botao, "fechar pop-up do Panorama")
+                            fechados += 1
+                            time.sleep(0.3)
+                            break
+                    else:
+                        continue
+                    break
+            except Exception:
+                continue
+
+    if handle_original:
+        try:
+            driver.switch_to.window(handle_original)
+        except Exception:
+            pass
+    try:
+        driver.switch_to.default_content()
+    except Exception:
+        pass
+    return fechados
+
+
+def fechar_avisos_exportacao_panorama(
+    driver, etapa="EXPORTAÇÃO", limite=10, aguardar_segundos=0
+):
+    """Remove avisos automáticos de exportação concluída, inclusive acumulados."""
+    fechados = 0
+    handle_original = None
+    try:
+        handle_original = driver.current_window_handle
+        handles = list(driver.window_handles)
+    except Exception:
+        handles = [handle_original] if handle_original else []
+
+    xpath_aviso = (
+        "//div[contains(translate(normalize-space(.), "
+        "'ABCDEFGHIJKLMNOPQRSTUVWXYZÁÀÃÂÉÊÍÓÔÕÚÇ', "
+        "'abcdefghijklmnopqrstuvwxyzaaaaeeiooouc'), 'a exportacao iniciada') "
+        "and contains(translate(normalize-space(.), "
+        "'ABCDEFGHIJKLMNOPQRSTUVWXYZÁÀÃÂÉÊÍÓÔÕÚÇ', "
+        "'abcdefghijklmnopqrstuvwxyzaaaaeeiooouc'), 'foi concluida')]"
+    )
+
+    fim_espera = time.monotonic() + max(0, aguardar_segundos)
+    tentativas = 0
+    while tentativas < limite:
+        tentativas += 1
+        fechou_nesta_passagem = False
+        for handle in handles:
+            try:
+                driver.switch_to.window(handle)
+                driver.switch_to.default_content()
+                contextos = [None] + driver.find_elements(By.TAG_NAME, "iframe")
+            except Exception:
+                continue
+
+            for contexto in contextos:
+                try:
+                    driver.switch_to.default_content()
+                    if contexto is not None:
+                        driver.switch_to.frame(contexto)
+                    botoes_exatos = [
+                        botao
+                        for botao in driver.find_elements(
+                            By.CSS_SELECTOR,
+                            ".paneAv.automaticotrue i.delete[title='confirmar leitura do aviso'], "
+                            ".paneAv i.delete[title*='leitura do aviso']",
+                        )
+                        if botao.is_displayed() and botao.is_enabled()
+                    ]
+                    if botoes_exatos:
+                        botao = botoes_exatos[0]
+                        clicar_elemento_seguro(
+                            driver,
+                            botao,
+                            "X real do aviso automatico de exportacao",
+                        )
+
+                        def aviso_foi_removido(_navegador):
+                            try:
+                                return not botao.is_displayed()
+                            except StaleElementReferenceException:
+                                return True
+
+                        WebDriverWait(driver, 3).until(
+                            aviso_foi_removido
+                        )
+                        fechados += 1
+                        fechou_nesta_passagem = True
+                        time.sleep(0.4)
+                        break
+
+                    avisos = [
+                        aviso for aviso in driver.find_elements(By.XPATH, xpath_aviso)
+                        if aviso.is_displayed()
+                    ]
+                    avisos.sort(
+                        key=lambda aviso: aviso.size.get("width", 0)
+                        * aviso.size.get("height", 0)
+                    )
+                    if not avisos:
+                        continue
+
+                    aviso = avisos[0]
+                    botao = driver.execute_script(
+                        """
+                        const aviso = arguments[0];
+                        const explicito = aviso.querySelector(
+                          '[title="Fechar"], [title="fechar"], '
+                          '[aria-label="Fechar"], [aria-label="Close"], '
+                          '.close, .fechar, .ui-dialog-titlebar-close'
+                        );
+                        if (explicito) return explicito;
+                        const alvo = document.elementFromPoint(
+                          aviso.getBoundingClientRect().right - 10,
+                          aviso.getBoundingClientRect().top + 10
+                        );
+                        return alvo && aviso.contains(alvo) ? alvo : null;
+                        """,
+                        aviso,
+                    )
+                    if botao is None:
+                        continue
+                    clicar_elemento_seguro(
+                        driver, botao, "X do aviso automático de exportação"
+                    )
+                    fechados += 1
+                    fechou_nesta_passagem = True
+                    time.sleep(0.4)
+                    break
+                except Exception:
+                    continue
+            if fechou_nesta_passagem:
+                break
+        if not fechou_nesta_passagem:
+            if time.monotonic() < fim_espera:
+                time.sleep(0.3)
+                tentativas -= 1
+                continue
+            break
+
+    if handle_original:
+        try:
+            driver.switch_to.window(handle_original)
+        except Exception:
+            pass
+    try:
+        driver.switch_to.default_content()
+    except Exception:
+        pass
+    if fechados:
+        log_panorama(etapa, f"Avisos automáticos de exportação fechados: {fechados}.")
+    return fechados
+
+
+def ativar_tela_emprestimos_aberta(driver):
+    """Localiza a tela já aberta sem clicar novamente no menu Vendas."""
+    try:
+        handle_original = driver.current_window_handle
+        handles = list(driver.window_handles)
+    except Exception:
+        handle_original = None
+        handles = [None]
+
+    def procurar_no_contexto(caminho="conteúdo principal", profundidade=0):
+        try:
+            botoes = driver.find_elements(By.ID, "acoes_ver")
+            if any(botao.is_displayed() for botao in botoes):
+                return caminho
+        except Exception:
+            pass
+        if profundidade >= 3:
+            return None
+        try:
+            iframes = driver.find_elements(By.TAG_NAME, "iframe")
+        except Exception:
+            return None
+        for indice, iframe in enumerate(iframes):
+            try:
+                driver.switch_to.frame(iframe)
+                encontrado = procurar_no_contexto(
+                    f"{caminho} > iframe {indice}", profundidade + 1
+                )
+                if encontrado:
+                    return encontrado
+                driver.switch_to.parent_frame()
+            except Exception:
+                try:
+                    driver.switch_to.parent_frame()
+                except Exception:
+                    pass
+        return None
+
+    for handle in handles:
+        try:
+            if handle is not None:
+                driver.switch_to.window(handle)
+            driver.switch_to.default_content()
+            nome_contexto = procurar_no_contexto()
+            if nome_contexto:
+                log_panorama(
+                    "NAVEGAÇÃO",
+                    f"Tela de Empréstimos já aberta em {nome_contexto}; reutilizando-a.",
+                )
+                return True
+        except Exception:
+            continue
+
+    if handle_original:
+        try:
+            driver.switch_to.window(handle_original)
+        except Exception:
+            pass
+    try:
+        driver.switch_to.default_content()
+    except Exception:
+        pass
+    return False
+
+
+SELETORES_ITEM_EMPRESTIMO = (
+    (By.XPATH, "//a[normalize-space(.)='Empréstimo' or normalize-space(.)='Emprestimo']"),
+    (By.XPATH, "//button[normalize-space(.)='Empréstimo' or normalize-space(.)='Emprestimo']"),
+    (By.XPATH, "//*[@descricao='Empréstimo' or @descricao='Emprestimo']"),
+    (By.XPATH, "//*[@title='Empréstimo' or @title='Emprestimo']"),
+)
+
+
+def clicar_item_emprestimo_visivel(driver, origem, profundidade_maxima=3):
+    """Clica no item exato já visível sem alternar o menu Vendas."""
+    ultimo_erro = None
+
+    def procurar(caminho="conteúdo principal", profundidade=0):
+        nonlocal ultimo_erro
+
+        for by, seletor in SELETORES_ITEM_EMPRESTIMO:
+            try:
+                candidatos = []
+                for elemento in driver.find_elements(by, seletor):
+                    if not elemento.is_displayed() or not elemento.is_enabled():
+                        continue
+                    texto = (
+                        elemento.text
+                        or elemento.get_attribute("descricao")
+                        or elemento.get_attribute("title")
+                        or ""
+                    )
+                    if normalizar_texto(texto) == "emprestimo":
+                        candidatos.append(elemento)
+
+                if candidatos:
+                    candidatos.sort(
+                        key=lambda elemento: (
+                            0
+                            if (elemento.tag_name or "").lower() in {"a", "button"}
+                            else 1,
+                            len((elemento.text or "").strip()),
+                        )
+                    )
+                    elemento = candidatos[0]
+                    log_panorama(
+                        "NAVEGAÇÃO",
+                        f"Item Empréstimo visível em {caminho}; "
+                        f"usando o submenu {origem} sem clicar em Vendas.",
+                    )
+                    clicar_elemento_seguro(
+                        driver, elemento, f"Empréstimo em {caminho}"
+                    )
+                    time.sleep(2)
+                    return caminho
+            except Exception as erro:
+                ultimo_erro = erro
+
+        if profundidade >= profundidade_maxima:
+            return None
+
+        try:
+            iframes = list(driver.find_elements(By.TAG_NAME, "iframe"))
+        except Exception as erro:
+            ultimo_erro = erro
+            return None
+
+        for indice, iframe in enumerate(iframes):
+            try:
+                driver.switch_to.frame(iframe)
+                encontrado = procurar(
+                    f"{caminho} > iframe {indice}", profundidade + 1
+                )
+                if encontrado:
+                    return encontrado
+            except Exception as erro:
+                ultimo_erro = erro
+            finally:
+                try:
+                    driver.switch_to.parent_frame()
+                except Exception:
+                    pass
+        return None
+
+    try:
+        driver.switch_to.default_content()
+        return procurar(), ultimo_erro
+    except Exception as erro:
+        return None, erro
+
+
 def entrar_em_vendas_e_emprestimo(driver):
     """
     Entra corretamente em:
@@ -1145,143 +1599,42 @@ def entrar_em_vendas_e_emprestimo(driver):
     - Procura Empréstimo por texto, href, url, ação, descrição e onclick.
     - Depois confirma que a tela correta carregou procurando o botão acoes_ver.
     """
-    log("Abrindo menu Vendas...")
+    fechar_avisos_exportacao_panorama(
+        driver, "NAVEGAÇÃO", aguardar_segundos=1.5
+    )
+    tratar_popups_panorama(driver)
+    if ativar_tela_emprestimos_aberta(driver):
+        return
 
-    try:
+    # O Panorama preserva o estado do menu. Primeiro tenta usar o item que ja
+    # estiver visivel; clicar novamente em Vendas fecharia o submenu.
+    contexto_emprestimo, ultimo_erro = clicar_item_emprestimo_visivel(
+        driver, "já aberto"
+    )
+    clicou_emprestimo = contexto_emprestimo is not None
+
+    if not clicou_emprestimo:
+        log_panorama(
+            "NAVEGAÇÃO", "Submenu fechado; abrindo Vendas > Empréstimo."
+        )
         driver.switch_to.default_content()
-    except Exception:
-        pass
+        clicar_por_texto(driver, "Vendas", segundos=40)
+        time.sleep(1.5)
+        fechar_avisos_exportacao_panorama(
+            driver, "NAVEGAÇÃO", aguardar_segundos=0.5
+        )
+        tratar_popups_panorama(driver)
 
-    # 1) Abre o menu Vendas.
-    clicar_por_texto(driver, "Vendas", segundos=40)
-    time.sleep(1.5)
-
-    # Às vezes o submenu abre por hover e não por clique.
-    try:
-        elemento_vendas = None
-
-        for xp in [
-            "//a[contains(translate(normalize-space(.), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'vendas')]",
-            "//*[contains(translate(@descricao, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'vendas')]",
-            "//*[contains(translate(@title, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'vendas')]",
-            "//*[string-length(normalize-space(.)) < 80 and contains(translate(normalize-space(.), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'vendas')]",
-        ]:
-            try:
-                driver.switch_to.default_content()
-                encontrados = driver.find_elements(By.XPATH, xp)
-                encontrados = [e for e in encontrados if e.is_displayed()]
-
-                if encontrados:
-                    elemento_vendas = encontrados[0]
-                    break
-            except Exception:
-                continue
-
-        if elemento_vendas is not None:
-            ActionChains(driver).move_to_element(elemento_vendas).pause(0.8).perform()
-            log("Hover realizado sobre Vendas para abrir submenu.")
-            time.sleep(1)
-    except Exception as erro:
-        log(f"Hover em Vendas não foi necessário ou falhou: {erro}")
-
-    # 2) Clica em Empréstimo.
-    log("Clicando em Empréstimo...")
-
-    clicou_emprestimo = False
-    ultimo_erro = None
-
-    # Seletores mais específicos antes do clique genérico.
-    seletores_emprestimo = [
-        (By.XPATH, "//a[contains(translate(@href, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'emprestimo')]"),
-        (By.XPATH, "//*[contains(translate(@url, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'emprestimo')]"),
-        (By.XPATH, "//*[contains(translate(@acao, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'emprestimo')]"),
-        (By.XPATH, "//*[contains(translate(@onclick, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'emprestimo')]"),
-        (By.XPATH, "//*[contains(translate(@descricao, 'ÁÀÃÂÉÊÍÓÔÕÚÇáàãâéêíóôõúçABCDEFGHIJKLMNOPQRSTUVWXYZ', 'AAAAEEIOOOUCaaaaeeioooucabcdefghijklmnopqrstuvwxyz'), 'emprestimo')]"),
-        (By.XPATH, "//a[contains(translate(normalize-space(.), 'ÁÀÃÂÉÊÍÓÔÕÚÇáàãâéêíóôõúçABCDEFGHIJKLMNOPQRSTUVWXYZ', 'AAAAEEIOOOUCaaaaeeioooucabcdefghijklmnopqrstuvwxyz'), 'emprestimo')]"),
-        (By.XPATH, "//li[contains(translate(normalize-space(.), 'ÁÀÃÂÉÊÍÓÔÕÚÇáàãâéêíóôõúçABCDEFGHIJKLMNOPQRSTUVWXYZ', 'AAAAEEIOOOUCaaaaeeioooucabcdefghijklmnopqrstuvwxyz'), 'emprestimo')]"),
-        (By.XPATH, "//*[string-length(normalize-space(.)) < 80 and contains(translate(normalize-space(.), 'ÁÀÃÂÉÊÍÓÔÕÚÇáàãâéêíóôõúçABCDEFGHIJKLMNOPQRSTUVWXYZ', 'AAAAEEIOOOUCaaaaeeioooucabcdefghijklmnopqrstuvwxyz'), 'emprestimo')]"),
-    ]
-
-    def tentar_clicar_emprestimo_contexto(nome_contexto):
-        nonlocal ultimo_erro
-
-        for by, seletor in seletores_emprestimo:
-            try:
-                elementos = driver.find_elements(by, seletor)
-                elementos = [e for e in elementos if e.is_displayed()]
-
-                if not elementos:
-                    continue
-
-                elementos.sort(
-                    key=lambda el: (
-                        0 if (el.tag_name or "").lower() in ["a", "button"] else 1,
-                        len((el.text or "").strip())
-                    )
-                )
-
-                clicar_elemento_seguro(driver, elementos[0], f"Empréstimo em {nome_contexto}")
-                time.sleep(2)
-                return True
-
-            except Exception as erro:
-                ultimo_erro = erro
-                continue
-
-        return False
-
-    # Tenta no contexto atual primeiro, pois o submenu pode ter aberto dentro dele.
-    try:
-        if tentar_clicar_emprestimo_contexto("contexto atual"):
-            clicou_emprestimo = True
-    except Exception as erro:
-        ultimo_erro = erro
-
-    # Tenta no conteúdo principal e nos iframes.
-    if not clicou_emprestimo:
-        fim = time.time() + 35
-
-        while time.time() < fim and not clicou_emprestimo:
-            try:
-                driver.switch_to.default_content()
-                if tentar_clicar_emprestimo_contexto("conteúdo principal"):
-                    clicou_emprestimo = True
-                    break
-            except Exception as erro:
-                ultimo_erro = erro
-
-            try:
-                driver.switch_to.default_content()
-                iframes = driver.find_elements(By.TAG_NAME, "iframe")
-                log(f"Procurando Empréstimo em iframes. Total: {len(iframes)}")
-
-                for indice, iframe in enumerate(iframes):
-                    try:
-                        driver.switch_to.default_content()
-                        driver.switch_to.frame(iframe)
-
-                        if tentar_clicar_emprestimo_contexto(f"iframe {indice}"):
-                            clicou_emprestimo = True
-                            break
-
-                    except Exception as erro:
-                        ultimo_erro = erro
-                        continue
-
-            except Exception as erro:
-                ultimo_erro = erro
-
+        fim = time.monotonic() + 35
+        while time.monotonic() < fim and not clicou_emprestimo:
+            contexto_emprestimo, erro_busca = clicar_item_emprestimo_visivel(
+                driver, "recém-aberto"
+            )
+            if erro_busca is not None:
+                ultimo_erro = erro_busca
+            clicou_emprestimo = contexto_emprestimo is not None
             if not clicou_emprestimo:
-                time.sleep(1)
-
-    # Último fallback: usa a função genérica corrigida.
-    if not clicou_emprestimo:
-        try:
-            clicar_por_texto(driver, "Empréstimo", segundos=15)
-            clicou_emprestimo = True
-        except Exception as erro:
-            ultimo_erro = erro
-            log(f"Fallback por texto também falhou para Empréstimo: {erro}")
+                time.sleep(0.5)
 
     if not clicou_emprestimo:
         salvar_diagnostico_erro(driver, "erro_nao_achou_emprestimo")
@@ -1356,7 +1709,10 @@ def voltar_para_emprestimos(driver):
 
     Assim evita procurar "Vendas" novamente no final.
     """
-    log("Voltando para a tela anterior para iniciar a próxima exportação...")
+    fechar_avisos_exportacao_panorama(
+        driver, "NAVEGAÇÃO", aguardar_segundos=1.5
+    )
+    log_panorama("NAVEGAÇÃO", "Retornando para iniciar a próxima exportação.")
 
     try:
         driver.switch_to.default_content()
@@ -2550,18 +2906,29 @@ def clicar_executar_exportacao(driver):
 
 
 def baixar_exportacao(driver, nome_exportacao, limpar_antes=True):
+    etapa = etapa_panorama(nome_exportacao)
+    log_panorama(etapa, f"Iniciando geração do layout: {nome_exportacao}.")
+    fechar_avisos_exportacao_panorama(
+        driver, etapa, aguardar_segundos=1.5
+    )
     if limpar_antes:
         limpar_downloads()
     else:
-        log("Downloads existentes preservados antes da exportação.")
+        log_panorama(etapa, "Downloads existentes preservados antes da exportação.")
 
+    log_panorama(etapa, "Abrindo Exportações > Exportar Layout Arquivo.")
     abrir_tela_exportacao(driver)
+    log_panorama(etapa, f"Selecionando layout {nome_exportacao}.")
     selecionar_layout(driver, nome_exportacao)
 
+    fechar_avisos_exportacao_panorama(
+        driver, etapa, aguardar_segundos=1
+    )
+    log_panorama(etapa, "Solicitando geração do arquivo.")
     clicar_executar_exportacao(driver)
     time.sleep(3)
 
-    log("Aguardando lista de arquivos...")
+    log_panorama(etapa, "Aguardando a lista de arquivos gerados.")
     esperar(driver, 120).until(
         EC.presence_of_element_located(
             (
@@ -2577,13 +2944,19 @@ def baixar_exportacao(driver, nome_exportacao, limpar_antes=True):
 
     inicio_download = time.time() - 5
 
-    log("Clicando no download mais recente...")
+    log_panorama(etapa, "Baixando o arquivo mais recente desta exportação.")
     clicar_primeiro_download(driver)
 
-    log("Aguardando download finalizar...")
-    arquivo_baixado = esperar_download_novo(PASTA_DOWNLOAD, inicio=inicio_download)
+    with acompanhar_operacao(
+        f"[PANORAMA][{etapa}] Aguardando o download finalizar",
+        intervalo=10,
+    ):
+        arquivo_baixado = esperar_download_novo(PASTA_DOWNLOAD, inicio=inicio_download)
 
-    log(f"Arquivo baixado para {nome_exportacao}: {arquivo_baixado}")
+    log_panorama(etapa, f"Download concluído: {arquivo_baixado}")
+    fechar_avisos_exportacao_panorama(
+        driver, etapa, aguardar_segundos=2
+    )
 
     return arquivo_baixado
 
@@ -2976,7 +3349,8 @@ def copiar_dados_excel_origem_para_destino(
     coluna_data="L",
     colunas_formula=None,
     ultima_coluna_dados="T",
-    ultima_coluna_total="V"
+    ultima_coluna_total="V",
+    etapa_panorama_log="ATUALIZAÇÃO",
 ):
     """
     Processo Excel otimizado:
@@ -3002,14 +3376,19 @@ def copiar_dados_excel_origem_para_destino(
     if not arquivo_destino.exists():
         raise FileNotFoundError(f"Arquivo de destino não encontrado: {arquivo_destino}")
 
-    log(f"Abrindo origem: {arquivo_origem}")
-    log(f"Abrindo destino: {arquivo_destino}")
-    log(f"Colunas de fórmula: {colunas_formula}")
-    log(f"Colar dados até a coluna: {ultima_coluna_dados}")
-    log(f"Limpar/reescrever até a coluna: {ultima_coluna_total}")
+    etapa = etapa_panorama_log
+    log_panorama(etapa, f"Arquivo exportado: {arquivo_origem}")
+    log_panorama(etapa, f"Planilha de destino: {arquivo_destino}")
+    log_panorama(
+        etapa,
+        f"Configuração: dados A:{ultima_coluna_dados}; "
+        f"fórmulas {', '.join(colunas_formula)}; limpeza até {ultima_coluna_total}.",
+    )
 
+    log_panorama(etapa, "Verificando se a planilha está liberada para edição.")
     esperar_arquivo_excel_liberar(arquivo_destino)
 
+    log_panorama(etapa, "Lendo e validando o arquivo exportado.")
     linhas_origem = ler_linhas_exportacao(arquivo_origem)
     if not linhas_origem:
         raise ValueError(
@@ -3020,13 +3399,18 @@ def copiar_dados_excel_origem_para_destino(
     wb_destino = None
 
     try:
-        with acompanhar_operacao("Abrindo a planilha de destino", intervalo=10):
+        log_panorama(etapa, f"Registros válidos encontrados: {len(linhas_origem)}.")
+        with acompanhar_operacao(
+            f"[PANORAMA][{etapa}] Abrindo a planilha de destino", intervalo=10
+        ):
             wb_destino = load_workbook(arquivo_destino, keep_links=False)
         ws_destino = wb_destino.active
 
         modelos_formula = obter_modelos_formulas(ws_destino, colunas_formula)
 
-        with acompanhar_operacao("Analisando e reconstruindo a base", intervalo=10):
+        with acompanhar_operacao(
+            f"[PANORAMA][{etapa}] Reconstruindo a base do mês vigente", intervalo=10
+        ):
             removidas, primeira_linha_colagem = limpar_e_reconstruir_base(
                 ws_destino,
                 modelos_formula,
@@ -3034,8 +3418,8 @@ def copiar_dados_excel_origem_para_destino(
                 ultima_coluna_total=ultima_coluna_total
             )
 
-        log(f"Linhas removidas do mês vigente: {removidas}")
-        log(f"Primeira linha para colagem: {primeira_linha_colagem}")
+        log_panorama(etapa, f"Linhas antigas removidas do mês vigente: {removidas}.")
+        log_panorama(etapa, f"Primeira linha de gravação: {primeira_linha_colagem}.")
 
         linha_destino = primeira_linha_colagem
         linhas_coladas = 0
@@ -3057,13 +3441,17 @@ def copiar_dados_excel_origem_para_destino(
         ultima_linha_colada = linha_destino - 1
         
 
-        log(f"Linhas novas coladas: {linhas_coladas}")
+        log_panorama(etapa, f"Registros gravados: {linhas_coladas}.")
         if linhas_coladas == 0:
             raise ValueError(
                 "Nenhuma linha válida foi colada no arquivo destino. "
                 "Verifique se o arquivo exportado veio vazio ou em formato inesperado."
             )
 
+        log_panorama(
+            etapa,
+            f"Preenchendo fórmulas até a linha {ultima_linha_colada}.",
+        )
         aplicar_formulas(
             ws_destino,
             modelos_formula,
@@ -3076,9 +3464,11 @@ def copiar_dados_excel_origem_para_destino(
 
         esperar_arquivo_excel_liberar(arquivo_destino)
 
-        with acompanhar_operacao("Salvando a planilha atualizada", intervalo=10):
+        with acompanhar_operacao(
+            f"[PANORAMA][{etapa}] Salvando a planilha atualizada", intervalo=10
+        ):
             wb_destino.save(arquivo_destino)
-        log(f"Arquivo salvo com sucesso: {arquivo_destino}")
+        log_panorama(etapa, f"Planilha salva com sucesso: {arquivo_destino}")
 
     finally:
         if wb_destino:
@@ -3090,7 +3480,8 @@ def copiar_dados_excel_origem_para_destino(
 # ============================================================
 
 def processar_exportacao_vendas(driver):
-    log("========== INICIANDO EXPORTAÇÃO VENDAS ==========")
+    inicio = time.monotonic()
+    log_panorama("VENDAS", "Iniciando exportação e atualização da planilha.")
 
     arquivo_vendas = baixar_exportacao(driver, "Exportação vendas")
 
@@ -3100,15 +3491,20 @@ def processar_exportacao_vendas(driver):
         coluna_data=COLUNA_DATA_CPC,
         colunas_formula=COLUNAS_FORMULA_VENDAS,
         ultima_coluna_dados=ULTIMA_COLUNA_DADOS_VENDAS,
-        ultima_coluna_total=ULTIMA_COLUNA_TOTAL_VENDAS
+        ultima_coluna_total=ULTIMA_COLUNA_TOTAL_VENDAS,
+        etapa_panorama_log="VENDAS",
     )
 
-    log("========== EXPORTAÇÃO VENDAS CONCLUÍDA ==========")
+    log_panorama(
+        "VENDAS",
+        f"Processo concluído com sucesso em {time.monotonic() - inicio:.1f}s.",
+    )
     return ARQUIVO_FAT_VENDAS
 
 
 def processar_receita_gerada(driver):
-    log("========== INICIANDO RECEITA GERADA ==========")
+    inicio = time.monotonic()
+    log_panorama("RECEITA", "Iniciando exportação e atualização da planilha.")
 
     arquivo_receita = baixar_exportacao(driver, "Receita gerada")
 
@@ -3118,10 +3514,14 @@ def processar_receita_gerada(driver):
         coluna_data=COLUNA_DATA_CPC,
         colunas_formula=COLUNAS_FORMULA_RECEITA,
         ultima_coluna_dados=ULTIMA_COLUNA_DADOS_RECEITA,
-        ultima_coluna_total=ULTIMA_COLUNA_TOTAL_RECEITA
+        ultima_coluna_total=ULTIMA_COLUNA_TOTAL_RECEITA,
+        etapa_panorama_log="RECEITA",
     )
 
-    log("========== RECEITA GERADA CONCLUÍDA ==========")
+    log_panorama(
+        "RECEITA",
+        f"Processo concluído com sucesso em {time.monotonic() - inicio:.1f}s.",
+    )
     return ARQUIVO_FAT_RECEITA
 
 
@@ -3237,7 +3637,7 @@ def main(argv=None):
         driver = iniciar_chrome(headless=headless, manter_navegador=manter_navegador)
 
         if executar_crediagora:
-            fazer_login(driver)
+            fazer_login(driver, preparar_janela=not headless)
 
         if args.check_login:
             log("Diagnóstico de login concluído com sucesso; nenhuma exportação foi iniciada.")

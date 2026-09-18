@@ -2,9 +2,11 @@ import csv
 import os
 import re
 import shutil
+import threading
 import time
 import uuid
 from copy import copy
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -47,6 +49,26 @@ class ResultadoAtualizacaoIndicadores:
 
 def _log(log, mensagem):
     log(f"[INDICADORES] {mensagem}")
+
+
+@contextmanager
+def _progresso_continuo(log, descricao, intervalo=20):
+    terminou = threading.Event()
+    inicio = time.monotonic()
+
+    def acompanhar():
+        while not terminou.wait(intervalo):
+            _log(log, f"{descricao} em andamento... {time.monotonic() - inicio:.0f}s.")
+
+    thread = threading.Thread(target=acompanhar, daemon=True)
+    _log(log, f"{descricao} iniciado.")
+    thread.start()
+    try:
+        yield
+    finally:
+        terminou.set()
+        thread.join(timeout=1)
+        _log(log, f"{descricao} finalizado em {time.monotonic() - inicio:.1f}s.")
 
 
 def _validar_csv_estavel(caminho, tentativas=3, intervalo=1):
@@ -238,7 +260,8 @@ def atualizar_indicadores_fpd1(csv_atual, xlsx_destino, log=print):
     backup = xlsx_destino.with_name(f".{xlsx_destino.stem}.{uuid.uuid4().hex}.bak.xlsx")
     precisa_restaurar = False
     try:
-        wb = load_workbook(xlsx_destino, data_only=False, keep_links=True)
+        with _progresso_continuo(log, "Carregamento do XLSX"):
+            wb = load_workbook(xlsx_destino, data_only=False, keep_links=True)
         if ABA_DADOS not in wb.sheetnames:
             raise AtualizacaoIndicadoresError("XLSX", f"Aba {ABA_DADOS!r} ausente.")
         ws = wb[ABA_DADOS]
@@ -257,9 +280,18 @@ def atualizar_indicadores_fpd1(csv_atual, xlsx_destino, log=print):
         limite = max(antiga_ultima, ultima)
         estilos_modelo = [copy(ws.cell(2, c)._style) for c in range(1, 92)]
 
-        for linha in ws.iter_rows(min_row=2, max_row=limite, min_col=1, max_col=91):
+        _log(log, f"Limpando base anterior ate a linha {limite}.")
+        for numero, linha in enumerate(
+            ws.iter_rows(min_row=2, max_row=limite, min_col=1, max_col=91),
+            start=2,
+        ):
             for celula in linha:
                 celula.value = None
+            if numero % 2000 == 0:
+                _log(log, f"Limpeza: linha {numero} de {limite}.")
+        _log(log, "Limpeza da base anterior concluida.")
+
+        _log(log, f"Gravando {len(registros)} registros e formulas.")
         for numero_linha, registro in enumerate(registros, start=2):
             for coluna, valor in enumerate(registro, start=1):
                 celula = ws.cell(numero_linha, coluna, valor)
@@ -271,19 +303,25 @@ def atualizar_indicadores_fpd1(csv_atual, xlsx_destino, log=print):
                 celula.value = _traduzir(valor, origem, celula.coordinate)
                 if numero_linha > antiga_ultima:
                     celula._style = copy(estilos_modelo[coluna - 1])
+            if numero_linha % 1000 == 0:
+                _log(log, f"Gravacao: linha {numero_linha} de {ultima}.")
+        _log(log, "Dados e formulas preenchidos em memoria.")
 
         _validar_planilha(ws, cabecalhos, modelo, registros, ultima, antiga_ultima)
         wb.calculation.fullCalcOnLoad = True
         wb.calculation.forceFullCalc = True
         wb.calculation.calcMode = "auto"
-        wb.save(temporario)
+        with _progresso_continuo(log, "Salvamento do XLSX temporario"):
+            wb.save(temporario)
         wb.close()
         wb = None
-        _validar_salvo(temporario, cabecalhos, modelo, registros, ultima, antiga_ultima)
+        with _progresso_continuo(log, "Validacao do XLSX temporario"):
+            _validar_salvo(temporario, cabecalhos, modelo, registros, ultima, antiga_ultima)
         shutil.copy2(xlsx_destino, backup)
         os.replace(temporario, xlsx_destino)
         precisa_restaurar = True
-        _validar_salvo(xlsx_destino, cabecalhos, modelo, registros, ultima, antiga_ultima)
+        with _progresso_continuo(log, "Validacao final do XLSX"):
+            _validar_salvo(xlsx_destino, cabecalhos, modelo, registros, ultima, antiga_ultima)
         precisa_restaurar = False
         backup.unlink(missing_ok=True)
 
