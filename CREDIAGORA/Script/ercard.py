@@ -1320,30 +1320,47 @@ def configurar_exportacao_csv_canvas(driver, config, arquivo_webfile, log):
 
 def preencher_periodo_canvas(driver, config, log):
     data_final = datetime.now().strftime("%d%m%y")
+    posicao_campo = (0.455, 0.706)
 
-    _clicar_janela_gerencial(driver, 0.455, 0.706)
-    time.sleep(1)
-    _clicar_janela_gerencial(driver, 0.455, 0.706)
-    time.sleep(0.5)
-    ActionChains(driver).key_down(Keys.CONTROL).send_keys("a").key_up(
-        Keys.CONTROL
-    ).send_keys(Keys.BACKSPACE).perform()
-    time.sleep(0.3)
+    def limpar_campo_data():
+        # Garante que todo o conteúdo do campo seja selecionado e apagado de forma
+        # consistente mesmo quando o campo estiver vazio ou com valor antigo.
+        for _ in range(3):
+            ActionChains(driver).key_down(Keys.CONTROL).send_keys("a").key_up(
+                Keys.CONTROL
+            ).send_keys(Keys.BACKSPACE).perform()
+            time.sleep(0.15)
+        ActionChains(driver).send_keys(Keys.HOME).perform()
+        time.sleep(0.1)
+        ActionChains(driver).key_down(Keys.CONTROL).send_keys("a").key_up(
+            Keys.CONTROL
+        ).send_keys(Keys.DELETE).perform()
+        time.sleep(0.15)
+
+    # Foca o campo de data e repete o clique para reduzir flakiness do canvas.
+    _clicar_janela_gerencial(driver, *posicao_campo)
+    time.sleep(0.6)
+    _clicar_janela_gerencial(driver, *posicao_campo)
+    time.sleep(0.4)
+    limpar_campo_data()
+
     for caractere in DATA_INICIAL:
         ActionChains(driver).send_keys(caractere).perform()
-        time.sleep(0.12)
-    time.sleep(1)
+        time.sleep(0.08)
+    time.sleep(0.6)
     ActionChains(driver).send_keys(Keys.TAB).perform()
-    time.sleep(1.5)
+    time.sleep(0.9)
 
     # O TAB da data inicial posiciona o foco diretamente na data final.
-    time.sleep(0.5)
+    _clicar_janela_gerencial(driver, *posicao_campo)
+    time.sleep(0.25)
+    limpar_campo_data()
     for caractere in data_final:
         ActionChains(driver).send_keys(caractere).perform()
-        time.sleep(0.12)
+        time.sleep(0.08)
     time.sleep(0.5)
     ActionChains(driver).send_keys(Keys.TAB).perform()
-    time.sleep(1.5)
+    time.sleep(1.0)
     log_ercard(log, f"Data inicial: {DATA_INICIAL}")
     log_ercard(log, f"Data final: {data_final}")
 

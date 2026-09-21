@@ -27,6 +27,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 from ercard import ErCardConfig, executar_fase_ercard
+from gestor import GestorConfig, executar_fase_gestor, formatar_brasileiro
 from indicadores_fpd1 import atualizar_indicadores_fpd1
 
 
@@ -79,6 +80,9 @@ ERCARD_PORTAL_USUARIO, _ = carregar_credencial("ERCARD_PORTAL_USUARIO")
 ERCARD_PORTAL_SENHA, _ = carregar_credencial("ERCARD_PORTAL_SENHA")
 ERCARD_SISTEMA_USUARIO, _ = carregar_credencial("ERCARD_SISTEMA_USUARIO")
 ERCARD_SISTEMA_SENHA, _ = carregar_credencial("ERCARD_SISTEMA_SENHA")
+GESTOR_REMOTO_USUARIO, _ = carregar_credencial("GESTOR_REMOTO_USUARIO", "HJ54")
+GESTOR_USUARIO, _ = carregar_credencial("GESTOR_USUARIO", "JUNIORM")
+GESTOR_SENHA, _ = carregar_credencial("GESTOR_SENHA")
 
 
 def caminho_env(nome_variavel, padrao):
@@ -130,6 +134,15 @@ PASTA_TABELA_FAT = caminho_env(
     / "TJI PROMOTORA DE VENDAS EIRELI"
     / "Crediagora-doc - dados"
     / "tabela fat"
+)
+
+ARQUIVO_METAS_GESTOR = caminho_env(
+    "GESTOR_XLSX_METAS",
+    PASTA_TABELA_FAT / "fat_metas_venda_moda_lojas_hoje_Teste_Automaçao.xlsx",
+)
+ATALHO_GESTOR = caminho_env(
+    "GESTOR_ATALHO",
+    Path.home() / "Desktop" / "GESTOR NUVEM.lnk",
 )
 
 # Arquivos finais
@@ -189,6 +202,8 @@ TIMEOUT_EXCEL = int_env("CREDIAGORA_EXCEL_TIMEOUT", 120)
 ERCARD_TIMEOUT_NORMAL = int_env("ERCARD_TIMEOUT_NORMAL", 30)
 ERCARD_TIMEOUT_REMOTO = int_env("ERCARD_TIMEOUT_REMOTO", 20)
 ERCARD_TIMEOUT_EXPORTACAO = int_env("ERCARD_TIMEOUT_EXPORTACAO", 300)
+GESTOR_TIMEOUT_JANELA = int_env("GESTOR_TIMEOUT_JANELA", 60)
+GESTOR_TIMEOUT_RELATORIO = int_env("GESTOR_TIMEOUT_RELATORIO", 120)
 PASTA_EXPORTACOES_ERCARD = caminho_env(
     "ERCARD_EXPORT_DIR",
     Path.home() / "Desktop" / "Exportações"
@@ -351,7 +366,14 @@ def validar_pasta_download_segura():
         )
 
 
-def mostrar_resumo_configuracao(exportacao, headless, manter_downloads, manter_navegador, criar_backups):
+def mostrar_resumo_configuracao(
+    exportacao,
+    headless,
+    manter_downloads,
+    manter_navegador,
+    criar_backups,
+    executar_gestor=False,
+):
     log("Resumo da configuração:")
     log(f"- Exportação: {exportacao}")
     log(f"- URL: {URL}")
@@ -368,6 +390,12 @@ def mostrar_resumo_configuracao(exportacao, headless, manter_downloads, manter_n
     log(f"- Manter navegador ao final: {'sim' if manter_navegador else 'não'}")
     log(f"- Manter downloads ao final: {'sim' if manter_downloads else 'não'}")
     log(f"- Criar backup antes de atualizar: {'sim' if criar_backups else 'não'}")
+    if executar_gestor:
+        log(
+            "- Fase Gestor: sim; "
+            f"usuario remoto={GESTOR_REMOTO_USUARIO}; usuario={GESTOR_USUARIO}"
+        )
+        log(f"- Excel de metas: {ARQUIVO_METAS_GESTOR}")
 
 
 def validar_configuracao():
@@ -400,6 +428,21 @@ def criar_configuracao_ercard():
         timeout_normal=ERCARD_TIMEOUT_NORMAL,
         timeout_remoto=ERCARD_TIMEOUT_REMOTO,
         timeout_exportacao=ERCARD_TIMEOUT_EXPORTACAO,
+    )
+
+
+def criar_configuracao_gestor():
+    return GestorConfig(
+        remoto_usuario=GESTOR_REMOTO_USUARIO,
+        usuario=GESTOR_USUARIO,
+        senha=GESTOR_SENHA,
+        arquivo_excel=ARQUIVO_METAS_GESTOR,
+        pasta_logs=PASTA_LOGS,
+        pasta_erros=PASTA_ERROS,
+        pasta_backup=PASTA_BACKUP,
+        atalho=ATALHO_GESTOR,
+        timeout_janela=GESTOR_TIMEOUT_JANELA,
+        timeout_relatorio=GESTOR_TIMEOUT_RELATORIO,
     )
 
 
@@ -1305,7 +1348,7 @@ def tratar_popups_panorama(driver):
 
 
 def fechar_avisos_exportacao_panorama(
-    driver, etapa="EXPORTAÇÃO", limite=10, aguardar_segundos=0
+    driver, etapa="EXPORTAÇÃO", limite=10, aguardar_segundos: float = 0
 ):
     """Remove avisos automáticos de exportação concluída, inclusive acumulados."""
     fechados = 0
@@ -2817,92 +2860,99 @@ def clicar_primeiro_download(driver):
 
 
 
+def _buscar_contexto_panorama(driver, verificar, profundidade=0):
+    """Deixa o driver no contexto encontrado; visita frames sem esperas individuais."""
+    resultado = verificar()
+    if resultado:
+        return resultado
+    if profundidade >= 3:
+        return None
+    for frame in driver.find_elements(By.CSS_SELECTOR, "iframe, frame"):
+        if not frame.is_displayed():
+            continue
+        driver.switch_to.frame(frame)
+        resultado = _buscar_contexto_panorama(driver, verificar, profundidade + 1)
+        if resultado:
+            return resultado
+        driver.switch_to.parent_frame()
+    return None
+
+
+def _resultado_exportacao_visivel(driver):
+    mensagens = driver.find_elements(
+        By.XPATH,
+        "//*[normalize-space(.)='Arquivo Gerado com sucesso']",
+    )
+    links = driver.find_elements(
+        By.CSS_SELECTOR,
+        "a[href*='idDigitalizacao'], a[href*='exibirDigitalizacao']",
+    )
+    return any(item.is_displayed() for item in mensagens) and any(
+        item.is_displayed() for item in links
+    )
+
+
 def clicar_executar_exportacao(driver):
-    """
-    Clica no botão Executar da tela de exportação.
-    Tenta seletores específicos antes de usar texto genérico.
-    """
-    log("Clicando em Executar.")
-
-    seletores = [
-        (By.XPATH, "//button[normalize-space(.)='Executar']"),
-        (By.XPATH, "//input[@type='button' and translate(@value, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz')='executar']"),
-        (By.XPATH, "//input[@type='submit' and translate(@value, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz')='executar']"),
-        (By.XPATH, "//a[normalize-space(.)='Executar']"),
-        (By.XPATH, "//*[normalize-space(.)='Executar' and (self::button or self::input or self::a or contains(@class,'btn'))]"),
-        (By.XPATH, "//*[contains(translate(normalize-space(.), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'executar')]"),
-    ]
-
+    """Envia uma vez e confirma o resultado, mesmo se o DOM mudar durante o clique."""
+    log_panorama("EXPORTACAO", "Localizando Executar e acompanhando a resposta.")
+    seletor = (
+        "//button[translate(normalize-space(.), 'EXECUTAR', 'executar')='executar']"
+        " | //input[(@type='button' or @type='submit') and "
+        "translate(normalize-space(@value), 'EXECUTAR', 'executar')='executar']"
+        " | //a[translate(normalize-space(.), 'EXECUTAR', 'executar')='executar']"
+        " | //*[@role='button' and "
+        "translate(normalize-space(.), 'EXECUTAR', 'executar')='executar']"
+    )
+    enviado = False
     ultimo_erro = None
+    fim = time.monotonic() + 120
 
-    def tentar_contexto(nome_contexto):
-        nonlocal ultimo_erro
+    def verificar():
+        nonlocal enviado
+        if _resultado_exportacao_visivel(driver):
+            return "concluida"
+        if enviado:
+            return None
+        candidatos = [
+            item for item in driver.find_elements(By.XPATH, seletor)
+            if item.is_displayed() and item.is_enabled()
+        ]
+        if len(candidatos) > 1:
+            raise RuntimeError("Mais de um botao Executar visivel; clique cancelado.")
+        if candidatos:
+            botao = candidatos[0]
+            driver.execute_script(
+                "arguments[0].scrollIntoView({block:'center'});", botao
+            )
+            # Marcar antes do envio impede duplicacao quando a resposta troca o DOM.
+            enviado = True
+            botao.click()
+        return None
 
-        for by, seletor in seletores:
-            try:
-                elemento = WebDriverWait(driver, 10).until(
-                    EC.presence_of_element_located((by, seletor))
-                )
-
-                driver.execute_script(
-                    "arguments[0].scrollIntoView({block: 'center', inline: 'center'});",
-                    elemento
-                )
-                time.sleep(0.3)
-
-                try:
-                    elemento.click()
-                except Exception:
-                    driver.execute_script("arguments[0].click();", elemento)
-
-                log(f"Executar clicado em {nome_contexto} usando seletor: {seletor}")
-                time.sleep(2)
-                return True
-
-            except Exception as erro:
+    while time.monotonic() < fim:
+        try:
+            driver.switch_to.default_content()
+            if _buscar_contexto_panorama(driver, verificar):
+                log_panorama("EXPORTACAO", "Geracao confirmada; lista de arquivos disponivel.")
+                return
+        except StaleElementReferenceException as erro:
+            ultimo_erro = erro
+        except Exception as erro:
+            # Interceptacao garante que o clique nao foi entregue ao alvo.
+            if erro.__class__.__name__ == "ElementClickInterceptedException":
+                enviado = False
+                fechar_avisos_exportacao_panorama(driver, aguardar_segundos=0)
+            else:
                 ultimo_erro = erro
-                continue
+                if isinstance(erro, RuntimeError):
+                    raise
+        time.sleep(0.4)
 
-        return False
-
-    if tentar_contexto("contexto atual"):
-        return
-
-    try:
-        driver.switch_to.default_content()
-        iframes = driver.find_elements(By.TAG_NAME, "iframe")
-
-        for indice, iframe in enumerate(iframes):
-            try:
-                driver.switch_to.default_content()
-                driver.switch_to.frame(iframe)
-
-                if tentar_contexto(f"iframe {indice}"):
-                    return
-
-            except Exception as erro:
-                ultimo_erro = erro
-                continue
-
-    except Exception as erro:
-        ultimo_erro = erro
-
-    screenshot = PASTA_ERROS / f"erro_executar_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png"
-    html = PASTA_ERROS / f"erro_executar_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.html"
-
-    try:
-        driver.save_screenshot(str(screenshot))
-        log(f"Print do erro salvo em: {screenshot}")
-    except Exception:
-        pass
-
-    try:
-        html.write_text(driver.page_source, encoding="utf-8")
-        log(f"HTML do erro salvo em: {html}")
-    except Exception:
-        pass
-
-    raise Exception(f"Não consegui clicar no botão Executar. Último erro: {ultimo_erro}")
+    salvar_diagnostico_erro(driver, "erro_executar")
+    raise RuntimeError(
+        "Panorama: geracao nao confirmada em 120s. "
+        f"Clique enviado={enviado}; ultimo erro={ultimo_erro}"
+    )
 
 
 def baixar_exportacao(driver, nome_exportacao, limpar_antes=True):
@@ -3404,7 +3454,13 @@ def copiar_dados_excel_origem_para_destino(
             f"[PANORAMA][{etapa}] Abrindo a planilha de destino", intervalo=10
         ):
             wb_destino = load_workbook(arquivo_destino, keep_links=False)
+
+        if wb_destino is None:
+            raise ValueError(f"Não foi possível abrir a planilha de destino: {arquivo_destino}")
+
         ws_destino = wb_destino.active
+        if ws_destino is None:
+            raise ValueError(f"A planilha de destino não possui uma aba ativa: {arquivo_destino}")
 
         modelos_formula = obter_modelos_formulas(ws_destino, colunas_formula)
 
@@ -3581,7 +3637,22 @@ def parse_args(argv=None):
         action="store_true",
         help="Executa somente a nova fase ERCard."
     )
-    return parser.parse_args(argv)
+    parser.add_argument(
+        "--sem-gestor",
+        action="store_true",
+        help="Nao executa a Fase 3 do Gestor ERP."
+    )
+    parser.add_argument(
+        "--somente-gestor",
+        action="store_true",
+        help="Executa somente a Fase 3 do Gestor ERP."
+    )
+    args = parser.parse_args(argv)
+    if args.somente_gestor and (args.somente_ercard or args.sem_gestor):
+        parser.error("--somente-gestor nao pode ser combinado com --somente-ercard/--sem-gestor")
+    if args.somente_gestor and args.check_login:
+        parser.error("--somente-gestor nao pode ser combinado com --check-login")
+    return args
 
 
 def main(argv=None):
@@ -3592,9 +3663,17 @@ def main(argv=None):
     manter_downloads = MANTER_DOWNLOADS or args.manter_downloads
     manter_navegador = (MANTER_NAVEGADOR or args.manter_navegador) and not headless
     criar_backups = not args.sem_backup and not args.check_login
-    executar_crediagora = not args.somente_ercard
-    executar_ercard = not args.sem_ercard and not args.check_login
+    executar_crediagora = not args.somente_ercard and not args.somente_gestor
+    executar_ercard = (
+        (args.somente_ercard or (not args.sem_ercard and not args.somente_gestor))
+        and not args.check_login
+    )
+    executar_gestor = (
+        (args.somente_gestor or (not args.sem_gestor and not args.somente_ercard))
+        and not args.check_login
+    )
     config_ercard = criar_configuracao_ercard()
+    config_gestor = criar_configuracao_gestor()
     LOGS_ATIVACAO.clear()
 
     try:
@@ -3616,6 +3695,8 @@ def main(argv=None):
                 config_ercard,
                 somente_ercard=args.somente_ercard,
             )
+        if executar_gestor:
+            config_gestor.validar()
         if executar_crediagora and not args.check_login:
             validar_caminhos(args.exportacao)
         mostrar_resumo_configuracao(
@@ -3623,7 +3704,8 @@ def main(argv=None):
             headless=headless,
             manter_downloads=manter_downloads,
             manter_navegador=manter_navegador,
-            criar_backups=criar_backups
+            criar_backups=criar_backups,
+            executar_gestor=executar_gestor,
         )
 
         if args.check:
@@ -3634,7 +3716,8 @@ def main(argv=None):
         if args.check_login:
             log("Backups dispensados no diagnóstico exclusivo de login.")
 
-        driver = iniciar_chrome(headless=headless, manter_navegador=manter_navegador)
+        if executar_crediagora or executar_ercard:
+            driver = iniciar_chrome(headless=headless, manter_navegador=manter_navegador)
 
         if executar_crediagora:
             fazer_login(driver, preparar_janela=not headless)
@@ -3687,6 +3770,18 @@ def main(argv=None):
                 "Fórmulas preenchidas="
                 f"AY2:CM{resultado_indicadores.ultima_linha}"
             )
+
+        if executar_gestor:
+            resultado_gestor = executar_fase_gestor(config_gestor, log)
+            log(f"Data do relatorio Gestor={resultado_gestor.data_relatorio}")
+            for loja, valor in resultado_gestor.valores.items():
+                log(f"Gestor {loja}={formatar_brasileiro(valor)}")
+            log(
+                "Gestor TOTAL GERAL="
+                f"{formatar_brasileiro(resultado_gestor.total_relatorio)}"
+            )
+            log(f"Excel Gestor={resultado_gestor.arquivo_excel}")
+            log(f"Screenshot Gestor={resultado_gestor.screenshot}")
 
         log("========== PROCESSO FINALIZADO COM SUCESSO ==========")
         status_log = "sucesso"
