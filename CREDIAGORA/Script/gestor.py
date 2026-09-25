@@ -808,6 +808,41 @@ def _preencher_campo_canvas_acesso(hwnd, x, y, texto, intervalo):
     pyautogui.write(str(texto), interval=intervalo)
 
 
+def _preparar_teclado_credenciais(hwnd, log):
+    import pyautogui
+
+    _ativar(hwnd)
+    # write() usa Shift para maiusculas; Caps Lock ligado inverte as letras.
+    if ctypes.windll.user32.GetKeyState(0x14) & 1:
+        pyautogui.press("capslock")
+        time.sleep(1)
+        if ctypes.windll.user32.GetKeyState(0x14) & 1:
+            raise GestorError("Controle de acesso", "Caps Lock permaneceu ligado; credenciais nao enviadas.", hwnd=hwnd)
+        log_gestor(log, "Caps Lock desativado antes de digitar as credenciais.")
+
+
+def _aguardar_empresas_acesso(hwnd, timeout):
+    fim = time.monotonic() + timeout
+    with tempfile.TemporaryDirectory(prefix="gestor_acesso_") as pasta:
+        captura = Path(pasta) / "estado.png"
+        while time.monotonic() < fim:
+            if not _janela_existe(hwnd):
+                return False
+            # Nao ativar o pai: uma mensagem modal pode estar bloqueando-o.
+            ImageGrab.grab(bbox=_retangulo_visivel(hwnd), all_screens=True).save(captura)
+            texto = normalizar(" ".join(str(p.get("text", "")) for p in _executar_ocr(captura)))
+            if "senha invalida" in texto or ("senha" in texto and "nao localizada" in texto):
+                raise GestorError(
+                    "Controle de acesso",
+                    "SENHA INVALIDA OU NAO LOCALIZADA. Login interrompido sem nova tentativa.",
+                    hwnd=hwnd,
+                )
+            if "lojas hoje" in texto:
+                return True
+            time.sleep(0.5)
+    raise GestorError("Controle de acesso", "Lista de empresas nao confirmada; nenhum novo clique enviado.", hwnd=hwnd)
+
+
 def _data_campo_corresponde(texto, data_esperada):
     esperado = data_esperada.strftime("%d%m%Y")
     dia, mes, ano = esperado[:2], esperado[2:4], esperado[4:]
@@ -952,6 +987,7 @@ def autenticar_comercial(gestor, config, log):
 
     hwnd_acesso = acesso["hwnd"]
     _aguardar_formulario_acesso_pronto(hwnd_acesso, config.timeout_janela, log)
+    _preparar_teclado_credenciais(hwnd_acesso, log)
     usuario_antes = _capturar_campo_canvas_acesso(hwnd_acesso, 0.33, 0.38)
     _preencher_campo_canvas_acesso(
         hwnd_acesso, 0.33, 0.35, config.usuario.upper(), config.intervalo_tecla
@@ -972,8 +1008,7 @@ def autenticar_comercial(gestor, config, log):
 
     _clicar_canvas_acesso(hwnd_acesso, 0.86, 0.94)
     log_gestor(log, "Credenciais enviadas; aguardando carregar a lista de empresas.")
-    time.sleep(3)
-    if _janela_existe(hwnd_acesso):
+    if _aguardar_empresas_acesso(hwnd_acesso, config.timeout_janela):
         _clicar_canvas_acesso(hwnd_acesso, 0.45, 0.50)
         time.sleep(0.7)
         _clicar_canvas_acesso(hwnd_acesso, 0.86, 0.94)
@@ -1060,6 +1095,7 @@ def autenticar_liberacao(liberacao, config, log):
     preparar_janela_gestor(liberacao["hwnd"], log)
     _ativar(liberacao["hwnd"])
     time.sleep(1.5)
+    _preparar_teclado_credenciais(liberacao["hwnd"], log)
     _preencher_campo_canvas_acesso(
         liberacao["hwnd"],
         0.52,
@@ -1737,7 +1773,13 @@ def salvar_diagnostico_gestor(config, etapa, log, hwnd=None):
         return caminho
     except Exception as erro:
         log_gestor(log, f"Falha ao salvar screenshot de diagnostico: {erro}")
-        return None
+        try:
+            ImageGrab.grab(all_screens=True).save(caminho)
+            log_gestor(log, f"Screenshot passivo de diagnostico: {caminho}")
+            return caminho
+        except Exception as erro_captura:
+            log_gestor(log, f"Falha na captura passiva: {erro_captura}")
+            return None
 
 
 def executar_fase_gestor(config, log):

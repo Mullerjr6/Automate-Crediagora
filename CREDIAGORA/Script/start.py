@@ -3412,7 +3412,7 @@ def copiar_dados_excel_origem_para_destino(
     ultima_coluna_dados="T",
     ultima_coluna_total="V",
     etapa_panorama_log="ATUALIZAÇÃO",
-    normalizar_cpc_receita=False,
+    normalizar_cpc=False,
 ):
     """
     Processo Excel otimizado:
@@ -3465,7 +3465,7 @@ def copiar_dados_excel_origem_para_destino(
         with acompanhar_operacao(
             f"[PANORAMA][{etapa}] Abrindo a planilha de destino", intervalo=10
         ):
-            wb_destino = load_workbook(arquivo_destino, keep_links=False)
+            wb_destino = load_workbook(arquivo_destino, keep_links=True)
 
         if wb_destino is None:
             raise ValueError(f"Não foi possível abrir a planilha de destino: {arquivo_destino}")
@@ -3476,7 +3476,7 @@ def copiar_dados_excel_origem_para_destino(
 
         modelos_formula = obter_modelos_formulas(ws_destino, colunas_formula)
 
-        if normalizar_cpc_receita:
+        if normalizar_cpc:
             indice_data = coluna_data_cpc(ws_destino)
             linhas_origem = preparar_linhas_receita(linhas_origem, indice_data)
             relatorio_datas = normalizar_datas_cpc(ws_destino)
@@ -3535,7 +3535,7 @@ def copiar_dados_excel_origem_para_destino(
         )
 
         ultima_linha_real = obter_ultima_linha_com_dados(ws_destino, ultima_coluna_total)
-        if normalizar_cpc_receita:
+        if normalizar_cpc:
             normalizar_datas_cpc(ws_destino)
         ajustar_tabelas_excel(ws_destino, ultima_linha=ultima_linha_real)
 
@@ -3570,6 +3570,7 @@ def processar_exportacao_vendas(driver):
         ultima_coluna_dados=ULTIMA_COLUNA_DADOS_VENDAS,
         ultima_coluna_total=ULTIMA_COLUNA_TOTAL_VENDAS,
         etapa_panorama_log="VENDAS",
+        normalizar_cpc=True,
     )
 
     log_panorama(
@@ -3593,7 +3594,7 @@ def processar_receita_gerada(driver):
         ultima_coluna_dados=ULTIMA_COLUNA_DADOS_RECEITA,
         ultima_coluna_total=ULTIMA_COLUNA_TOTAL_RECEITA,
         etapa_panorama_log="RECEITA",
-        normalizar_cpc_receita=True,
+        normalizar_cpc=True,
     )
 
     log_panorama(
@@ -3880,4 +3881,3 @@ if __name__ == "__main__":
     except Exception as erro:
         log(f"Erro fatal na execução: {erro}")
         raise SystemExit(1)
-
