@@ -1339,30 +1339,31 @@ def preencher_periodo_canvas(driver, config, log):
 
     # Foca o campo de data e repete o clique para reduzir flakiness do canvas.
     _clicar_janela_gerencial(driver, *posicao_campo)
-    time.sleep(0.6)
+    time.sleep(1.0)
     _clicar_janela_gerencial(driver, *posicao_campo)
-    time.sleep(0.4)
+    time.sleep(0.5)
     limpar_campo_data()
 
     for caractere in DATA_INICIAL:
         ActionChains(driver).send_keys(caractere).perform()
-        time.sleep(0.08)
-    time.sleep(0.6)
+        time.sleep(0.12)
+    time.sleep(1.0)
     ActionChains(driver).send_keys(Keys.TAB).perform()
-    time.sleep(0.9)
+    time.sleep(1.5)
+    log_ercard(log, "TAB enviado apos DATA INICIAL; aguardando foco na DATA FINAL sem novo clique.")
+    time.sleep(0.5)
 
-    # O TAB da data inicial posiciona o foco diretamente na data final.
-    _clicar_janela_gerencial(driver, *posicao_campo)
-    time.sleep(0.25)
+    # Preserva o foco transferido pelo TAB; clicar em posicao_campo voltaria a DATA INICIAL.
     limpar_campo_data()
     for caractere in data_final:
         ActionChains(driver).send_keys(caractere).perform()
-        time.sleep(0.08)
+        time.sleep(0.12)
     time.sleep(0.5)
     ActionChains(driver).send_keys(Keys.TAB).perform()
-    time.sleep(1.0)
-    log_ercard(log, f"Data inicial: {DATA_INICIAL}")
-    log_ercard(log, f"Data final: {data_final}")
+    time.sleep(1.5)
+    log_ercard(log, f"Valor enviado para DATA INICIAL: {DATA_INICIAL}")
+    log_ercard(log, f"Valor enviado para DATA FINAL: {data_final}; TAB enviado para aplicar a mascara.")
+    salvar_diagnostico_ercard(driver, config, "periodo_preenchido_antes_exportar", log)
 
 
 def exportar_tabela_contratos_canvas(driver, config, arquivo_final, log):

@@ -18,7 +18,11 @@ from openpyxl import load_workbook
 from openpyxl.formula.translate import Translator
 from openpyxl.utils import get_column_letter, range_boundaries
 from selenium import webdriver
-from selenium.common.exceptions import StaleElementReferenceException
+from selenium.common.exceptions import (
+    ElementClickInterceptedException,
+    NoSuchFrameException,
+    StaleElementReferenceException,
+)
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
@@ -29,7 +33,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from ercard import ErCardConfig, executar_fase_ercard
 from gestor import GestorConfig, executar_fase_gestor, formatar_brasileiro
 from indicadores_fpd1 import atualizar_indicadores_fpd1
-
+from receita_cpc import coluna_data_cpc, normalizar_datas_cpc, preparar_linhas_receita
 
 # ============================================================
 # CONFIGURAÇÕES PRINCIPAIS
@@ -156,15 +160,14 @@ ARQUIVOS_FAT_RECEITA_POSSIVEIS = [
     PASTA_TABELA_FAT / "tabelas fat" / "fat_receita_gerada_CPC_TESTE.xlsx",
 ]
 
-ARQUIVO_FAT_RECEITA = None
-
-for caminho_receita in ARQUIVOS_FAT_RECEITA_POSSIVEIS:
-    if caminho_receita.exists():
-        ARQUIVO_FAT_RECEITA = caminho_receita
-        break
-
-if ARQUIVO_FAT_RECEITA is None:
-    ARQUIVO_FAT_RECEITA = ARQUIVOS_FAT_RECEITA_POSSIVEIS[0]
+ARQUIVO_FAT_RECEITA = next(
+    (
+        caminho_receita
+        for caminho_receita in ARQUIVOS_FAT_RECEITA_POSSIVEIS
+        if caminho_receita.exists()
+    ),
+    ARQUIVOS_FAT_RECEITA_POSSIVEIS[0],
+)
 
 # Coluna da data cpc no arquivo final
 COLUNA_DATA_CPC = "L"
@@ -208,12 +211,9 @@ PASTA_EXPORTACOES_ERCARD = caminho_env(
     "ERCARD_EXPORT_DIR",
     Path.home() / "Desktop" / "Exportações"
 )
-ARQUIVO_INDICADORES_FPD1 = (
-    Path.home()
-    / "TJI PROMOTORA DE VENDAS EIRELI"
-    / "Crediagora-doc - dados"
-    / "tabela fat"
-    / "Indicadores de FPD1_teste_de_automação.xlsx"
+ARQUIVO_INDICADORES_FPD1 = caminho_env(
+    "CREDIAGORA_INDICADORES_FPD1_XLSX",
+    PASTA_TABELA_FAT / "Indicadores de FPD1_teste_de_automacao.xlsx",
 )
 
 PADROES_DOWNLOAD = [
@@ -2868,13 +2868,23 @@ def _buscar_contexto_panorama(driver, verificar, profundidade=0):
     if profundidade >= 3:
         return None
     for frame in driver.find_elements(By.CSS_SELECTOR, "iframe, frame"):
-        if not frame.is_displayed():
+        try:
+            if not frame.is_displayed():
+                continue
+            driver.switch_to.frame(frame)
+        except (StaleElementReferenceException, NoSuchFrameException):
             continue
-        driver.switch_to.frame(frame)
-        resultado = _buscar_contexto_panorama(driver, verificar, profundidade + 1)
-        if resultado:
-            return resultado
-        driver.switch_to.parent_frame()
+        resultado = None
+        try:
+            resultado = _buscar_contexto_panorama(driver, verificar, profundidade + 1)
+            if resultado:
+                return resultado
+        except StaleElementReferenceException:
+            # Um frame atualizado nao deve impedir a busca nos frames vizinhos.
+            pass
+        finally:
+            if not resultado:
+                driver.switch_to.parent_frame()
     return None
 
 
@@ -2905,7 +2915,9 @@ def clicar_executar_exportacao(driver):
     )
     enviado = False
     ultimo_erro = None
-    fim = time.monotonic() + 120
+    inicio = time.monotonic()
+    fim = inicio + 120
+    proximo_log = inicio + 10
 
     def verificar():
         nonlocal enviado
@@ -2926,7 +2938,12 @@ def clicar_executar_exportacao(driver):
             )
             # Marcar antes do envio impede duplicacao quando a resposta troca o DOM.
             enviado = True
-            botao.click()
+            try:
+                botao.click()
+            except ElementClickInterceptedException:
+                enviado = False
+                raise
+            log_panorama("EXPORTACAO", "Executar clicado; aguardando geracao sem repetir o envio.")
         return None
 
     while time.monotonic() < fim:
@@ -2935,17 +2952,20 @@ def clicar_executar_exportacao(driver):
             if _buscar_contexto_panorama(driver, verificar):
                 log_panorama("EXPORTACAO", "Geracao confirmada; lista de arquivos disponivel.")
                 return
-        except StaleElementReferenceException as erro:
+        except (StaleElementReferenceException, NoSuchFrameException) as erro:
             ultimo_erro = erro
+        except ElementClickInterceptedException as erro:
+            ultimo_erro = erro
+            log_panorama("EXPORTACAO", "Clique bloqueado; verificando avisos de exportacao.")
+            fechar_avisos_exportacao_panorama(driver, aguardar_segundos=0)
         except Exception as erro:
-            # Interceptacao garante que o clique nao foi entregue ao alvo.
-            if erro.__class__.__name__ == "ElementClickInterceptedException":
-                enviado = False
-                fechar_avisos_exportacao_panorama(driver, aguardar_segundos=0)
-            else:
-                ultimo_erro = erro
-                if isinstance(erro, RuntimeError):
-                    raise
+            salvar_diagnostico_erro(driver, "erro_executar")
+            raise RuntimeError(f"Panorama: falha ao acompanhar Executar: {erro}") from erro
+        agora = time.monotonic()
+        if agora >= proximo_log:
+            estado = "aguardando resultado" if enviado else "localizando botao Executar"
+            log_panorama("EXPORTACAO", f"{estado}; {agora - inicio:.0f}s decorridos (limite 120s).")
+            proximo_log = agora + 10
         time.sleep(0.4)
 
     salvar_diagnostico_erro(driver, "erro_executar")
@@ -2976,21 +2996,7 @@ def baixar_exportacao(driver, nome_exportacao, limpar_antes=True):
     )
     log_panorama(etapa, "Solicitando geração do arquivo.")
     clicar_executar_exportacao(driver)
-    time.sleep(3)
-
-    log_panorama(etapa, "Aguardando a lista de arquivos gerados.")
-    esperar(driver, 120).until(
-        EC.presence_of_element_located(
-            (
-                By.XPATH,
-                "//*[contains(text(), 'Data') or contains(text(), 'Código') or contains(text(), 'Codigo')]"
-                " | //a[contains(@href, 'layoutArquivo.do')]"
-                " | //a[contains(@href, 'exibirDigitalizacao')]"
-                " | //a[contains(@href, 'idDigitalizacao')]"
-                " | //a[.//i[contains(@class, 'file-alt')]]"
-            )
-        )
-    )
+    log_panorama(etapa, "Lista de arquivos gerados confirmada; iniciando download.")
 
     inicio_download = time.time() - 5
 
@@ -3163,14 +3169,15 @@ def ajustar_tabelas_excel(ws, ultima_linha=None):
     if not ws.tables:
         return
 
-    if ultima_linha is None:
-        ultima_linha = ws.max_row
-
-    ultima_linha = max(int(ultima_linha), 1)
+    ultima_linha_int = int(ws.max_row if ultima_linha is None else ultima_linha)
+    ultima_linha_int = max(ultima_linha_int, 1)
 
     for tabela in ws.tables.values():
         min_col, min_row, max_col, _ = range_boundaries(tabela.ref)
-        linha_final = max(ultima_linha, min_row)
+        min_col = int(min_col) if min_col is not None else 1
+        min_row = int(min_row) if min_row is not None else 1
+        max_col = int(max_col) if max_col is not None else min_col
+        linha_final = max(ultima_linha_int, min_row)
         nova_ref = (
             f"{get_column_letter(min_col)}{min_row}:"
             f"{get_column_letter(max_col)}{linha_final}"
@@ -3329,6 +3336,10 @@ def ler_linhas_exportacao(arquivo_origem):
         wb_origem = load_workbook(arquivo_origem, data_only=True, read_only=True, keep_links=False)
         ws_origem = wb_origem.active
 
+        if ws_origem is None:
+            wb_origem.close()
+            raise ValueError(f"Arquivo Excel sem planilha ativa: {arquivo_origem}")
+
         linhas = []
 
         for linha in ws_origem.iter_rows(min_row=2, values_only=True):
@@ -3401,6 +3412,7 @@ def copiar_dados_excel_origem_para_destino(
     ultima_coluna_dados="T",
     ultima_coluna_total="V",
     etapa_panorama_log="ATUALIZAÇÃO",
+    normalizar_cpc_receita=False,
 ):
     """
     Processo Excel otimizado:
@@ -3464,6 +3476,13 @@ def copiar_dados_excel_origem_para_destino(
 
         modelos_formula = obter_modelos_formulas(ws_destino, colunas_formula)
 
+        if normalizar_cpc_receita:
+            indice_data = coluna_data_cpc(ws_destino)
+            linhas_origem = preparar_linhas_receita(linhas_origem, indice_data)
+            relatorio_datas = normalizar_datas_cpc(ws_destino)
+            coluna_data = relatorio_datas["coluna"]
+            log_panorama(etapa, f"DATA CPC localizada em {coluna_data}; datas-texto convertidas: {relatorio_datas['convertidas']}.")
+
         with acompanhar_operacao(
             f"[PANORAMA][{etapa}] Reconstruindo a base do mês vigente", intervalo=10
         ):
@@ -3516,6 +3535,8 @@ def copiar_dados_excel_origem_para_destino(
         )
 
         ultima_linha_real = obter_ultima_linha_com_dados(ws_destino, ultima_coluna_total)
+        if normalizar_cpc_receita:
+            normalizar_datas_cpc(ws_destino)
         ajustar_tabelas_excel(ws_destino, ultima_linha=ultima_linha_real)
 
         esperar_arquivo_excel_liberar(arquivo_destino)
@@ -3572,6 +3593,7 @@ def processar_receita_gerada(driver):
         ultima_coluna_dados=ULTIMA_COLUNA_DADOS_RECEITA,
         ultima_coluna_total=ULTIMA_COLUNA_TOTAL_RECEITA,
         etapa_panorama_log="RECEITA",
+        normalizar_cpc_receita=True,
     )
 
     log_panorama(
@@ -3850,4 +3872,12 @@ def main(argv=None):
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        raise SystemExit(main())
+    except KeyboardInterrupt:
+        log("Execução interrompida pelo usuário.")
+        raise SystemExit(130)
+    except Exception as erro:
+        log(f"Erro fatal na execução: {erro}")
+        raise SystemExit(1)
+

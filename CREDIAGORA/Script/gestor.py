@@ -841,11 +841,23 @@ def _ler_data_visual_campo(hwnd, x, y):
         all_screens=True,
     )
     cinza = ImageOps.autocontrast(ImageOps.grayscale(imagem))
+    # O texto pequeno do RemoteApp pode virar 23/03 no OCR mesmo exibindo 25/09.
+    # Preserve os pixels com outro limiar, sem interpolacao, e margem branca.
+    contraste_alternativo = ImageOps.grayscale(imagem).point(
+        lambda pixel: 255 if pixel > 200 else 0
+    )
     variantes = (
         imagem.resize((imagem.width * 8, imagem.height * 8), Image.Resampling.LANCZOS),
         cinza.resize((imagem.width * 8, imagem.height * 8), Image.Resampling.LANCZOS),
         cinza.point(lambda pixel: 255 if pixel > 180 else 0).resize(
             (imagem.width * 8, imagem.height * 8), Image.Resampling.NEAREST
+        ),
+        ImageOps.expand(
+            contraste_alternativo.resize(
+                (imagem.width * 4, imagem.height * 4), Image.Resampling.NEAREST
+            ),
+            border=30,
+            fill=255,
         ),
     )
     textos = []
@@ -1818,4 +1830,3 @@ def executar_fase_gestor(config, log):
                         return
                     time.sleep(0.5)
                 raise GestorError("fechar_janela_gestor", "Falha ao forcar o fechamento da janela do Gestor de Vendas.")
-
