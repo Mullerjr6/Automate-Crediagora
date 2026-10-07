@@ -22,8 +22,9 @@ FORMATO_CSV = "ARQUIVO CSV (EXCEL)"
 
 
 class ErCardError(RuntimeError):
-    def __init__(self, etapa, mensagem):
+    def __init__(self, etapa, mensagem, preservar_sessao=False):
         self.etapa = etapa
+        self.preservar_sessao = preservar_sessao
         super().__init__(f"[ERCARD][ERRO][{etapa}] {mensagem}")
 
 
@@ -38,7 +39,7 @@ class ErCardConfig:
     pasta_download: Path | None = None
     timeout_normal: int = 30
     timeout_remoto: int = 20
-    timeout_exportacao: int = 300
+    timeout_exportacao: int = 1800
 
     def validar(self):
         ausentes = []
@@ -1388,7 +1389,7 @@ def exportar_tabela_contratos_canvas(driver, config, arquivo_final, log):
     log_ercard(
         log,
         "Aguardando processamento e download do CSV por até "
-        f"{config.timeout_exportacao} segundos; Not Responding não é falha.",
+        f"{config.timeout_exportacao} segundos; Not Responding isolado nao confirma falha.",
     )
 
 
@@ -1396,9 +1397,12 @@ def mover_download_webfile(arquivo_final, config, log):
     arquivo_final = Path(arquivo_final)
     pasta_download = Path(config.pasta_download or arquivo_final.parent)
     origem = pasta_download / arquivo_final.name
-    fim = time.monotonic() + config.timeout_exportacao
+    inicio = time.monotonic()
+    fim = inicio + config.timeout_exportacao
+    proximo_log = inicio + 30
     ultimo_tamanho = -1
     estavel = 0
+    ultimo_erro = None
 
     while time.monotonic() < fim:
         if arquivo_final.exists():
@@ -1409,17 +1413,34 @@ def mover_download_webfile(arquivo_final, config, log):
                 estavel += 1
                 if estavel >= 2:
                     arquivo_final.parent.mkdir(parents=True, exist_ok=True)
-                    shutil.move(str(origem), str(arquivo_final))
-                    log_ercard(log, f"CSV movido do WebFile para: {arquivo_final}")
-                    return arquivo_final
+                    try:
+                        shutil.move(str(origem), str(arquivo_final))
+                    except PermissionError as erro:
+                        ultimo_erro = erro
+                        estavel = 0
+                        log_ercard(log, "CSV ainda bloqueado; aguardando liberacao sem repetir a exportacao.")
+                    else:
+                        log_ercard(log, f"CSV movido do WebFile para: {arquivo_final}")
+                        return arquivo_final
             else:
                 estavel = 0
             ultimo_tamanho = tamanho
+        agora = time.monotonic()
+        if agora >= proximo_log:
+            log_ercard(
+                log,
+                f"Aguardando consulta 14 e CSV no WebFile: {agora - inicio:.0f}s "
+                f"de {config.timeout_exportacao}s; processamento mantido sem novos cliques.",
+            )
+            proximo_log = agora + 30
         time.sleep(1)
 
     raise ErCardError(
         "Download WebFile",
-        f"O CSV não apareceu em {pasta_download} dentro do tempo limite.",
+        f"CSV nao confirmado em {config.timeout_exportacao}s em {pasta_download}. "
+        "A exportacao pode continuar no sistema remoto; nao repetir Exportar. "
+        f"Ultimo erro de arquivo: {ultimo_erro}.",
+        preservar_sessao=True,
     )
 
 

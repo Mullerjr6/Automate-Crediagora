@@ -1,3 +1,5 @@
+import _ambiente
+
 import time
 from datetime import datetime
 
@@ -10,6 +12,36 @@ import start
 
 def log(mensagem):
     print(mensagem, flush=True)
+
+
+def digitar_lentamente(driver, texto, intervalo=0.12):
+    for caractere in texto:
+        ActionChains(driver).send_keys(caractere).perform()
+        time.sleep(intervalo)
+
+
+def adquirir_foco_e_preencher(driver, y_relativo, valor, nome_campo):
+    ercard._clicar_janela_gerencial(driver, 0.455, y_relativo)
+    time.sleep(1)
+    ercard._clicar_janela_gerencial(driver, 0.455, y_relativo)
+    time.sleep(0.5)
+    ActionChains(driver).key_down(Keys.CONTROL).send_keys("a").key_up(
+        Keys.CONTROL
+    ).perform()
+    time.sleep(0.3)
+    ActionChains(driver).send_keys(Keys.BACKSPACE).perform()
+    time.sleep(0.3)
+    digitar_lentamente(driver, valor)
+    time.sleep(1)
+    ercard._clicar_janela_gerencial(driver, 0.700, 0.850)
+    time.sleep(1)
+    log(f"[DATAS] {nome_campo} recebeu {valor} com aquisi\u00e7\u00e3o expl\u00edcita de foco.")
+
+
+def capturar(driver, config, nome):
+    caminho = config.pasta_erros / nome
+    driver.save_screenshot(str(caminho))
+    log(f"CAPTURA={caminho}")
 
 
 def executar():
@@ -42,28 +74,24 @@ def executar():
         ercard._clicar_janela_gerencial(driver, 0.955, 0.535)
         time.sleep(0.8)
         for numero in (1, 2):
-            log(f"[DATAS] Confirmando Restrictions {numero}/2.")
             ActionChains(driver).send_keys(Keys.ENTER).perform()
             time.sleep(0.6)
-
+            log(f"[DATAS] Restrictions {numero}/2 confirmado.")
         ActionChains(driver).key_down(Keys.ALT).send_keys("n").key_up(
             Keys.ALT
         ).key_down(Keys.CONTROL).send_keys("a").key_up(Keys.CONTROL).send_keys(
             "Tabela contratos teste"
         ).key_down(Keys.ALT).send_keys("o").key_up(Keys.ALT).perform()
         time.sleep(1.2)
-        log(r"[DATAS] Destino definido em \\tsclient\WebFile.")
+        log(r"[DATAS] Destino: \\tsclient\WebFile\Tabela contratos teste.csv")
+
+        adquirir_foco_e_preencher(driver, 0.706, "010124", "DATA INICIAL")
+        capturar(driver, config, "fase2_data_inicial_foco.png")
+        input("PAUSA_INICIAL: continue somente se exibir 01/01/2024... ")
 
         data_final = datetime.now().strftime("%d%m%y")
-        ercard._clicar_janela_gerencial(driver, 0.455, 0.706, texto="010124")
-        log("[DATAS] DATA INICIAL preenchida com 010124.")
-        ercard._clicar_janela_gerencial(driver, 0.455, 0.780, texto=data_final)
-        log(f"[DATAS] DATA FINAL preenchida dinamicamente com {data_final}.")
-        time.sleep(1)
-
-        caminho = config.pasta_erros / "fase2_teste_datas.png"
-        driver.save_screenshot(str(caminho))
-        log(f"CAPTURA={caminho}")
+        adquirir_foco_e_preencher(driver, 0.780, data_final, "DATA FINAL")
+        capturar(driver, config, "fase2_data_final_foco.png")
         log("[DATAS] Teste encerrado sem clicar em Exportar.")
     finally:
         try:

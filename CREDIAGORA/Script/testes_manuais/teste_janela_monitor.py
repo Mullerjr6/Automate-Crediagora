@@ -1,3 +1,5 @@
+import _ambiente
+
 import time
 
 from PIL import ImageGrab

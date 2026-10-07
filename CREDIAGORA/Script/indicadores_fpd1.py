@@ -107,6 +107,8 @@ def _ler_csv(caminho):
     linhas = []
     with caminho.open("r", encoding=codificacao, newline="") as arquivo:
         for numero, linha in enumerate(csv.reader(arquivo, dialeto), start=1):
+            if numero > 1 and not any(valor.strip() for valor in linha):
+                continue
             if len(linha) < COLUNAS_DADOS:
                 raise AtualizacaoIndicadoresError(
                     "CSV", f"Linha {numero}: {len(linha)} colunas; esperado: 50."
@@ -268,6 +270,25 @@ def atualizar_indicadores_fpd1(csv_atual, xlsx_destino, log=print):
         antiga_ultima = ws.max_row
         cabecalhos = tuple(ws.cell(1, c).value for c in range(1, 51))
         cabecalhos_efetivos = _validar_cabecalhos(cabecalho_csv, cabecalhos)
+        with _progresso_continuo(log, "Conferencia da quantidade de registros"):
+            registros_anteriores = sum(
+                any(valor is not None and str(valor).strip() for valor in linha)
+                for linha in ws.iter_rows(
+                    min_row=2, max_row=antiga_ultima,
+                    min_col=1, max_col=COLUNAS_DADOS, values_only=True,
+                )
+            )
+        _log(log, f"Comparacao de registros: CSV={len(linhas_csv)}; XLSX={registros_anteriores}.")
+        if len(linhas_csv) < registros_anteriores:
+            mensagem = (
+                f"CSV possui {len(linhas_csv)} registros, menos que os "
+                f"{registros_anteriores} registros existentes no XLSX "
+                f"(diferenca: {registros_anteriores - len(linhas_csv)}). "
+                "Exportacao possivelmente incompleta. Atualizacao bloqueada; "
+                "XLSX preservado e CSV mantido para diagnostico."
+            )
+            _log(log, mensagem)
+            raise AtualizacaoIndicadoresError("Quantidade de registros", mensagem)
         modelo = tuple(ws.cell(2, c).value for c in range(51, 92))
         formulas = sum(isinstance(v, str) and v.startswith("=") for v in modelo)
         if not formulas:
@@ -297,6 +318,8 @@ def atualizar_indicadores_fpd1(csv_atual, xlsx_destino, log=print):
                 celula = ws.cell(numero_linha, coluna, valor)
                 if numero_linha > antiga_ultima:
                     celula._style = copy(estilos_modelo[coluna - 1])
+                if isinstance(valor, datetime):
+                    celula.number_format = "dd/mm/yyyy"
             for coluna, valor in enumerate(modelo, start=51):
                 celula = ws.cell(numero_linha, coluna)
                 origem = ws.cell(2, coluna).coordinate

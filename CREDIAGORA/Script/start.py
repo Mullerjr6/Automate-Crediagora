@@ -20,7 +20,9 @@ from openpyxl.utils import get_column_letter, range_boundaries
 from selenium import webdriver
 from selenium.common.exceptions import (
     ElementClickInterceptedException,
+    InvalidSessionIdException,
     NoSuchFrameException,
+    NoSuchWindowException,
     StaleElementReferenceException,
 )
 from selenium.webdriver.common.by import By
@@ -204,7 +206,7 @@ TIMEOUT_DOWNLOAD = int_env("CREDIAGORA_DOWNLOAD_TIMEOUT", 300)
 TIMEOUT_EXCEL = int_env("CREDIAGORA_EXCEL_TIMEOUT", 120)
 ERCARD_TIMEOUT_NORMAL = int_env("ERCARD_TIMEOUT_NORMAL", 30)
 ERCARD_TIMEOUT_REMOTO = int_env("ERCARD_TIMEOUT_REMOTO", 20)
-ERCARD_TIMEOUT_EXPORTACAO = int_env("ERCARD_TIMEOUT_EXPORTACAO", 300)
+ERCARD_TIMEOUT_EXPORTACAO = int_env("ERCARD_TIMEOUT_EXPORTACAO", 1800)
 GESTOR_TIMEOUT_JANELA = int_env("GESTOR_TIMEOUT_JANELA", 60)
 GESTOR_TIMEOUT_RELATORIO = int_env("GESTOR_TIMEOUT_RELATORIO", 120)
 PASTA_EXPORTACOES_ERCARD = caminho_env(
@@ -1236,6 +1238,9 @@ def encerrar_sessao_portal(driver):
     )
 
     try:
+        if not driver.window_handles:
+            log("[ENCERRAMENTO] Chrome sem janelas abertas; saida do portal dispensada.")
+            return False
         driver.switch_to.default_content()
         contextos = [None] + driver.find_elements(By.TAG_NAME, "iframe")
 
@@ -1257,6 +1262,9 @@ def encerrar_sessao_portal(driver):
                             return True
                     except Exception:
                         continue
+    except (InvalidSessionIdException, NoSuchWindowException):
+        log("[ENCERRAMENTO] Sessao do Chrome ja encerrada; saida do portal dispensada. Os arquivos atualizados nao foram afetados.")
+        return False
     except Exception as erro:
         log(f"Não foi possível procurar a opção de saída do portal: {erro}")
     finally:
@@ -3452,6 +3460,11 @@ def copiar_dados_excel_origem_para_destino(
 
     log_panorama(etapa, "Lendo e validando o arquivo exportado.")
     linhas_origem = ler_linhas_exportacao(arquivo_origem)
+    limite_coluna_dados = coluna_para_numero(ultima_coluna_dados)
+    linhas_origem = [
+        linha for linha in linhas_origem
+        if any(valor is not None and str(valor).strip() for valor in linha[:limite_coluna_dados])
+    ]
     if not linhas_origem:
         raise ValueError(
             f"O arquivo exportado não possui linhas de dados: {arquivo_origem}. "
@@ -3479,6 +3492,42 @@ def copiar_dados_excel_origem_para_destino(
         if normalizar_cpc:
             indice_data = coluna_data_cpc(ws_destino)
             linhas_origem = preparar_linhas_receita(linhas_origem, indice_data)
+
+        coluna_comparacao = (
+            indice_data if normalizar_cpc else coluna_para_numero(coluna_data)
+        )
+        with acompanhar_operacao(
+            f"[PANORAMA][{etapa}] Conferindo quantidade de registros", intervalo=10
+        ):
+            registros_anteriores = sum(
+                any(valor is not None and str(valor).strip() for valor in linha)
+                and linha_eh_mes_vigente(valor_para_data(linha[coluna_comparacao - 1]))
+                for linha in ws_destino.iter_rows(
+                    min_row=2, max_col=limite_coluna_dados, values_only=True
+                )
+            )
+            registros_exportados = sum(
+                len(linha) >= coluna_comparacao
+                and linha_eh_mes_vigente(valor_para_data(linha[coluna_comparacao - 1]))
+                for linha in linhas_origem
+            )
+        log_panorama(
+            etapa,
+            f"Registros do mes vigente: exportacao={registros_exportados}; "
+            f"planilha={registros_anteriores}.",
+        )
+        if registros_exportados < registros_anteriores:
+            mensagem = (
+                f"Exportacao possui {registros_exportados} registros do mes vigente, "
+                f"menos que os {registros_anteriores} existentes na planilha "
+                f"(diferenca: {registros_anteriores - registros_exportados}). "
+                "Atualizacao bloqueada; planilha preservada e arquivo baixado "
+                "mantido para diagnostico."
+            )
+            log_panorama(etapa, mensagem)
+            raise ValueError(mensagem)
+
+        if normalizar_cpc:
             relatorio_datas = normalizar_datas_cpc(ws_destino)
             coluna_data = relatorio_datas["coluna"]
             log_panorama(etapa, f"DATA CPC localizada em {coluna_data}; datas-texto convertidas: {relatorio_datas['convertidas']}.")
@@ -3740,7 +3789,10 @@ def main(argv=None):
             log("Backups dispensados no diagnóstico exclusivo de login.")
 
         if executar_crediagora or executar_ercard:
-            driver = iniciar_chrome(headless=headless, manter_navegador=manter_navegador)
+            driver = iniciar_chrome(
+                headless=headless,
+                manter_navegador=manter_navegador or (executar_ercard and not headless),
+            )
 
         if executar_crediagora:
             fazer_login(driver, preparar_janela=not headless)
@@ -3818,6 +3870,9 @@ def main(argv=None):
     except Exception as erro:
         log("========== ERRO NO PROCESSO ==========")
         log(str(erro))
+        if getattr(erro, "preservar_sessao", False) and not headless:
+            manter_navegador = True
+            log("Exportacao ERCard ainda nao confirmada; navegador e sessao remota mantidos abertos para acompanhamento.")
 
         if driver is not None:
             try:
@@ -3830,7 +3885,7 @@ def main(argv=None):
     finally:
         try:
             if driver is not None:
-                if status_log in ("sucesso", "check_login"):
+                if executar_crediagora and status_log in ("sucesso", "check_login"):
                     encerrar_sessao_portal(driver)
 
                 if not manter_navegador:
@@ -3838,6 +3893,8 @@ def main(argv=None):
                     driver.quit()
                 else:
                     log("Navegador mantido aberto conforme configuração.")
+        except (InvalidSessionIdException, NoSuchWindowException):
+            log("[ENCERRAMENTO] Chrome ja encerrado; nenhuma nova tentativa de fechamento necessaria.")
         except Exception as erro:
             log(f"Falha ao finalizar o navegador: {erro}")
 

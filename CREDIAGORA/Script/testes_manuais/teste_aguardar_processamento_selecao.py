@@ -1,3 +1,5 @@
+import _ambiente
+
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
