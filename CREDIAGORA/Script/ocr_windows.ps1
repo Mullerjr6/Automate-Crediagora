@@ -35,3 +35,4 @@ $words = foreach ($line in $result.Lines) {
     }
 }
 @($words) | ConvertTo-Json -Compress
+

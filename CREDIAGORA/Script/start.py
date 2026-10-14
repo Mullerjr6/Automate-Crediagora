@@ -1,22 +1,27 @@
 import argparse
 import hashlib
 import json
+import logging
 import os
-import sys
+import re
+import shutil
+import subprocess
 import threading
 import time
-import shutil
-import re
-import subprocess
 import unicodedata
 from contextlib import contextmanager
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
 import pandas as pd
+from ercard import ErCardConfig, executar_fase_ercard
+from gestor import GestorConfig, executar_fase_gestor, formatar_brasileiro
+from indicadores_fpd1 import atualizar_indicadores_fpd1
 from openpyxl import load_workbook
 from openpyxl.formula.translate import Translator
 from openpyxl.utils import get_column_letter, range_boundaries
+from receita_cpc import coluna_data_cpc, normalizar_datas_cpc, preparar_linhas_receita
+from resumo_vendas import calcular_resumo, salvar_resumo
 from selenium import webdriver
 from selenium.common.exceptions import (
     ElementClickInterceptedException,
@@ -25,17 +30,14 @@ from selenium.common.exceptions import (
     NoSuchWindowException,
     StaleElementReferenceException,
 )
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.common.action_chains import ActionChains
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
 
-from ercard import ErCardConfig, executar_fase_ercard
-from gestor import GestorConfig, executar_fase_gestor, formatar_brasileiro
-from indicadores_fpd1 import atualizar_indicadores_fpd1
-from receita_cpc import coluna_data_cpc, normalizar_datas_cpc, preparar_linhas_receita
+logger = logging.getLogger(__name__)
 
 # ============================================================
 # CONFIGURAÇÕES PRINCIPAIS
@@ -194,6 +196,7 @@ PASTA_PERFIL_CHROME = caminho_env(
 )
 PASTA_BACKUP = PASTA_AUTOMACAO / "backups"
 PASTA_LOGS = PASTA_AUTOMACAO / "logs"
+PASTA_RESUMOS_VENDAS = PASTA_SCRIPT.parent / "logs de vendas"
 PASTA_ERROS = PASTA_AUTOMACAO / "erros"
 ARQUIVO_ESTADO_LOGIN = PASTA_AUTOMACAO / "estado_login.json"
 
@@ -249,7 +252,7 @@ def log(msg):
     try:
         LOGS_ATIVACAO.append(texto)
     except Exception:
-        pass
+        logger.debug("Falha capturada em log", exc_info=True)
 
 
 def log_panorama(etapa, mensagem):
@@ -293,7 +296,7 @@ def criar_pastas():
 
 
 def identificador_credencial():
-    conteudo = f"{USUARIO}\0{SENHA}".encode("utf-8")
+    conteudo = f"{USUARIO}\0{SENHA}".encode()
     return hashlib.sha256(conteudo).hexdigest()[:16]
 
 
@@ -402,15 +405,15 @@ def mostrar_resumo_configuracao(
 
 def validar_configuracao():
     if not URL.startswith(("http://", "https://")):
-        raise EnvironmentError("URL inválida. Defina CREDIAGORA_URL com http:// ou https://.")
+        raise OSError("URL inválida. Defina CREDIAGORA_URL com http:// ou https://.")
 
     if not USUARIO or not str(USUARIO).strip():
-        raise EnvironmentError(
+        raise OSError(
             "Usuário não configurado. Defina CREDIAGORA_USUARIO ou ajuste o valor padrão no script."
         )
 
     if not SENHA or SENHA == "COLOQUE_SUA_SENHA_AQUI":
-        raise EnvironmentError(
+        raise OSError(
             "Senha não configurada. Defina a variável de ambiente "
             "CREDIAGORA_SENHA antes de executar a automação."
         )
@@ -451,13 +454,13 @@ def criar_configuracao_gestor():
 def ativar_ercard_se_configurado(config, somente_ercard=False):
     try:
         config.validar()
-    except EnvironmentError as erro:
+    except OSError as erro:
         instrucao = (
             "Execute configurar_ercard.bat na pasta CREDIAGORA\\Script e abra "
             "um novo terminal."
         )
         if somente_ercard:
-            raise EnvironmentError(f"{erro}. {instrucao}") from erro
+            raise OSError(f"{erro}. {instrucao}") from erro
 
         log(f"[ERCARD][AVISO] {erro}.")
         log(f"[ERCARD][AVISO] Fase ERCard ignorada. {instrucao}")
@@ -508,6 +511,7 @@ def limpar_downloads():
                     apagados += 1
                     log(f"Arquivo removido: {arquivo.name}")
             except Exception as erro:
+                logger.debug("Falha capturada em limpar_downloads", exc_info=True)
                 log(f"Não foi possível apagar {arquivo.name}: {erro}")
 
     log(f"Limpeza concluída. Arquivos apagados: {apagados}")
@@ -547,6 +551,7 @@ if ($processos) {
             time.sleep(2)
         return quantidade
     except Exception as erro:
+        logger.debug("Falha capturada em encerrar_chrome_da_automacao", exc_info=True)
         log(f"Não foi possível verificar o Chrome antigo da automação: {erro}")
         return 0
 
@@ -604,6 +609,7 @@ def iniciar_chrome(headless=False, manter_navegador=False):
             driver = webdriver.Chrome(options=opcoes)
             break
         except Exception as erro:
+            logger.debug("Falha capturada em iniciar_chrome", exc_info=True)
             ultimo_erro = erro
             if tentativa == 2:
                 raise
@@ -626,6 +632,7 @@ def iniciar_chrome(headless=False, manter_navegador=False):
             {"behavior": "allow", "downloadPath": str(PASTA_DOWNLOAD)}
         )
     except Exception as erro:
+        logger.debug("Falha capturada em iniciar_chrome", exc_info=True)
         log(f"Não foi possível configurar download via CDP; seguindo com preferências do Chrome. Detalhe: {erro}")
 
     return driver
@@ -754,16 +761,17 @@ def clicar_elemento_seguro(driver, elemento, descricao="elemento"):
         )
         time.sleep(0.4)
     except Exception:
-        pass
+        logger.debug("Falha capturada em clicar_elemento_seguro", exc_info=True)
 
     try:
         ActionChains(driver).move_to_element(elemento).pause(0.2).perform()
     except Exception:
-        pass
+        logger.debug("Falha capturada em clicar_elemento_seguro", exc_info=True)
 
     try:
         elemento.click()
     except Exception:
+        logger.debug("Falha capturada em clicar_elemento_seguro", exc_info=True)
         driver.execute_script("arguments[0].click();", elemento)
 
     log(f"Clique realizado em: {descricao}")
@@ -813,7 +821,6 @@ def clicar_por_texto(driver, texto, segundos=20):
     ]
 
     def tentar_no_contexto(nome_contexto):
-        ultimo_erro_local = None
 
         for xpath in xpaths:
             try:
@@ -826,6 +833,7 @@ def clicar_por_texto(driver, texto, segundos=20):
                         if elemento.is_displayed():
                             elementos_visiveis.append(elemento)
                     except Exception:
+                        logger.debug("Falha capturada em tentar_no_contexto", exc_info=True)
                         continue
 
                 if not elementos_visiveis:
@@ -844,8 +852,8 @@ def clicar_por_texto(driver, texto, segundos=20):
                 time.sleep(1)
                 return True
 
-            except Exception as erro:
-                ultimo_erro_local = erro
+            except Exception:
+                logger.debug("Falha capturada em tentar_no_contexto", exc_info=True)
                 continue
 
         return False
@@ -860,6 +868,7 @@ def clicar_por_texto(driver, texto, segundos=20):
             if tentar_no_contexto("conteúdo principal"):
                 return True
         except Exception as erro:
+            logger.debug("Falha capturada em clicar_por_texto", exc_info=True)
             ultimo_erro = erro
 
         # Iframes
@@ -876,16 +885,18 @@ def clicar_por_texto(driver, texto, segundos=20):
                         return True
 
                 except Exception as erro:
+                    logger.debug("Falha capturada em clicar_por_texto", exc_info=True)
                     ultimo_erro = erro
                     continue
 
         except Exception as erro:
+            logger.debug("Falha capturada em clicar_por_texto", exc_info=True)
             ultimo_erro = erro
 
         time.sleep(1)
 
     salvar_diagnostico_erro(driver, f"erro_clicar_{texto_original}")
-    raise Exception(
+    raise RuntimeError(
         f"Não consegui clicar em '{texto_original}' dentro de {segundos} segundos. "
         f"Último erro: {ultimo_erro}"
     )
@@ -920,6 +931,7 @@ def esperar_download_novo(pasta, inicio=None, timeout=None):
                 if arquivo.is_file() and nome.endswith(EXTENSOES_TEMPORARIAS_DOWNLOAD):
                     temporarios.append(arquivo)
             except Exception:
+                logger.debug("Falha capturada em listar_temporarios", exc_info=True)
                 continue
 
         return temporarios
@@ -949,6 +961,7 @@ def esperar_download_novo(pasta, inicio=None, timeout=None):
                     arquivos.append(arquivo)
 
             except Exception:
+                logger.debug("Falha capturada em listar_validos", exc_info=True)
                 continue
 
         return arquivos
@@ -960,6 +973,7 @@ def esperar_download_novo(pasta, inicio=None, timeout=None):
             try:
                 tamanhos.append(arquivo.stat().st_size)
             except Exception:
+                logger.debug("Falha capturada em arquivo_estavel", exc_info=True)
                 return False
 
             time.sleep(intervalo)
@@ -988,7 +1002,7 @@ def esperar_download_novo(pasta, inicio=None, timeout=None):
                 mod = datetime.fromtimestamp(arquivo.stat().st_mtime).strftime("%d/%m/%Y %H:%M:%S")
                 log(f"{arquivo.name} | tamanho: {arquivo.stat().st_size} | modificado: {mod}")
     except Exception:
-        pass
+        logger.debug("Falha capturada em esperar_download_novo", exc_info=True)
 
     raise TimeoutError(
         "Download não encontrado dentro do tempo limite. "
@@ -1062,6 +1076,7 @@ def salvar_log_ativacao(status="execucao"):
         return arquivo_log
 
     except Exception as erro:
+        logger.debug("Falha capturada em salvar_log_ativacao", exc_info=True)
         print(f"Não foi possível salvar o log da execução: {erro}")
         return None
 
@@ -1083,12 +1098,14 @@ def salvar_diagnostico_erro(driver, nome_base):
         driver.save_screenshot(str(screenshot))
         log(f"Print do erro salvo em: {screenshot}")
     except Exception as erro:
+        logger.debug("Falha capturada em salvar_diagnostico_erro", exc_info=True)
         log(f"Não foi possível salvar print do erro: {erro}")
 
     try:
         html.write_text(driver.page_source, encoding="utf-8")
         log(f"HTML do erro salvo em: {html}")
     except Exception as erro:
+        logger.debug("Falha capturada em salvar_diagnostico_erro", exc_info=True)
         log(f"Não foi possível salvar HTML do erro: {erro}")
 
     return screenshot, html
@@ -1213,14 +1230,15 @@ def fazer_login(driver, preparar_janela=True):
 
         log("Login realizado com sucesso.")
     except Exception as erro:
+        logger.debug("Falha capturada em fazer_login", exc_info=True)
         screenshot = PASTA_ERROS / f"erro_login_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png"
         try:
             driver.save_screenshot(str(screenshot))
             log(f"Print do erro salvo em: {screenshot}")
         except Exception:
-            pass
+            logger.debug("Falha capturada em fazer_login", exc_info=True)
 
-        raise Exception(
+        raise RuntimeError(
             "Não consegui confirmar o login. "
             "Os campos e o botão foram conferidos. O portal recusou a autenticação; "
             "verifique se a conta está bloqueada ou presa em outra sessão. "
@@ -1250,6 +1268,7 @@ def encerrar_sessao_portal(driver):
                 try:
                     driver.switch_to.frame(contexto)
                 except Exception:
+                    logger.debug("Falha capturada em encerrar_sessao_portal", exc_info=True)
                     continue
 
             for seletor in seletores:
@@ -1261,17 +1280,19 @@ def encerrar_sessao_portal(driver):
                             time.sleep(1)
                             return True
                     except Exception:
+                        logger.debug("Falha capturada em encerrar_sessao_portal", exc_info=True)
                         continue
     except (InvalidSessionIdException, NoSuchWindowException):
         log("[ENCERRAMENTO] Sessao do Chrome ja encerrada; saida do portal dispensada. Os arquivos atualizados nao foram afetados.")
         return False
     except Exception as erro:
+        logger.debug("Falha capturada em encerrar_sessao_portal", exc_info=True)
         log(f"Não foi possível procurar a opção de saída do portal: {erro}")
     finally:
         try:
             driver.switch_to.default_content()
         except Exception:
-            pass
+            logger.debug("Falha capturada em encerrar_sessao_portal", exc_info=True)
 
     log("Opção de saída não encontrada; o navegador será fechado normalmente.")
     return False
@@ -1284,11 +1305,12 @@ def tratar_popups_panorama(driver):
     try:
         handle_original = driver.current_window_handle
     except Exception:
-        pass
+        logger.debug("Falha capturada em tratar_popups_panorama", exc_info=True)
 
     try:
         handles = list(driver.window_handles)
     except Exception:
+        logger.debug("Falha capturada em tratar_popups_panorama", exc_info=True)
         handles = [handle_original] if handle_original else []
 
     seletores_fechar = (
@@ -1307,6 +1329,7 @@ def tratar_popups_panorama(driver):
         try:
             driver.switch_to.window(handle)
         except Exception:
+            logger.debug("Falha capturada em tratar_popups_panorama", exc_info=True)
             continue
 
         try:
@@ -1316,14 +1339,14 @@ def tratar_popups_panorama(driver):
             fechados += 1
             log_panorama("NAVEGAÇÃO", f"Alerta fechado sem confirmar ação: {texto!r}.")
         except Exception:
-            pass
+            logger.debug("Falha capturada em tratar_popups_panorama", exc_info=True)
 
         contextos = [None]
         try:
             driver.switch_to.default_content()
             contextos.extend(driver.find_elements(By.TAG_NAME, "iframe"))
         except Exception:
-            pass
+            logger.debug("Falha capturada em tratar_popups_panorama", exc_info=True)
 
         for contexto in contextos:
             try:
@@ -1341,17 +1364,18 @@ def tratar_popups_panorama(driver):
                         continue
                     break
             except Exception:
+                logger.debug("Falha capturada em tratar_popups_panorama", exc_info=True)
                 continue
 
     if handle_original:
         try:
             driver.switch_to.window(handle_original)
         except Exception:
-            pass
+            logger.debug("Falha capturada em tratar_popups_panorama", exc_info=True)
     try:
         driver.switch_to.default_content()
     except Exception:
-        pass
+        logger.debug("Falha capturada em tratar_popups_panorama", exc_info=True)
     return fechados
 
 
@@ -1365,6 +1389,7 @@ def fechar_avisos_exportacao_panorama(
         handle_original = driver.current_window_handle
         handles = list(driver.window_handles)
     except Exception:
+        logger.debug("Falha capturada em fechar_avisos_exportacao_panorama", exc_info=True)
         handles = [handle_original] if handle_original else []
 
     xpath_aviso = (
@@ -1387,6 +1412,7 @@ def fechar_avisos_exportacao_panorama(
                 driver.switch_to.default_content()
                 contextos = [None] + driver.find_elements(By.TAG_NAME, "iframe")
             except Exception:
+                logger.debug("Falha capturada em fechar_avisos_exportacao_panorama", exc_info=True)
                 continue
 
             for contexto in contextos:
@@ -1411,9 +1437,9 @@ def fechar_avisos_exportacao_panorama(
                             "X real do aviso automatico de exportacao",
                         )
 
-                        def aviso_foi_removido(_navegador):
+                        def aviso_foi_removido(_navegador, alvo=botao):
                             try:
-                                return not botao.is_displayed()
+                                return not alvo.is_displayed()
                             except StaleElementReferenceException:
                                 return True
 
@@ -1464,6 +1490,7 @@ def fechar_avisos_exportacao_panorama(
                     time.sleep(0.4)
                     break
                 except Exception:
+                    logger.debug("Falha capturada em fechar_avisos_exportacao_panorama", exc_info=True)
                     continue
             if fechou_nesta_passagem:
                 break
@@ -1478,11 +1505,11 @@ def fechar_avisos_exportacao_panorama(
         try:
             driver.switch_to.window(handle_original)
         except Exception:
-            pass
+            logger.debug("Falha capturada em fechar_avisos_exportacao_panorama", exc_info=True)
     try:
         driver.switch_to.default_content()
     except Exception:
-        pass
+        logger.debug("Falha capturada em fechar_avisos_exportacao_panorama", exc_info=True)
     if fechados:
         log_panorama(etapa, f"Avisos automáticos de exportação fechados: {fechados}.")
     return fechados
@@ -1494,6 +1521,7 @@ def ativar_tela_emprestimos_aberta(driver):
         handle_original = driver.current_window_handle
         handles = list(driver.window_handles)
     except Exception:
+        logger.debug("Falha capturada em ativar_tela_emprestimos_aberta", exc_info=True)
         handle_original = None
         handles = [None]
 
@@ -1503,12 +1531,13 @@ def ativar_tela_emprestimos_aberta(driver):
             if any(botao.is_displayed() for botao in botoes):
                 return caminho
         except Exception:
-            pass
+            logger.debug("Falha capturada em procurar_no_contexto", exc_info=True)
         if profundidade >= 3:
             return None
         try:
             iframes = driver.find_elements(By.TAG_NAME, "iframe")
         except Exception:
+            logger.debug("Falha capturada em procurar_no_contexto", exc_info=True)
             return None
         for indice, iframe in enumerate(iframes):
             try:
@@ -1520,10 +1549,11 @@ def ativar_tela_emprestimos_aberta(driver):
                     return encontrado
                 driver.switch_to.parent_frame()
             except Exception:
+                logger.debug("Falha capturada em procurar_no_contexto", exc_info=True)
                 try:
                     driver.switch_to.parent_frame()
                 except Exception:
-                    pass
+                    logger.debug("Falha capturada em procurar_no_contexto", exc_info=True)
         return None
 
     for handle in handles:
@@ -1539,17 +1569,18 @@ def ativar_tela_emprestimos_aberta(driver):
                 )
                 return True
         except Exception:
+            logger.debug("Falha capturada em ativar_tela_emprestimos_aberta", exc_info=True)
             continue
 
     if handle_original:
         try:
             driver.switch_to.window(handle_original)
         except Exception:
-            pass
+            logger.debug("Falha capturada em ativar_tela_emprestimos_aberta", exc_info=True)
     try:
         driver.switch_to.default_content()
     except Exception:
-        pass
+        logger.debug("Falha capturada em ativar_tela_emprestimos_aberta", exc_info=True)
     return False
 
 
@@ -1604,6 +1635,7 @@ def clicar_item_emprestimo_visivel(driver, origem, profundidade_maxima=3):
                     time.sleep(2)
                     return caminho
             except Exception as erro:
+                logger.debug("Falha capturada em procurar", exc_info=True)
                 ultimo_erro = erro
 
         if profundidade >= profundidade_maxima:
@@ -1612,6 +1644,7 @@ def clicar_item_emprestimo_visivel(driver, origem, profundidade_maxima=3):
         try:
             iframes = list(driver.find_elements(By.TAG_NAME, "iframe"))
         except Exception as erro:
+            logger.debug("Falha capturada em procurar", exc_info=True)
             ultimo_erro = erro
             return None
 
@@ -1624,18 +1657,20 @@ def clicar_item_emprestimo_visivel(driver, origem, profundidade_maxima=3):
                 if encontrado:
                     return encontrado
             except Exception as erro:
+                logger.debug("Falha capturada em procurar", exc_info=True)
                 ultimo_erro = erro
             finally:
                 try:
                     driver.switch_to.parent_frame()
                 except Exception:
-                    pass
+                    logger.debug("Falha capturada em procurar", exc_info=True)
         return None
 
     try:
         driver.switch_to.default_content()
         return procurar(), ultimo_erro
     except Exception as erro:
+        logger.debug("Falha capturada em clicar_item_emprestimo_visivel", exc_info=True)
         return None, erro
 
 
@@ -1689,7 +1724,7 @@ def entrar_em_vendas_e_emprestimo(driver):
 
     if not clicou_emprestimo:
         salvar_diagnostico_erro(driver, "erro_nao_achou_emprestimo")
-        raise Exception(
+        raise RuntimeError(
             "Não consegui clicar no botão/menu Empréstimo. "
             f"Último erro: {ultimo_erro}. "
             "Foi salvo print e HTML na pasta de erros."
@@ -1711,7 +1746,7 @@ def entrar_em_vendas_e_emprestimo(driver):
             log("Tela de Empréstimo confirmada no conteúdo principal.")
             break
         except Exception:
-            pass
+            logger.debug("Falha capturada em entrar_em_vendas_e_emprestimo", exc_info=True)
 
         try:
             driver.switch_to.default_content()
@@ -1731,17 +1766,18 @@ def entrar_em_vendas_e_emprestimo(driver):
                     break
 
                 except Exception:
+                    logger.debug("Falha capturada em entrar_em_vendas_e_emprestimo", exc_info=True)
                     continue
 
         except Exception:
-            pass
+            logger.debug("Falha capturada em entrar_em_vendas_e_emprestimo", exc_info=True)
 
         if not encontrou_acoes:
             time.sleep(1)
 
     if not encontrou_acoes:
         salvar_diagnostico_erro(driver, "erro_emprestimo_nao_carregou")
-        raise Exception(
+        raise RuntimeError(
             "Cliquei em Empréstimo, mas não consegui confirmar a tela. "
             "O botão 'Click para ações' não apareceu."
         )
@@ -1768,7 +1804,7 @@ def voltar_para_emprestimos(driver):
     try:
         driver.switch_to.default_content()
     except Exception:
-        pass
+        logger.debug("Falha capturada em voltar_para_emprestimos", exc_info=True)
 
     # Primeiro tenta voltar uma página, pois após clicar no arquivo o site pode ter navegado.
     try:
@@ -1776,6 +1812,7 @@ def voltar_para_emprestimos(driver):
         time.sleep(3)
         log("Navegador voltou uma página.")
     except Exception as erro:
+        logger.debug("Falha capturada em voltar_para_emprestimos", exc_info=True)
         log(f"Não consegui voltar página pelo navegador: {erro}")
 
     # Confirma se o botão Click para ações apareceu.
@@ -1784,7 +1821,7 @@ def voltar_para_emprestimos(driver):
     try:
         driver.switch_to.default_content()
     except Exception:
-        pass
+        logger.debug("Falha capturada em voltar_para_emprestimos", exc_info=True)
 
     # Procura no conteúdo principal
     try:
@@ -1794,7 +1831,7 @@ def voltar_para_emprestimos(driver):
         encontrou_acoes = True
         log("Botão Click para ações encontrado no conteúdo principal.")
     except Exception:
-        pass
+        logger.debug("Falha capturada em voltar_para_emprestimos", exc_info=True)
 
     # Procura dentro dos iframes
     if not encontrou_acoes:
@@ -1817,9 +1854,11 @@ def voltar_para_emprestimos(driver):
                     break
 
                 except Exception:
+                    logger.debug("Falha capturada em voltar_para_emprestimos", exc_info=True)
                     continue
 
         except Exception as erro:
+            logger.debug("Falha capturada em voltar_para_emprestimos", exc_info=True)
             log(f"Falha ao procurar botão Click para ações nos iframes: {erro}")
 
     # Se não encontrou, tenta mais uma vez voltar.
@@ -1830,6 +1869,7 @@ def voltar_para_emprestimos(driver):
             time.sleep(3)
             log("Segunda tentativa de voltar página realizada.")
         except Exception as erro:
+            logger.debug("Falha capturada em voltar_para_emprestimos", exc_info=True)
             log(f"Não consegui voltar na segunda tentativa: {erro}")
 
         try:
@@ -1850,10 +1890,11 @@ def voltar_para_emprestimos(driver):
                     break
 
                 except Exception:
+                    logger.debug("Falha capturada em voltar_para_emprestimos", exc_info=True)
                     continue
 
         except Exception:
-            pass
+            logger.debug("Falha capturada em voltar_para_emprestimos", exc_info=True)
 
     if not encontrou_acoes:
         screenshot = PASTA_ERROS / f"erro_voltar_para_acoes_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png"
@@ -1863,15 +1904,15 @@ def voltar_para_emprestimos(driver):
             driver.save_screenshot(str(screenshot))
             log(f"Print do erro salvo em: {screenshot}")
         except Exception:
-            pass
+            logger.debug("Falha capturada em voltar_para_emprestimos", exc_info=True)
 
         try:
             html.write_text(driver.page_source, encoding="utf-8")
             log(f"HTML do erro salvo em: {html}")
         except Exception:
-            pass
+            logger.debug("Falha capturada em voltar_para_emprestimos", exc_info=True)
 
-        raise Exception(
+        raise RuntimeError(
             "Não consegui voltar para a tela onde aparece o botão 'Click para ações'. "
             "Parei para evitar clicar no lugar errado."
         )
@@ -1893,7 +1934,7 @@ def localizar_iframe_com_elemento(driver, by, seletor, timeout_por_contexto=3):
     try:
         driver.switch_to.default_content()
     except Exception:
-        pass
+        logger.debug("Falha capturada em localizar_iframe_com_elemento", exc_info=True)
 
     # Primeiro procura no conteúdo principal
     try:
@@ -1902,7 +1943,7 @@ def localizar_iframe_com_elemento(driver, by, seletor, timeout_por_contexto=3):
         )
         return True
     except Exception:
-        pass
+        logger.debug("Falha capturada em localizar_iframe_com_elemento", exc_info=True)
 
     # Depois procura em iframes
     try:
@@ -1923,16 +1964,18 @@ def localizar_iframe_com_elemento(driver, by, seletor, timeout_por_contexto=3):
                 return True
 
             except Exception:
+                logger.debug("Falha capturada em localizar_iframe_com_elemento", exc_info=True)
                 continue
 
         driver.switch_to.default_content()
         return False
 
     except Exception:
+        logger.debug("Falha capturada em localizar_iframe_com_elemento", exc_info=True)
         try:
             driver.switch_to.default_content()
         except Exception:
-            pass
+            logger.debug("Falha capturada em localizar_iframe_com_elemento", exc_info=True)
         return False
 
 
@@ -1977,6 +2020,7 @@ def clicar_por_texto_em_qualquer_contexto(driver, texto, segundos=40):
                 try:
                     elemento.click()
                 except Exception:
+                    logger.debug("Falha capturada em clicar_por_texto_em_qualquer_contexto", exc_info=True)
                     driver.execute_script("arguments[0].click();", elemento)
 
                 log(f"Clique realizado em '{texto}'.")
@@ -1984,6 +2028,7 @@ def clicar_por_texto_em_qualquer_contexto(driver, texto, segundos=40):
                 return elemento
 
         except Exception as erro:
+            logger.debug("Falha capturada em clicar_por_texto_em_qualquer_contexto", exc_info=True)
             ultimo_erro = erro
             time.sleep(1)
 
@@ -1994,15 +2039,15 @@ def clicar_por_texto_em_qualquer_contexto(driver, texto, segundos=40):
         driver.save_screenshot(str(screenshot))
         log(f"Print do erro salvo em: {screenshot}")
     except Exception:
-        pass
+        logger.debug("Falha capturada em clicar_por_texto_em_qualquer_contexto", exc_info=True)
 
     try:
         html.write_text(driver.page_source, encoding="utf-8")
         log(f"HTML do erro salvo em: {html}")
     except Exception:
-        pass
+        logger.debug("Falha capturada em clicar_por_texto_em_qualquer_contexto", exc_info=True)
 
-    raise Exception(f"Não consegui clicar no texto '{texto}'. Último erro: {ultimo_erro}")
+    raise RuntimeError(f"Não consegui clicar no texto '{texto}'. Último erro: {ultimo_erro}")
 
 
 def clicar_click_para_acoes(driver):
@@ -2022,7 +2067,7 @@ def clicar_click_para_acoes(driver):
     try:
         driver.switch_to.default_content()
     except Exception:
-        pass
+        logger.debug("Falha capturada em clicar_click_para_acoes", exc_info=True)
 
     seletores = [
         (By.ID, "acoes_ver"),
@@ -2034,7 +2079,6 @@ def clicar_click_para_acoes(driver):
     ]
 
     def tentar_clicar_no_contexto(nome_contexto):
-        ultimo_erro_local = None
 
         for by, seletor in seletores:
             try:
@@ -2054,14 +2098,15 @@ def clicar_click_para_acoes(driver):
                     )
                     elemento.click()
                 except Exception:
+                    logger.debug("Falha capturada em tentar_clicar_no_contexto", exc_info=True)
                     driver.execute_script("arguments[0].click();", elemento)
 
                 log(f"Click para ações clicado em {nome_contexto} usando seletor: {seletor}")
                 time.sleep(1)
                 return True
 
-            except Exception as erro:
-                ultimo_erro_local = erro
+            except Exception:
+                logger.debug("Falha capturada em tentar_clicar_no_contexto", exc_info=True)
                 continue
 
         return False
@@ -2087,7 +2132,7 @@ def clicar_click_para_acoes(driver):
             time.sleep(1)
             return
     except Exception:
-        pass
+        logger.debug("Falha capturada em clicar_click_para_acoes", exc_info=True)
 
     # 3) Procura dentro de iframes
     try:
@@ -2121,15 +2166,17 @@ def clicar_click_para_acoes(driver):
                     return
 
             except Exception:
+                logger.debug("Falha capturada em clicar_click_para_acoes", exc_info=True)
                 continue
 
         driver.switch_to.default_content()
 
     except Exception as erro:
+        logger.debug("Falha capturada em clicar_click_para_acoes", exc_info=True)
         try:
             driver.switch_to.default_content()
         except Exception:
-            pass
+            logger.debug("Falha capturada em clicar_click_para_acoes", exc_info=True)
         log(f"Falha ao procurar dentro de iframes: {erro}")
 
     screenshot = PASTA_ERROS / f"erro_click_acoes_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png"
@@ -2139,15 +2186,15 @@ def clicar_click_para_acoes(driver):
         driver.save_screenshot(str(screenshot))
         log(f"Print do erro salvo em: {screenshot}")
     except Exception:
-        pass
+        logger.debug("Falha capturada em clicar_click_para_acoes", exc_info=True)
 
     try:
         html.write_text(driver.page_source, encoding="utf-8")
         log(f"HTML do erro salvo em: {html}")
     except Exception:
-        pass
+        logger.debug("Falha capturada em clicar_click_para_acoes", exc_info=True)
 
-    raise Exception(
+    raise RuntimeError(
         "Não consegui clicar em 'Click para ações'. "
         "Envie o print/HTML gerado na pasta de downloads para análise."
     )
@@ -2181,7 +2228,7 @@ def clicar_click_para_acoes_rapido(driver):
     try:
         driver.switch_to.default_content()
     except Exception:
-        pass
+        logger.debug("Falha capturada em clicar_click_para_acoes_rapido", exc_info=True)
 
     # 1) Tenta direto no conteúdo principal
     try:
@@ -2193,6 +2240,7 @@ def clicar_click_para_acoes_rapido(driver):
             return
 
     except Exception as erro:
+        logger.debug("Falha capturada em clicar_click_para_acoes_rapido", exc_info=True)
         log(f"Clique rápido no conteúdo principal falhou: {erro}")
 
     # 2) Tenta direto dentro dos iframes
@@ -2214,9 +2262,11 @@ def clicar_click_para_acoes_rapido(driver):
                     return
 
             except Exception:
+                logger.debug("Falha capturada em clicar_click_para_acoes_rapido", exc_info=True)
                 continue
 
     except Exception as erro:
+        logger.debug("Falha capturada em clicar_click_para_acoes_rapido", exc_info=True)
         log(f"Procura rápida em iframes falhou: {erro}")
 
     # 3) Fallback seguro: usa a função completa antiga, mais lenta, mas mais robusta
@@ -2275,6 +2325,7 @@ def clicar_exportacoes(driver):
                 )
                 elemento.click()
             except Exception:
+                logger.debug("Falha capturada em clicar_exportacoes", exc_info=True)
                 driver.execute_script("arguments[0].click();", elemento)
 
             log(f"Exportações clicado usando seletor: {seletor}")
@@ -2282,6 +2333,7 @@ def clicar_exportacoes(driver):
             return
 
         except Exception as erro:
+            logger.debug("Falha capturada em clicar_exportacoes", exc_info=True)
             ultimo_erro = erro
             continue
 
@@ -2311,6 +2363,7 @@ def clicar_exportacoes(driver):
                         try:
                             elemento.click()
                         except Exception:
+                            logger.debug("Falha capturada em clicar_exportacoes", exc_info=True)
                             driver.execute_script("arguments[0].click();", elemento)
 
                         log(f"Exportações clicado no iframe {indice} usando seletor: {seletor}")
@@ -2318,14 +2371,17 @@ def clicar_exportacoes(driver):
                         return
 
                     except Exception as erro:
+                        logger.debug("Falha capturada em clicar_exportacoes", exc_info=True)
                         ultimo_erro = erro
                         continue
 
             except Exception as erro:
+                logger.debug("Falha capturada em clicar_exportacoes", exc_info=True)
                 ultimo_erro = erro
                 continue
 
     except Exception as erro:
+        logger.debug("Falha capturada em clicar_exportacoes", exc_info=True)
         ultimo_erro = erro
 
     screenshot = PASTA_ERROS / f"erro_exportacoes_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png"
@@ -2335,15 +2391,15 @@ def clicar_exportacoes(driver):
         driver.save_screenshot(str(screenshot))
         log(f"Print do erro salvo em: {screenshot}")
     except Exception:
-        pass
+        logger.debug("Falha capturada em clicar_exportacoes", exc_info=True)
 
     try:
         html.write_text(driver.page_source, encoding="utf-8")
         log(f"HTML do erro salvo em: {html}")
     except Exception:
-        pass
+        logger.debug("Falha capturada em clicar_exportacoes", exc_info=True)
 
-    raise Exception(f"Não consegui clicar em Exportações. Último erro: {ultimo_erro}")
+    raise RuntimeError(f"Não consegui clicar em Exportações. Último erro: {ultimo_erro}")
 
 
 def clicar_exportar_layout_arquivo(driver):
@@ -2396,6 +2452,7 @@ def clicar_exportar_layout_arquivo(driver):
                     )
                     elemento.click()
                 except Exception:
+                    logger.debug("Falha capturada em tentar_contexto", exc_info=True)
                     driver.execute_script("arguments[0].click();", elemento)
 
                 log(f"Exportar Layout Arquivo clicado em {nome_contexto} usando seletor: {seletor}")
@@ -2403,6 +2460,7 @@ def clicar_exportar_layout_arquivo(driver):
                 return True
 
             except Exception as erro:
+                logger.debug("Falha capturada em tentar_contexto", exc_info=True)
                 ultimo_erro = erro
                 continue
 
@@ -2427,10 +2485,12 @@ def clicar_exportar_layout_arquivo(driver):
                     return
 
             except Exception as erro:
+                logger.debug("Falha capturada em clicar_exportar_layout_arquivo", exc_info=True)
                 ultimo_erro = erro
                 continue
 
     except Exception as erro:
+        logger.debug("Falha capturada em clicar_exportar_layout_arquivo", exc_info=True)
         ultimo_erro = erro
 
     screenshot = PASTA_ERROS / f"erro_layout_arquivo_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png"
@@ -2440,15 +2500,15 @@ def clicar_exportar_layout_arquivo(driver):
         driver.save_screenshot(str(screenshot))
         log(f"Print do erro salvo em: {screenshot}")
     except Exception:
-        pass
+        logger.debug("Falha capturada em clicar_exportar_layout_arquivo", exc_info=True)
 
     try:
         html.write_text(driver.page_source, encoding="utf-8")
         log(f"HTML do erro salvo em: {html}")
     except Exception:
-        pass
+        logger.debug("Falha capturada em clicar_exportar_layout_arquivo", exc_info=True)
 
-    raise Exception(
+    raise RuntimeError(
         "Não consegui clicar no botão correto 'Exportar Layout Arquivo'. "
         "Parei aqui para evitar preencher campo errado."
     )
@@ -2507,6 +2567,7 @@ def selecionar_layout(driver, nome_exportacao):
                 return elemento
 
             except Exception as erro:
+                logger.debug("Falha capturada em procurar_campo_no_contexto", exc_info=True)
                 ultimo_erro = erro
                 continue
 
@@ -2533,10 +2594,12 @@ def selecionar_layout(driver, nome_exportacao):
                         break
 
                 except Exception as erro:
+                    logger.debug("Falha capturada em selecionar_layout", exc_info=True)
                     ultimo_erro = erro
                     continue
 
         except Exception as erro:
+            logger.debug("Falha capturada em selecionar_layout", exc_info=True)
             ultimo_erro = erro
 
     if campo is None:
@@ -2547,22 +2610,22 @@ def selecionar_layout(driver, nome_exportacao):
             driver.save_screenshot(str(screenshot))
             log(f"Print do erro salvo em: {screenshot}")
         except Exception:
-            pass
+            logger.debug("Falha capturada em selecionar_layout", exc_info=True)
 
         try:
             html.write_text(driver.page_source, encoding="utf-8")
             log(f"HTML do erro salvo em: {html}")
         except Exception:
-            pass
+            logger.debug("Falha capturada em selecionar_layout", exc_info=True)
 
-        raise Exception(f"Não encontrei o campo layoutArquivo. Último erro: {ultimo_erro}")
+        raise RuntimeError(f"Não encontrei o campo layoutArquivo. Último erro: {ultimo_erro}")
 
     # 3) Limpa painéis antigos, mas NÃO remove novos painéis depois que digitar
     try:
         driver.switch_to.active_element.send_keys(Keys.ESCAPE)
         time.sleep(0.3)
     except Exception:
-        pass
+        logger.debug("Falha capturada em selecionar_layout", exc_info=True)
 
     # 4) Foca via JS, limpa e digita com send_keys para disparar autocomplete real do site
     try:
@@ -2582,6 +2645,7 @@ def selecionar_layout(driver, nome_exportacao):
         time.sleep(1.5)
 
     except Exception as erro:
+        logger.debug("Falha capturada em selecionar_layout", exc_info=True)
         log(f"Falha ao digitar no campo com send_keys; tentando JS puro. Detalhe: {erro}")
 
         driver.execute_script("""
@@ -2638,6 +2702,7 @@ def selecionar_layout(driver, nome_exportacao):
                         try:
                             opcao.click()
                         except Exception:
+                            logger.debug("Falha capturada em selecionar_layout", exc_info=True)
                             driver.execute_script("arguments[0].click();", opcao)
 
                         selecionou = True
@@ -2646,6 +2711,7 @@ def selecionar_layout(driver, nome_exportacao):
                         break
 
                 except Exception as erro:
+                    logger.debug("Falha capturada em selecionar_layout", exc_info=True)
                     ultimo_erro_opcao = erro
                     continue
 
@@ -2653,6 +2719,7 @@ def selecionar_layout(driver, nome_exportacao):
                 break
 
         except Exception as erro:
+            logger.debug("Falha capturada em selecionar_layout", exc_info=True)
             ultimo_erro_opcao = erro
             continue
 
@@ -2667,6 +2734,7 @@ def selecionar_layout(driver, nome_exportacao):
             time.sleep(1)
             selecionou = True
         except Exception as erro:
+            logger.debug("Falha capturada em selecionar_layout", exc_info=True)
             log(f"Falha ao confirmar autocomplete com teclado: {erro}")
 
     # 7) Validação final
@@ -2675,9 +2743,10 @@ def selecionar_layout(driver, nome_exportacao):
         log(f"Valor atual no campo layoutArquivo: {valor_atual}")
 
         if not valor_atual:
-            raise Exception("O campo layoutArquivo ficou vazio após o preenchimento.")
+            raise RuntimeError("O campo layoutArquivo ficou vazio após o preenchimento.")
 
     except Exception as erro:
+        logger.debug("Falha capturada em selecionar_layout", exc_info=True)
         screenshot = PASTA_ERROS / f"erro_valor_layout_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png"
         html = PASTA_ERROS / f"erro_valor_layout_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.html"
 
@@ -2685,15 +2754,15 @@ def selecionar_layout(driver, nome_exportacao):
             driver.save_screenshot(str(screenshot))
             log(f"Print do erro salvo em: {screenshot}")
         except Exception:
-            pass
+            logger.debug("Falha capturada em selecionar_layout", exc_info=True)
 
         try:
             html.write_text(driver.page_source, encoding="utf-8")
             log(f"HTML do erro salvo em: {html}")
         except Exception:
-            pass
+            logger.debug("Falha capturada em selecionar_layout", exc_info=True)
 
-        raise Exception(f"Falha ao validar valor do campo layoutArquivo: {erro}")
+        raise RuntimeError(f"Falha ao validar valor do campo layoutArquivo: {erro}")
 
     log(f"Layout preenchido e selecionado: {nome_exportacao}")
 
@@ -2721,6 +2790,7 @@ def clicar_primeiro_download(driver):
             try:
                 return datetime.strptime(data_texto, formato)
             except Exception:
+                logger.debug("Falha capturada em converter_data", exc_info=True)
                 continue
         return None
 
@@ -2738,7 +2808,7 @@ def clicar_primeiro_download(driver):
             try:
                 encontrados.extend(driver.find_elements(By.XPATH, xp))
             except Exception:
-                pass
+                logger.debug("Falha capturada em coletar_links", exc_info=True)
 
         unicos = []
         chaves = set()
@@ -2765,6 +2835,7 @@ def clicar_primeiro_download(driver):
                     chaves.add(chave)
                     unicos.append(link)
             except Exception:
+                logger.debug("Falha capturada em coletar_links", exc_info=True)
                 continue
 
         return unicos
@@ -2783,6 +2854,7 @@ def clicar_primeiro_download(driver):
                 linha = link.find_element(By.XPATH, "./ancestor::tr[1]")
                 texto_linha = linha.text
             except Exception:
+                logger.debug("Falha capturada em tentar_no_contexto", exc_info=True)
                 texto_linha = link.text or ""
 
             candidatos.append({
@@ -2815,6 +2887,7 @@ def clicar_primeiro_download(driver):
         try:
             elemento.click()
         except Exception:
+            logger.debug("Falha capturada em tentar_no_contexto", exc_info=True)
             driver.execute_script("arguments[0].click();", elemento)
 
         log("Clique no arquivo mais recente realizado.")
@@ -2826,6 +2899,7 @@ def clicar_primeiro_download(driver):
             if tentar_no_contexto("contexto atual"):
                 return True
         except Exception as erro:
+            logger.debug("Falha capturada em tentar_todos_contextos", exc_info=True)
             log(f"Falha ao buscar download no contexto atual: {erro}")
 
         try:
@@ -2833,6 +2907,7 @@ def clicar_primeiro_download(driver):
             if tentar_no_contexto("conteúdo principal"):
                 return True
         except Exception as erro:
+            logger.debug("Falha capturada em tentar_todos_contextos", exc_info=True)
             log(f"Falha ao buscar download no conteúdo principal: {erro}")
 
         try:
@@ -2847,9 +2922,11 @@ def clicar_primeiro_download(driver):
                     if tentar_no_contexto(f"iframe {indice}"):
                         return True
                 except Exception as erro:
+                    logger.debug("Falha capturada em tentar_todos_contextos", exc_info=True)
                     log(f"Não encontrei download no iframe {indice}: {erro}")
                     continue
         except Exception as erro:
+            logger.debug("Falha capturada em tentar_todos_contextos", exc_info=True)
             log(f"Falha ao procurar download em iframes: {erro}")
 
         return False
@@ -2861,7 +2938,7 @@ def clicar_primeiro_download(driver):
         time.sleep(3)
 
     salvar_diagnostico_erro(driver, "erro_download_arquivo")
-    raise Exception(
+    raise RuntimeError(
         "Não encontrei o link correto de download. "
         "Verifique o HTML salvo na pasta erros para confirmar se a página gerou a lista de arquivos."
     )
@@ -2967,6 +3044,7 @@ def clicar_executar_exportacao(driver):
             log_panorama("EXPORTACAO", "Clique bloqueado; verificando avisos de exportacao.")
             fechar_avisos_exportacao_panorama(driver, aguardar_segundos=0)
         except Exception as erro:
+            logger.debug("Falha capturada em clicar_executar_exportacao", exc_info=True)
             salvar_diagnostico_erro(driver, "erro_executar")
             raise RuntimeError(f"Panorama: falha ao acompanhar Executar: {erro}") from erro
         agora = time.monotonic()
@@ -3030,7 +3108,7 @@ def baixar_exportacao(driver, nome_exportacao, limpar_antes=True):
 # ============================================================
 
 def remover_linhas_mes_vigente(ws, coluna_data="L"):
-    hoje = datetime.today()
+    hoje = datetime.now().astimezone()
     data_ini = datetime(hoje.year, hoje.month, 1)
 
     if hoje.month == 12:
@@ -3056,6 +3134,7 @@ def remover_linhas_mes_vigente(ws, coluna_data="L"):
                     continue
                 data = data.to_pydatetime()
             except Exception:
+                logger.debug("Falha capturada em remover_linhas_mes_vigente", exc_info=True)
                 continue
 
         if data_ini <= data < data_fim:
@@ -3149,6 +3228,7 @@ def aplicar_formulas(ws, modelos_formula, linha_inicial, linha_final):
                 ).translate_formula(destino)
 
             except Exception:
+                logger.debug("Falha capturada em aplicar_formulas", exc_info=True)
                 ws[destino] = formula_base
 
         log(f"Fórmulas aplicadas na coluna {coluna}, da linha {linha_inicial} até {linha_final}.")
@@ -3210,11 +3290,12 @@ def valor_para_data(valor):
             return None
         return data.to_pydatetime()
     except Exception:
+        logger.debug("Falha capturada em valor_para_data", exc_info=True)
         return None
 
 
 def linha_eh_mes_vigente(valor_data):
-    hoje = datetime.today()
+    hoje = datetime.now().astimezone()
     data = valor_para_data(valor_data)
 
     if data is None:
@@ -3333,10 +3414,11 @@ def ler_linhas_exportacao(arquivo_origem):
                 return df.values.tolist()
 
             except Exception as erro:
+                logger.debug("Falha capturada em ler_linhas_exportacao", exc_info=True)
                 ultimo_erro = erro
                 continue
 
-        raise Exception(f"Não consegui ler o CSV exportado. Último erro: {ultimo_erro}")
+        raise RuntimeError(f"Não consegui ler o CSV exportado. Último erro: {ultimo_erro}")
 
     if extensao in [".xlsx", ".xlsm"]:
         log("Arquivo de origem é Excel. Lendo com openpyxl...")
@@ -3402,6 +3484,7 @@ def esperar_arquivo_excel_liberar(arquivo, timeout=None):
             raise
 
         except Exception as erro:
+            logger.debug("Falha capturada em esperar_arquivo_excel_liberar", exc_info=True)
             log(f"Aguardando liberação do arquivo. Detalhe: {erro}")
             time.sleep(5)
 
@@ -3421,6 +3504,7 @@ def copiar_dados_excel_origem_para_destino(
     ultima_coluna_total="V",
     etapa_panorama_log="ATUALIZAÇÃO",
     normalizar_cpc=False,
+    tipo_resumo=None,
 ):
     """
     Processo Excel otimizado:
@@ -3490,12 +3574,32 @@ def copiar_dados_excel_origem_para_destino(
         modelos_formula = obter_modelos_formulas(ws_destino, colunas_formula)
 
         if normalizar_cpc:
-            indice_data = coluna_data_cpc(ws_destino)
-            linhas_origem = preparar_linhas_receita(linhas_origem, indice_data)
+            coluna_comparacao = coluna_data_cpc(ws_destino)
+        else:
+            coluna_comparacao = coluna_para_numero(coluna_data)
 
-        coluna_comparacao = (
-            indice_data if normalizar_cpc else coluna_para_numero(coluna_data)
-        )
+        if not isinstance(coluna_comparacao, int) or coluna_comparacao < 1:
+            raise ValueError(f"Coluna de comparação inválida: {coluna_comparacao}")
+
+        if normalizar_cpc:
+            linhas_origem = preparar_linhas_receita(linhas_origem, coluna_comparacao)
+
+        linhas_data_invalida = [
+            numero_linha
+            for numero_linha, linha in enumerate(linhas_origem, start=2)
+            if len(linha) < coluna_comparacao
+            or valor_para_data(linha[coluna_comparacao - 1]) is None
+        ]
+        if linhas_data_invalida:
+            exemplos = ", ".join(map(str, linhas_data_invalida[:10]))
+            raise ValueError(
+                f"A exportação contém datas ausentes ou inválidas na coluna "
+                f"{coluna_comparacao}, nas linhas {exemplos}. "
+                "Atualização bloqueada para evitar reconstruir a planilha com "
+                "registros não identificáveis."
+            )
+
+        limite_coluna_contagem = max(limite_coluna_dados, coluna_comparacao)
         with acompanhar_operacao(
             f"[PANORAMA][{etapa}] Conferindo quantidade de registros", intervalo=10
         ):
@@ -3503,7 +3607,7 @@ def copiar_dados_excel_origem_para_destino(
                 any(valor is not None and str(valor).strip() for valor in linha)
                 and linha_eh_mes_vigente(valor_para_data(linha[coluna_comparacao - 1]))
                 for linha in ws_destino.iter_rows(
-                    min_row=2, max_col=limite_coluna_dados, values_only=True
+                    min_row=2, max_col=limite_coluna_contagem, values_only=True
                 )
             )
             registros_exportados = sum(
@@ -3526,6 +3630,15 @@ def copiar_dados_excel_origem_para_destino(
             )
             log_panorama(etapa, mensagem)
             raise ValueError(mensagem)
+
+        resumo = None
+        if tipo_resumo is not None:
+            resumo = calcular_resumo(
+                linhas_origem,
+                [celula.value for celula in ws_destino[1]],
+                tipo_resumo,
+                datetime.now().astimezone(),
+            )
 
         if normalizar_cpc:
             relatorio_datas = normalizar_datas_cpc(ws_destino)
@@ -3595,6 +3708,12 @@ def copiar_dados_excel_origem_para_destino(
         ):
             wb_destino.save(arquivo_destino)
         log_panorama(etapa, f"Planilha salva com sucesso: {arquivo_destino}")
+        atualizado_em = datetime.now().astimezone()
+        if resumo is not None:
+            arquivo_resumo = salvar_resumo(
+                PASTA_RESUMOS_VENDAS, resumo, arquivo_destino, atualizado_em
+            )
+            log_panorama(etapa, f"Resumo mensal e horario de atualizacao registrados em: {arquivo_resumo}")
 
     finally:
         if wb_destino:
@@ -3620,6 +3739,7 @@ def processar_exportacao_vendas(driver):
         ultima_coluna_total=ULTIMA_COLUNA_TOTAL_VENDAS,
         etapa_panorama_log="VENDAS",
         normalizar_cpc=True,
+        tipo_resumo="VENDAS",
     )
 
     log_panorama(
@@ -3644,6 +3764,7 @@ def processar_receita_gerada(driver):
         ultima_coluna_total=ULTIMA_COLUNA_TOTAL_RECEITA,
         etapa_panorama_log="RECEITA",
         normalizar_cpc=True,
+        tipo_resumo="RECEITA",
     )
 
     log_panorama(
@@ -3868,6 +3989,7 @@ def main(argv=None):
         return 130
 
     except Exception as erro:
+        logger.debug("Falha capturada em main", exc_info=True)
         log("========== ERRO NO PROCESSO ==========")
         log(str(erro))
         if getattr(erro, "preservar_sessao", False) and not headless:
@@ -3878,6 +4000,7 @@ def main(argv=None):
             try:
                 salvar_diagnostico_erro(driver, "erro_processo")
             except Exception as erro_diagnostico:
+                logger.debug("Falha capturada em main", exc_info=True)
                 log(f"Não foi possível salvar o diagnóstico do erro: {erro_diagnostico}")
 
         return 1
@@ -3896,6 +4019,7 @@ def main(argv=None):
         except (InvalidSessionIdException, NoSuchWindowException):
             log("[ENCERRAMENTO] Chrome ja encerrado; nenhuma nova tentativa de fechamento necessaria.")
         except Exception as erro:
+            logger.debug("Falha capturada em main", exc_info=True)
             log(f"Falha ao finalizar o navegador: {erro}")
 
         try:
@@ -3909,6 +4033,7 @@ def main(argv=None):
                 log("Limpando arquivos baixados...")
                 limpar_downloads()
         except Exception as erro:
+            logger.debug("Falha capturada em main", exc_info=True)
             log(f"Não foi possível limpar os downloads finais: {erro}")
 
         try:
@@ -3919,11 +4044,12 @@ def main(argv=None):
                 f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ======="
             )
         except Exception:
-            pass
+            logger.debug("Falha capturada em main", exc_info=True)
 
         try:
             salvar_log_ativacao(status=status_log)
         except Exception as erro:
+            logger.debug("Falha capturada em main", exc_info=True)
             print(f"Não foi possível salvar o log final: {erro}")
 
     return 0
@@ -3936,5 +4062,6 @@ if __name__ == "__main__":
         log("Execução interrompida pelo usuário.")
         raise SystemExit(130)
     except Exception as erro:
+        logger.debug("Falha capturada em modulo", exc_info=True)
         log(f"Erro fatal na execução: {erro}")
         raise SystemExit(1)

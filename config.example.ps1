@@ -7,6 +7,7 @@ $env:CREDIAGORA_SENHA = "troque-pela-senha-real"
 # Opcional: ajuste apenas se os caminhos mudarem nesta máquina.
 $env:CREDIAGORA_DOWNLOAD_DIR = "$HOME\Downloads\crediagora"
 $env:CREDIAGORA_TABELA_FAT_DIR = "$HOME\TJI PROMOTORA DE VENDAS EIRELI\Crediagora-doc - dados\tabela fat"
+$env:CREDIAGORA_INDICADORES_FPD1_XLSX = "$env:CREDIAGORA_TABELA_FAT_DIR\Indicadores de FPD1_teste_de_automacao.xlsx"
 
 # Opcionais de execução.
 $env:CREDIAGORA_HEADLESS = "0"
@@ -25,4 +26,5 @@ $env:ERCARD_SISTEMA_SENHA = "senha-do-er-card"
 $env:ERCARD_EXPORT_DIR = "$HOME\Desktop\Exportações"
 $env:ERCARD_TIMEOUT_NORMAL = "30"
 $env:ERCARD_TIMEOUT_REMOTO = "20"
-$env:ERCARD_TIMEOUT_EXPORTACAO = "180"
+# Consulta 14 pode levar mais de 15 minutos; limite de 30 minutos.
+$env:ERCARD_TIMEOUT_EXPORTACAO = "1800"

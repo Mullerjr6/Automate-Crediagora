@@ -54,6 +54,15 @@ class IndicadoresFpd1Tests(unittest.TestCase):
             pasta = Path(pasta)
             xlsx, csv_atual = pasta / "indicadores.xlsx", pasta / "contratos.csv"
             cabecalhos = criar_xlsx(xlsx)
+            wb = load_workbook(xlsx)
+            ws = wb["Tabela Conta"]
+            for linha in ws.iter_rows(min_row=4, max_row=5, max_col=50):
+                for celula in linha:
+                    celula.value = None
+            ws["A6"] = "   "
+            ws["AY7"] = "=A7"
+            wb.save(xlsx)
+            wb.close()
             registros = []
             for numero in (1, 2):
                 linha = [str(numero)] * 50
@@ -77,6 +86,42 @@ class IndicadoresFpd1Tests(unittest.TestCase):
             self.assertIsNone(ws["A4"].value)
             self.assertIsNone(ws["AY4"].value)
             wb.close()
+
+    def test_csv_menor_bloqueia_sem_alterar_xlsx(self):
+        modulo = carregar_modulo()
+        with tempfile.TemporaryDirectory() as pasta:
+            pasta = Path(pasta)
+            xlsx, csv_atual = pasta / "indicadores.xlsx", pasta / "contratos.csv"
+            cabecalhos = criar_xlsx(xlsx)
+            criar_csv(csv_atual, cabecalhos, [["1"] * 50] * 3 + [[""] * 50] * 3)
+            original = xlsx.read_bytes()
+            mensagens = []
+            with patch.object(modulo.time, "sleep", return_value=None):
+                with self.assertRaisesRegex(
+                    modulo.AtualizacaoIndicadoresError,
+                    "CSV possui 3 registros, menos que os 4",
+                ):
+                    modulo.atualizar_indicadores_fpd1(csv_atual, xlsx, mensagens.append)
+            self.assertEqual(xlsx.read_bytes(), original)
+            self.assertTrue(csv_atual.exists())
+            self.assertTrue(any("Atualizacao bloqueada" in mensagem for mensagem in mensagens))
+            self.assertEqual(sorted(p.name for p in pasta.iterdir()), ["contratos.csv", "indicadores.xlsx"])
+
+    def test_csv_igual_ou_maior_permite_atualizacao(self):
+        modulo = carregar_modulo()
+        for quantidade in (4, 5):
+            with self.subTest(quantidade=quantidade), tempfile.TemporaryDirectory() as pasta:
+                pasta = Path(pasta)
+                xlsx, csv_atual = pasta / "indicadores.xlsx", pasta / "contratos.csv"
+                cabecalhos = criar_xlsx(xlsx)
+                registro = ["1"] * 50
+                registro[0] = "01/01/2024"
+                criar_csv(csv_atual, cabecalhos, [registro] * quantidade)
+                with patch.object(modulo.time, "sleep", return_value=None):
+                    resultado = modulo.atualizar_indicadores_fpd1(
+                        csv_atual, xlsx, lambda _mensagem: None
+                    )
+                self.assertEqual(resultado.registros_importados, quantidade)
 
     def test_csv_invalido_nao_altera_original(self):
         modulo = carregar_modulo()

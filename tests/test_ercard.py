@@ -20,6 +20,68 @@ def carregar_ercard():
 
 
 class ErCardTests(unittest.TestCase):
+    def test_csv_bloqueado_e_retentado_sem_reiniciar_exportacao(self):
+        modulo = carregar_ercard()
+        with tempfile.TemporaryDirectory() as pasta:
+            downloads = Path(pasta) / "downloads"
+            downloads.mkdir()
+            destino = Path(pasta) / "final" / "contratos.csv"
+            (downloads / destino.name).write_text("codigo;contrato\n1;ABC\n", encoding="utf-8")
+            config = unittest.mock.Mock(timeout_exportacao=60, pasta_download=downloads)
+            tempo = [0]
+            mover = modulo.shutil.move
+            tentativas = [0]
+
+            def mover_quando_liberado(*args):
+                tentativas[0] += 1
+                if tentativas[0] == 1:
+                    raise PermissionError("arquivo em gravacao")
+                return mover(*args)
+
+            with patch.object(modulo.time, "monotonic", side_effect=lambda: tempo[0]), \
+                 patch.object(modulo.time, "sleep", side_effect=lambda _: tempo.__setitem__(0, tempo[0] + 1)), \
+                 patch.object(modulo.shutil, "move", side_effect=mover_quando_liberado):
+                resultado = modulo.mover_download_webfile(destino, config, lambda _: None)
+            self.assertEqual(resultado, destino)
+            self.assertEqual(tentativas[0], 2)
+            self.assertTrue(destino.is_file())
+
+    def test_timeout_do_csv_sinaliza_preservacao_da_sessao(self):
+        modulo = carregar_ercard()
+        with tempfile.TemporaryDirectory() as pasta:
+            config = unittest.mock.Mock(timeout_exportacao=60, pasta_download=Path(pasta))
+            with patch.object(modulo.time, "monotonic", side_effect=[0, 61]):
+                with self.assertRaises(modulo.ErCardError) as contexto:
+                    modulo.mover_download_webfile(Path(pasta) / "contratos.csv", config, lambda _: None)
+            self.assertTrue(contexto.exception.preservar_sessao)
+            self.assertIn("nao repetir Exportar", str(contexto.exception))
+
+    def test_webfile_aguarda_csv_apos_mais_de_quinze_minutos(self):
+        modulo = carregar_ercard()
+        with tempfile.TemporaryDirectory() as pasta:
+            downloads = Path(pasta) / "downloads"
+            downloads.mkdir()
+            destino = Path(pasta) / "final" / "contratos.csv"
+            origem = downloads / destino.name
+            config = unittest.mock.Mock(timeout_exportacao=1800, pasta_download=downloads)
+            tempo = [0]
+            logs = []
+
+            def aguardar(_segundos):
+                tempo[0] += 60
+                if tempo[0] >= 960 and not origem.exists():
+                    origem.write_text("codigo;contrato\n1;ABC\n", encoding="utf-8")
+
+            with patch.object(modulo.time, "monotonic", side_effect=lambda: tempo[0]), \
+                 patch.object(modulo.time, "sleep", side_effect=aguardar):
+                resultado = modulo.mover_download_webfile(destino, config, logs.append)
+
+            self.assertEqual(resultado, destino)
+            self.assertTrue(destino.is_file())
+            self.assertFalse(origem.exists())
+            self.assertGreaterEqual(tempo[0], 960)
+            self.assertTrue(any("Aguardando consulta 14" in mensagem for mensagem in logs))
+
     def test_nome_dinamico_sem_caractere_invalido(self):
         modulo = carregar_ercard()
         nome = modulo.gerar_nome_tabela_contratos(datetime(2026, 9, 8, 16, 35))
@@ -152,6 +214,72 @@ class ErCardTests(unittest.TestCase):
         self.assertIsNotNone(painel)
         self.assertEqual(painel[:2], (710, 22))
 
+    def test_modulo_canvas_usa_duplo_clique_e_confirma_mudanca(self):
+        modulo = carregar_ercard()
+        driver = unittest.mock.MagicMock()
+        canvas = unittest.mock.MagicMock()
+        canvas.is_displayed.return_value = True
+        canvas.size = {"width": 1600, "height": 900}
+        driver.find_elements.return_value = [canvas]
+        driver.get_screenshot_as_png.return_value = b"imagem"
+        driver.execute_script.return_value = {"x": 10, "y": 20}
+        acao = unittest.mock.MagicMock()
+        acao.move_to_element_with_offset.return_value = acao
+        acao.double_click.return_value = acao
+
+        with patch.object(
+            modulo,
+            "_localizar_painel_de_opcoes",
+            return_value=(700, 290, 520, 340, 1920, 960),
+        ), patch.object(
+            modulo, "_mudanca_visual_significativa", return_value=True
+        ), patch.object(
+            modulo, "ActionChains", return_value=acao
+        ), patch.object(modulo.time, "sleep"):
+            resultado = modulo._clicar_opcao_canvas(
+                driver,
+                timeout=2,
+                etapa="Módulo ER Cartão CrediAgora",
+                log=lambda _mensagem: None,
+                posicao_horizontal=0.38,
+                nome_opcao="ER Cartão CrediAgora",
+                cliques=2,
+                confirmar_mudanca=True,
+            )
+
+        self.assertTrue(resultado)
+        acao.double_click.assert_called_once_with()
+        acao.perform.assert_called_once_with()
+
+    def test_mudanca_no_painel_e_detectada_sem_alterar_tela_inteira(self):
+        import cv2
+        import numpy as np
+
+        modulo = carregar_ercard()
+        antes = np.zeros((960, 1920, 3), dtype=np.uint8)
+        depois = antes.copy()
+        cv2.rectangle(antes, (700, 290), (1220, 630), (245, 245, 245), -1)
+        cv2.rectangle(depois, (700, 290), (1220, 630), (245, 245, 245), -1)
+        cv2.rectangle(antes, (790, 470), (820, 500), (20, 20, 20), -1)
+        cv2.rectangle(depois, (790, 470), (820, 500), (20, 20, 20), -1)
+        cv2.rectangle(depois, (930, 470), (980, 520), (20, 20, 20), -1)
+        _, antes_png = cv2.imencode(".png", antes)
+        _, depois_png = cv2.imencode(".png", depois)
+
+        self.assertFalse(
+            modulo._mudanca_visual_significativa(
+                antes_png.tobytes(), depois_png.tobytes()
+            )
+        )
+        self.assertTrue(
+            modulo._mudanca_visual_significativa(
+                antes_png.tobytes(),
+                depois_png.tobytes(),
+                regiao=(700, 290, 520, 340),
+                proporcao_minima=0.01,
+            )
+        )
+
     def test_detecta_janela_gerencial_independente_da_posicao(self):
         import cv2
         import numpy as np
@@ -169,6 +297,59 @@ class ErCardTests(unittest.TestCase):
     def test_data_inicial_usa_formato_digitado_pelo_ercard(self):
         modulo = carregar_ercard()
         self.assertEqual(modulo.DATA_INICIAL, "010124")
+
+    def test_periodo_canvas_preserva_foco_do_tab_e_data_inicial(self):
+        modulo = carregar_ercard()
+        for hoje in (datetime(2026, 9, 25), datetime(2027, 1, 2)):
+            with self.subTest(hoje=hoje):
+                eventos = []
+                campos = ["data antiga", "outra data antiga", ""]
+                foco = [0]
+                controle = [False]
+
+                class Acoes:
+                    def key_down(self, tecla):
+                        if tecla == modulo.Keys.CONTROL:
+                            controle[0] = True
+                        return self
+
+                    def key_up(self, tecla):
+                        if tecla == modulo.Keys.CONTROL:
+                            controle[0] = False
+                        return self
+
+                    def send_keys(self, tecla):
+                        eventos.append(("tecla", tecla))
+                        if tecla == modulo.Keys.TAB:
+                            foco[0] += 1
+                        elif tecla in (modulo.Keys.BACKSPACE, modulo.Keys.DELETE):
+                            campos[foco[0]] = ""
+                        elif tecla.isdigit() and not controle[0]:
+                            campos[foco[0]] += tecla
+                        return self
+
+                    def perform(self):
+                        return None
+
+                def clicar(*args):
+                    eventos.append(("clique", args[1:]))
+                    foco[0] = 0
+
+                with patch.object(modulo, "datetime") as relogio, \
+                     patch.object(modulo, "ActionChains", side_effect=lambda _: Acoes()), \
+                     patch.object(modulo, "_clicar_janela_gerencial", side_effect=clicar) as clique, \
+                     patch.object(modulo, "salvar_diagnostico_ercard") as captura, \
+                     patch.object(modulo.time, "sleep"):
+                    relogio.now.return_value = hoje
+                    driver, config = unittest.mock.Mock(), unittest.mock.Mock()
+                    modulo.preencher_periodo_canvas(driver, config, lambda _: None)
+
+                self.assertEqual(campos, ["010124", hoje.strftime("%d%m%y"), ""])
+                self.assertEqual(foco[0], 2)
+                self.assertEqual(clique.call_count, 2)
+                primeiro_tab = eventos.index(("tecla", modulo.Keys.TAB))
+                self.assertFalse(any(tipo == "clique" for tipo, _ in eventos[primeiro_tab:]))
+                captura.assert_called_once()
 
 
 if __name__ == "__main__":

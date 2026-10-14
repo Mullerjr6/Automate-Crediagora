@@ -5,16 +5,16 @@ import shutil
 import threading
 import time
 import uuid
-from copy import copy
+import zipfile
 from contextlib import contextmanager
+from copy import copy
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
 from openpyxl import load_workbook
-from openpyxl.formula.translate import Translator
+from openpyxl.cell.cell import Cell
 from openpyxl.utils import get_column_letter
-
 
 ABA_DADOS = "Tabela Conta"
 COLUNAS_DADOS = 50
@@ -26,6 +26,9 @@ COLUNAS_DATA = {
 }
 COLUNAS_TEXTO = {"Proposta", "Cpf", "Fone01", "Fone02"}
 CABECALHOS_VAZIOS_PERMITIDOS = {23: "Fone01", 24: "Fone02"}
+REFERENCIA_LINHA_MODELO = re.compile(
+    r"(?<![A-Z0-9_])(?P<coluna>\$?[A-Z]{1,3})(?P<absoluta>\$?)(?P<linha>2)(?!\d)"
+)
 
 
 class AtualizacaoIndicadoresError(RuntimeError):
@@ -163,13 +166,25 @@ def _validar_cabecalhos(cabecalho_csv, cabecalhos_xlsx):
 
 
 def _traduzir(modelo, origem, destino):
+    """Move referencias relativas da linha-modelo 2 para a linha de destino.
+
+    As formulas AY:CM sao todas copiadas a partir da linha 2. Usar o
+    Translator do openpyxl em cada celula tornava a atualizacao muito lenta.
+    """
     if isinstance(modelo, str) and modelo.startswith("="):
-        try:
-            return Translator(modelo, origin=origem).translate_formula(destino)
-        except Exception as erro:
+        destino_linha = re.search(r"\d+$", destino)
+        if destino_linha is None:
             raise AtualizacaoIndicadoresError(
-                "Formulas", f"Falha ao traduzir {origem} para {destino}: {modelo}"
-            ) from erro
+                "Formulas", f"Destino de formula invalido: {destino}"
+            )
+        linha = destino_linha.group()
+
+        def substituir(referencia):
+            if referencia.group("absoluta"):
+                return referencia.group()
+            return f"{referencia.group('coluna')}{linha}"
+
+        return REFERENCIA_LINHA_MODELO.sub(substituir, modelo)
     return modelo
 
 
@@ -197,53 +212,17 @@ def _validar_planilha(ws, cabecalhos, modelo, registros, ultima, antiga_ultima):
                 )
 
 
-def _validar_salvo(caminho, cabecalhos, modelo, registros, ultima, antiga_ultima):
+def _validar_arquivo_salvo(caminho):
+    """Confere se o XLSX salvo e um ZIP completo e legivel sem reabrir planilhas."""
     if not caminho.exists() or caminho.stat().st_size <= 0:
         raise AtualizacaoIndicadoresError("Pos-salvamento", "XLSX ausente ou vazio.")
-    wb = None
     try:
-        wb = load_workbook(caminho, read_only=True, data_only=False, keep_links=True)
-        if ABA_DADOS not in wb.sheetnames:
-            raise AtualizacaoIndicadoresError("Pos-salvamento", f"Aba {ABA_DADOS!r} ausente.")
-        ws = wb[ABA_DADOS]
-        linhas_chave = {}
-        limite = max(ultima, antiga_ultima)
-        for numero, valores in enumerate(
-            ws.iter_rows(
-                min_row=1,
-                max_row=limite,
-                min_col=1,
-                max_col=COLUNA_MODELO_FINAL,
-                values_only=True,
-            ),
-            start=1,
-        ):
-            if numero in (1, 2, ultima):
-                linhas_chave[numero] = valores
-            if numero > ultima and any(valor is not None for valor in valores):
-                raise AtualizacaoIndicadoresError(
-                    "Pos-salvamento", f"Conteudo antigo permaneceu na linha {numero}."
-                )
-        if tuple(linhas_chave[1][:50]) != cabecalhos:
-            raise AtualizacaoIndicadoresError("Pos-salvamento", "Cabecalhos alterados.")
-        if (
-            linhas_chave[2][0] != registros[0][0]
-            or linhas_chave[2][49] != registros[0][-1]
-            or linhas_chave[ultima][0] != registros[-1][0]
-        ):
-            raise AtualizacaoIndicadoresError("Pos-salvamento", "Dados gravados nao conferem.")
-        if tuple(linhas_chave[2][50:91]) != modelo:
-            raise AtualizacaoIndicadoresError("Pos-salvamento", "Modelo AY2:CM2 foi alterado.")
-        for coluna, valor in enumerate(modelo, start=51):
-            origem = f"{get_column_letter(coluna)}2"
-            destino = f"{get_column_letter(coluna)}{ultima}"
-            if linhas_chave[ultima][coluna - 1] != _traduzir(valor, origem, destino):
-                raise AtualizacaoIndicadoresError(
-                    "Pos-salvamento", f"Formula final incorreta em {destino}."
-                )
-    finally:
-        if wb is not None:
-            wb.close()
+        with zipfile.ZipFile(caminho) as arquivo:
+            obrigatorios = {"[Content_Types].xml", "xl/workbook.xml"}
+            if not obrigatorios.issubset(arquivo.namelist()) or arquivo.testzip() is not None:
+                raise AtualizacaoIndicadoresError("Pos-salvamento", "XLSX incompleto ou corrompido.")
+    except zipfile.BadZipFile as erro:
+        raise AtualizacaoIndicadoresError("Pos-salvamento", "XLSX corrompido.") from erro
 
 
 def atualizar_indicadores_fpd1(csv_atual, xlsx_destino, log=print):
@@ -301,15 +280,13 @@ def atualizar_indicadores_fpd1(csv_atual, xlsx_destino, log=print):
         limite = max(antiga_ultima, ultima)
         estilos_modelo = [copy(ws.cell(2, c)._style) for c in range(1, 92)]
 
-        _log(log, f"Limpando base anterior ate a linha {limite}.")
-        for numero, linha in enumerate(
-            ws.iter_rows(min_row=2, max_row=limite, min_col=1, max_col=91),
-            start=2,
-        ):
-            for celula in linha:
-                celula.value = None
-            if numero % 2000 == 0:
-                _log(log, f"Limpeza: linha {numero} de {limite}.")
+        _log(log, f"Removendo base anterior ate a linha {limite}.")
+        coordenadas_antigas = [
+            coordenada for coordenada in ws._cells
+            if coordenada[0] >= 2 and coordenada[1] <= COLUNA_MODELO_FINAL
+        ]
+        for coordenada in coordenadas_antigas:
+            del ws._cells[coordenada]
         _log(log, "Limpeza da base anterior concluida.")
 
         _log(log, f"Gravando {len(registros)} registros e formulas.")
@@ -322,8 +299,11 @@ def atualizar_indicadores_fpd1(csv_atual, xlsx_destino, log=print):
                     celula.number_format = "dd/mm/yyyy"
             for coluna, valor in enumerate(modelo, start=51):
                 celula = ws.cell(numero_linha, coluna)
-                origem = ws.cell(2, coluna).coordinate
-                celula.value = _traduzir(valor, origem, celula.coordinate)
+                if not isinstance(celula, Cell):
+                    raise AtualizacaoIndicadoresError(
+                        "Formulas", f"Celula mesclada inesperada em {celula.coordinate}."
+                    )
+                celula.value = _traduzir(valor, f"{get_column_letter(coluna)}2", celula.coordinate)
                 if numero_linha > antiga_ultima:
                     celula._style = copy(estilos_modelo[coluna - 1])
             if numero_linha % 1000 == 0:
@@ -338,13 +318,13 @@ def atualizar_indicadores_fpd1(csv_atual, xlsx_destino, log=print):
             wb.save(temporario)
         wb.close()
         wb = None
-        with _progresso_continuo(log, "Validacao do XLSX temporario"):
-            _validar_salvo(temporario, cabecalhos, modelo, registros, ultima, antiga_ultima)
+        with _progresso_continuo(log, "Conferencia do XLSX temporario"):
+            _validar_arquivo_salvo(temporario)
         shutil.copy2(xlsx_destino, backup)
         os.replace(temporario, xlsx_destino)
         precisa_restaurar = True
-        with _progresso_continuo(log, "Validacao final do XLSX"):
-            _validar_salvo(xlsx_destino, cabecalhos, modelo, registros, ultima, antiga_ultima)
+        with _progresso_continuo(log, "Conferencia final do XLSX"):
+            _validar_arquivo_salvo(xlsx_destino)
         precisa_restaurar = False
         backup.unlink(missing_ok=True)
 

@@ -15,6 +15,7 @@ env/
 # Artefatos da automação
 CREDIAGORA/backups/
 CREDIAGORA/logs/
+CREDIAGORA/logs de vendas/
 CREDIAGORA/erros/
 CREDIAGORA/chrome-profile/
 CREDIAGORA/estado_login.json

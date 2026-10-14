@@ -4,6 +4,15 @@ Automação em Python para atualizar as bases do Crediagora e, em seguida, expor
 
 ## Estrutura
 
+Depois de cada atualizacao do Panorama, o arquivo
+`CREDIAGORA/logs de vendas/DD-MM-AAAA.txt` registra os totais do mes vigente
+exportado, conforme DATA CPC. A secao VENDAS soma `Valor Contrato` e a secao
+RECEITA soma `COMISSAO PREVISTA`. Cada secao informa seu proprio horario de
+atualizacao, quantidade de registros e planilha de destino.
+O resumo e gravado somente depois do XLSX. Reexecutar no mesmo dia substitui
+o total daquela base e preserva a outra secao; nao acumula os totais entre execucoes.
+Os horarios ficam no TXT. A inclusao de uma nova planilha sera configurada separadamente.
+
 - `CREDIAGORA/Script/start.py`: automação principal.
 - `CREDIAGORA/Script/ercard.py`: fase ERCard isolada, com portal web e RemoteApp.
 - `CREDIAGORA/Script/iniciar.bat`: executa a automação no Windows e usa `.venv` automaticamente quando existir.
@@ -12,12 +21,31 @@ Automação em Python para atualizar as bases do Crediagora e, em seguida, expor
 - `CREDIAGORA/Script/diagnostico.bat`: valida configuração sem abrir Chrome.
 - `CREDIAGORA/Script/diagnostico_ercard.bat`: valida apenas a configuração ERCard.
 - `CREDIAGORA/Script/liberar_login.bat`: libera a proteção local após o desbloqueio da conta no portal.
-- `CREDIAGORA/Script/limpar_downloads_crediagora.py`: limpa a pasta de downloads da automação.
+- `CREDIAGORA/Script/gestor.py`: fase Gestor.
+- `CREDIAGORA/Script/indicadores_fpd1.py`: importacao e validacao dos indicadores.
+- `CREDIAGORA/Script/receita_cpc.py`: normalizacao de DATA CPC.
+- `CREDIAGORA/Script/ferramentas/`: utilitarios de manutencao, separados da execucao normal.
+- `CREDIAGORA/Script/testes_manuais/`: testes controlados historicos do ERCard; nao sao executados pelo fluxo principal.
+- `tests/`: testes automatizados offline, sem exportacoes reais.
 - `CREDIAGORA/backups/`: backups gerados antes de atualizar planilhas.
 - `CREDIAGORA/logs/`: logs de execução.
 - `CREDIAGORA/erros/`: prints e HTML salvos em falhas.
 
 ## Instalação
+
+Os comandos de inicio continuam nos mesmos caminhos. Para conferir o codigo sem
+abrir os sistemas nem alterar planilhas reais, execute na raiz do projeto:
+
+```powershell
+python -m unittest discover -s tests
+```
+
+A ferramenta de limpeza foi movida. Para apenas listar os arquivos candidatos,
+sem excluir downloads:
+
+```powershell
+python .\CREDIAGORA\Script\ferramentas\limpar_downloads_crediagora.py --check
+```
 
 ```powershell
 cd "C:\Users\CREDIAGORA\Desktop\Automacoes\crediagora"
