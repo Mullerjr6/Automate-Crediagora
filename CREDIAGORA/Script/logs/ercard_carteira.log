@@ -1,0 +1,189 @@
+[15/10/2026 15:47:03] ========== INICIO FLUXO ERCard - RELATORIOS ==========
+[15/10/2026 15:47:03] Pasta de destino: C:\Users\CREDIAGORA\Desktop\ATT manhã
+[15/10/2026 15:47:03] [ERCard][INICIO] Relatório Gerencial - Carteira
+[15/10/2026 15:47:03] [ERCard][DOWNLOAD] Solicitação iniciada: Relatório Gerencial - Carteira
+[15/10/2026 15:47:05] Travas antigas do perfil removidas: 1.
+[15/10/2026 15:47:07] [ERCARD] Iniciando fase ERCard...
+[15/10/2026 15:47:07] [ERCARD] Abrindo portal...
+[15/10/2026 15:47:08] [ERCARD] Janelas remotas já abertas e ignoradas: 0.
+[15/10/2026 15:47:08] [ERCARD] Verificando autenticação...
+[15/10/2026 15:47:08] [ERCARD] Botão Entrar clicado.
+[15/10/2026 15:47:09] [ERCARD] Nova aba da comunicação detectada e selecionada.
+[15/10/2026 15:47:09] [ERCARD] Login 1 realizado.
+[15/10/2026 15:47:09] [ERCARD] Conexão sendo estabelecida...
+[15/10/2026 15:47:09] [ERCARD] Se o navegador solicitar confirmação, clique em Abrir. Aguardando o ambiente ficar pronto...
+[15/10/2026 15:47:13] [ERCARD] Ambiente remoto carregado no navegador.
+[15/10/2026 15:47:15] [ERCARD] Janela ER Card movida e maximizada no monitor principal.
+[15/10/2026 15:47:15] [ERCARD] Selecionando ambiente CrediAgora...
+[15/10/2026 15:47:19] [ERCARD] Aguardando a tela de Ambiente CrediAgora terminar de carregar...
+[15/10/2026 15:47:21] [ERCARD] Clique enviado para CrediAgora no canvas.
+[15/10/2026 15:47:22] [ERCARD] Abertura de CrediAgora confirmada por mudança da tela.
+[15/10/2026 15:47:22] [ERCARD] Abrindo ER Cartão CrediAgora...
+[15/10/2026 15:47:26] [ERCARD] Aguardando a tela de Módulo ER Cartão CrediAgora terminar de carregar...
+[15/10/2026 15:47:28] [ERCARD] Duplo clique enviado para ER Cartão CrediAgora no canvas.
+[15/10/2026 15:47:29] [ERCARD] Abertura de ER Cartão CrediAgora confirmada por mudança da tela.
+[15/10/2026 15:47:29] [ERCARD] Aguardando Login 2 no canvas...
+[15/10/2026 15:47:29] [ERCARD] Preenchendo usuário do Login 2...
+[15/10/2026 15:47:31] [ERCARD] Preenchendo senha do Login 2...
+Traceback (most recent call last):
+  File "C:\Users\CREDIAGORA\AppData\Local\Python\pythoncore-3.14-64\Lib\http\client.py", line 1450, in getresponse
+    response.begin()
+    ~~~~~~~~~~~~~~^^
+  File "C:\Users\CREDIAGORA\AppData\Local\Python\pythoncore-3.14-64\Lib\http\client.py", line 336, in begin
+    version, status, reason = self._read_status()
+                              ~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\CREDIAGORA\AppData\Local\Python\pythoncore-3.14-64\Lib\http\client.py", line 297, in _read_status
+    line = str(self.fp.readline(_MAXLINE + 1), "iso-8859-1")
+               ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "C:\Users\CREDIAGORA\AppData\Local\Python\pythoncore-3.14-64\Lib\socket.py", line 725, in readinto
+    return self._sock.recv_into(b)
+           ~~~~~~~~~~~~~~~~~~~~^^^
+ConnectionResetError: [WinError 10054] Foi forçado o cancelamento de uma conexão existente pelo host remoto
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\CREDIAGORA\Desktop\workspace\Automacoes\crediagora\CREDIAGORA\Script\ercard_carteira.py", line 57, in main
+    arquivo = executar_fase_ercard(driver, config, log)
+  File "C:\Users\CREDIAGORA\Desktop\workspace\Automacoes\crediagora\CREDIAGORA\Script\ercard.py", line 1682, in executar_fase_ercard
+    realizar_login_sistema_canvas(driver, config, log)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\CREDIAGORA\Desktop\workspace\Automacoes\crediagora\CREDIAGORA\Script\ercard.py", line 1246, in realizar_login_sistema_canvas
+    preencher_campo(0.825, config.sistema_senha)
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\CREDIAGORA\Desktop\workspace\Automacoes\crediagora\CREDIAGORA\Script\ercard.py", line 1240, in preencher_campo
+    acao.perform()
+    ~~~~~~~~~~~~^^
+  File "C:\Users\CREDIAGORA\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\selenium\webdriver\common\action_chains.py", line 99, in perform
+    self.w3c_actions.perform()
+    ~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\CREDIAGORA\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\selenium\webdriver\common\actions\action_builder.py", line 148, in perform
+    self.driver.execute(Command.W3C_ACTIONS, enc)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\CREDIAGORA\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\selenium\webdriver\remote\webdriver.py", line 447, in execute
+    response = cast(RemoteConnection, self.command_executor).execute(driver_command, params)
+  File "C:\Users\CREDIAGORA\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\selenium\webdriver\remote\remote_connection.py", line 407, in execute
+    return self._request(command_info[0], url, body=data)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\CREDIAGORA\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\selenium\webdriver\remote\remote_connection.py", line 431, in _request
+    response = self._conn.request(method, url, body=body, headers=headers, timeout=self._client_config.timeout)
+  File "C:\Users\CREDIAGORA\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\urllib3\_request_methods.py", line 143, in request
+    return self.request_encode_body(
+           ~~~~~~~~~~~~~~~~~~~~~~~~^
+        method, url, fields=fields, headers=headers, **urlopen_kw
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\CREDIAGORA\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\urllib3\_request_methods.py", line 278, in request_encode_body
+    return self.urlopen(method, url, **extra_kw)
+           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\CREDIAGORA\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\urllib3\poolmanager.py", line 457, in urlopen
+    response = conn.urlopen(method, u.request_uri, **kw)
+  File "C:\Users\CREDIAGORA\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\urllib3\connectionpool.py", line 788, in urlopen
+    response = self._make_request(
+        conn,
+    ...<10 lines>...
+        **response_kw,
+    )
+  File "C:\Users\CREDIAGORA\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\urllib3\connectionpool.py", line 534, in _make_request
+    response = conn.getresponse()
+  File "C:\Users\CREDIAGORA\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\urllib3\connection.py", line 571, in getresponse
+    httplib_response = super().getresponse()
+  File "C:\Users\CREDIAGORA\AppData\Local\Python\pythoncore-3.14-64\Lib\http\client.py", line 1452, in getresponse
+    self.close()
+    ~~~~~~~~~~^^
+  File "C:\Users\CREDIAGORA\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\urllib3\connection.py", line 375, in close
+    def close(self) -> None:
+    
+KeyboardInterrupt
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\CREDIAGORA\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\urllib3\util\connection.py", line 73, in create_connection
+    sock.connect(sa)
+    ~~~~~~~~~~~~^^^^
+ConnectionRefusedError: [WinError 10061] Nenhuma conexão pôde ser feita porque a máquina de destino as recusou ativamente
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\CREDIAGORA\Desktop\workspace\Automacoes\crediagora\CREDIAGORA\Script\ercard_carteira.py", line 78, in <module>
+    raise SystemExit(main())
+                     ~~~~^^
+  File "C:\Users\CREDIAGORA\Desktop\workspace\Automacoes\crediagora\CREDIAGORA\Script\ercard_carteira.py", line 73, in main
+    driver.quit()
+    ~~~~~~~~~~~^^
+  File "C:\Users\CREDIAGORA\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\selenium\webdriver\common\webdriver.py", line 36, in quit
+    super().quit()
+    ~~~~~~~~~~~~^^
+  File "C:\Users\CREDIAGORA\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\selenium\webdriver\remote\webdriver.py", line 574, in quit
+    self.execute(Command.QUIT)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "C:\Users\CREDIAGORA\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\selenium\webdriver\remote\webdriver.py", line 447, in execute
+    response = cast(RemoteConnection, self.command_executor).execute(driver_command, params)
+  File "C:\Users\CREDIAGORA\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\selenium\webdriver\remote\remote_connection.py", line 407, in execute
+    return self._request(command_info[0], url, body=data)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\CREDIAGORA\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\selenium\webdriver\remote\remote_connection.py", line 431, in _request
+    response = self._conn.request(method, url, body=body, headers=headers, timeout=self._client_config.timeout)
+  File "C:\Users\CREDIAGORA\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\urllib3\_request_methods.py", line 135, in request
+    return self.request_encode_url(
+           ~~~~~~~~~~~~~~~~~~~~~~~^
+        method,
+        ^^^^^^^
+    ...<3 lines>...
+        **urlopen_kw,
+        ^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\CREDIAGORA\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\urllib3\_request_methods.py", line 182, in request_encode_url
+    return self.urlopen(method, url, **extra_kw)
+           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\CREDIAGORA\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\urllib3\poolmanager.py", line 457, in urlopen
+    response = conn.urlopen(method, u.request_uri, **kw)
+  File "C:\Users\CREDIAGORA\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\urllib3\connectionpool.py", line 788, in urlopen
+    response = self._make_request(
+        conn,
+    ...<10 lines>...
+        **response_kw,
+    )
+  File "C:\Users\CREDIAGORA\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\urllib3\connectionpool.py", line 493, in _make_request
+    conn.request(
+    ~~~~~~~~~~~~^
+        method,
+        ^^^^^^^
+    ...<6 lines>...
+        enforce_content_length=enforce_content_length,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\CREDIAGORA\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\urllib3\connection.py", line 500, in request
+    self.endheaders()
+    ~~~~~~~~~~~~~~~^^
+  File "C:\Users\CREDIAGORA\AppData\Local\Python\pythoncore-3.14-64\Lib\http\client.py", line 1353, in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\CREDIAGORA\AppData\Local\Python\pythoncore-3.14-64\Lib\http\client.py", line 1113, in _send_output
+    self.send(msg)
+    ~~~~~~~~~^^^^^
+  File "C:\Users\CREDIAGORA\AppData\Local\Python\pythoncore-3.14-64\Lib\http\client.py", line 1057, in send
+    self.connect()
+    ~~~~~~~~~~~~^^
+  File "C:\Users\CREDIAGORA\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\urllib3\connection.py", line 331, in connect
+    self.sock = self._new_conn()
+                ~~~~~~~~~~~~~~^^
+  File "C:\Users\CREDIAGORA\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\urllib3\connection.py", line 204, in _new_conn
+    sock = connection.create_connection(
+        (self._dns_host, self.port),
+    ...<2 lines>...
+        socket_options=self.socket_options,
+    )
+  File "C:\Users\CREDIAGORA\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\urllib3\util\connection.py", line 81, in create_connection
+    sock.close()
+    ~~~~~~~~~~^^
+  File "C:\Users\CREDIAGORA\AppData\Local\Python\pythoncore-3.14-64\Lib\socket.py", line 507, in close
+    def close(self):
+    
+KeyboardInterrupt
+^C

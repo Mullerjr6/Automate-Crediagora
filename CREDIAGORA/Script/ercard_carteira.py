@@ -1,6 +1,7 @@
 """Fluxo separado de relatorios gerenciais do ERCard."""
 
 import time
+import argparse
 from pathlib import Path
 
 import ercard
@@ -14,7 +15,31 @@ CONSULTAS = [
     ("14 - Tabela Contratos", "14 - TABELA CONTRATOS", "Tabela contratos"),
 ]
 
+
+def limpar_pasta_exportacao():
+    """Remove somente CSVs e temporarios criados pelo fluxo ERCard."""
+    PASTA_EXPORTACAO.mkdir(parents=True, exist_ok=True)
+    removidos = 0
+    for arquivo in PASTA_EXPORTACAO.iterdir():
+        if arquivo.is_file() and arquivo.suffix.casefold() in {".csv", ".tmp", ".part"}:
+            arquivo.unlink()
+            removidos += 1
+            log(f"[ERCard][LIMPEZA] Removido: {arquivo.name}")
+    log(f"[ERCard][LIMPEZA] Concluída. Arquivos removidos: {removidos}")
+    return removidos
+
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--limpar-pasta",
+        action="store_true",
+        help="Limpa somente os CSVs exportados da pasta ATT manhã.",
+    )
+    args = parser.parse_args()
+    if args.limpar_pasta:
+        limpar_pasta_exportacao()
+        return 0
+
     inicio_total = time.monotonic()
     PASTA_EXPORTACAO.mkdir(parents=True, exist_ok=True)
     config = criar_configuracao_ercard(PASTA_EXPORTACAO)

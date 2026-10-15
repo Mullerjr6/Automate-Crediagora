@@ -2,9 +2,10 @@
 setlocal
 
 title Crediagora - Automacao
-cd /d "%~dp0"
+set "SCRIPT_DIR=%~dp0.."
+cd /d "%SCRIPT_DIR%"
 
-set "PROJECT_DIR=%~dp0..\.."
+set "PROJECT_DIR=%SCRIPT_DIR%..\.."
 set "VENV_PYTHON=%PROJECT_DIR%\.venv\Scripts\python.exe"
 
 if exist "%VENV_PYTHON%" (
