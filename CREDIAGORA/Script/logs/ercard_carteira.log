@@ -186,4 +186,83 @@ Traceback (most recent call last):
     def close(self):
     
 KeyboardInterrupt
-^C
+^C[15/10/2026 15:59:03] ========== INICIO FLUXO ERCard - RELATORIOS ==========
+[15/10/2026 15:59:03] Pasta de destino: C:\Users\CREDIAGORA\Desktop\ATT manhã
+[15/10/2026 15:59:03] [ERCard][INICIO] Relatório Gerencial - Carteira
+[15/10/2026 15:59:03] [ERCard][DOWNLOAD] Solicitação iniciada: Relatório Gerencial - Carteira
+[15/10/2026 15:59:04] Travas antigas do perfil removidas: 1.
+[15/10/2026 15:59:06] [ERCARD] Iniciando fase ERCard...
+[15/10/2026 15:59:06] [ERCARD] Abrindo portal...
+[15/10/2026 15:59:07] [ERCARD] Janelas remotas já abertas e ignoradas: 0.
+[15/10/2026 15:59:07] [ERCARD] Verificando autenticação...
+[15/10/2026 15:59:07] [ERCARD] Botão Entrar clicado.
+[15/10/2026 15:59:08] [ERCARD] Nova aba da comunicação detectada e selecionada.
+[15/10/2026 15:59:08] [ERCARD] Login 1 realizado.
+[15/10/2026 15:59:08] [ERCARD] Conexão sendo estabelecida...
+[15/10/2026 15:59:08] [ERCARD] Se o navegador solicitar confirmação, clique em Abrir. Aguardando o ambiente ficar pronto...
+[15/10/2026 15:59:12] [ERCARD] Ambiente remoto carregado no navegador.
+[15/10/2026 15:59:14] [ERCARD] Janela ER Card movida e maximizada no monitor principal.
+[15/10/2026 15:59:14] [ERCARD] Selecionando ambiente CrediAgora...
+[15/10/2026 15:59:17] [ERCARD] Aguardando a tela de Ambiente CrediAgora terminar de carregar...
+[15/10/2026 15:59:20] [ERCARD] Clique enviado para CrediAgora no canvas.
+[15/10/2026 15:59:21] [ERCARD] Abertura de CrediAgora confirmada por mudança da tela.
+[15/10/2026 15:59:21] [ERCARD] Abrindo ER Cartão CrediAgora...
+[15/10/2026 15:59:25] [ERCARD] Aguardando a tela de Módulo ER Cartão CrediAgora terminar de carregar...
+[15/10/2026 15:59:26] [ERCARD] Duplo clique enviado para ER Cartão CrediAgora no canvas.
+[15/10/2026 15:59:27] [ERCARD] Abertura de ER Cartão CrediAgora confirmada por mudança da tela.
+[15/10/2026 15:59:27] [ERCARD] Aguardando Login 2 no canvas...
+[15/10/2026 15:59:27] [ERCARD] Preenchendo usuário do Login 2...
+[15/10/2026 15:59:30] [ERCARD] Preenchendo senha do Login 2...
+[15/10/2026 15:59:32] [ERCARD] Login 2 enviado; aguardando a aplicação principal...
+[15/10/2026 15:59:33] [ERCARD] Login 2 concluído no canvas.
+[15/10/2026 15:59:33] [ERCARD] Aguardando a aplicação principal estabilizar...
+[15/10/2026 15:59:35] [ERCARD] Abrindo Consultas > Gerencial no canvas...
+[15/10/2026 15:59:37] [ERCARD] Selecionando RELATORIO GERENCIAL - CARTEIRA no canvas...
+[15/10/2026 15:59:41] [ERCARD] Não foi possível salvar screenshot: Message: invalid session id; For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#invalidsessionidexception
+Stacktrace:
+Symbols not available. Dumping unresolved backtrace:
+	(No symbol) [0x7ff6a6225805]
+	(No symbol) [0x7ff6a6147d50]
+	(No symbol) [0x7ff6a5f644d6]
+	(No symbol) [0x7ff6a5fb0e53]
+	(No symbol) [0x7ff6a5fe92e2]
+	(No symbol) [0x7ff6a5fe30a2]
+	(No symbol) [0x7ff6a5fe2823]
+	(No symbol) [0x7ff6a5f2c8eb]
+	(No symbol) [0x7ff6a5f2cf52]
+	(No symbol) [0x7ff6a5f2d585]
+	(No symbol) [0x7ff6a6648531]
+	(No symbol) [0x7ff6a667430b]
+	(No symbol) [0x7ff6a666823e]
+	(No symbol) [0x7ff6a632523e]
+	(No symbol) [0x7ff6a61557a5]
+	(No symbol) [0x7ff6a5f2bd1a]
+	(No symbol) [0x7ff6a66ce53f]
+	(No symbol) [0x7ffe6434dda7]
+	(No symbol) [0x7ffe6521ee4c]
+
+[15/10/2026 15:59:41] [ERCard][ERRO] Processo interrompido apos 0.6 minutos: [ERCARD][ERRO][fase_ercard] Message: invalid session id: session deleted as the browser has closed the connection
+from disconnected: not connected to DevTools
+  (Session info: chrome=155.0.8059.40); For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#invalidsessionidexception
+Stacktrace:
+Symbols not available. Dumping unresolved backtrace:
+	(No symbol) [0x7ff6a6225805]
+	(No symbol) [0x7ff6a6147d50]
+	(No symbol) [0x7ff6a5f646dd]
+	(No symbol) [0x7ff6a5f50072]
+	(No symbol) [0x7ff6a5f75dc6]
+	(No symbol) [0x7ff6a5ff0d10]
+	(No symbol) [0x7ff6a6014dad]
+	(No symbol) [0x7ff6a5fb1d52]
+	(No symbol) [0x7ff6a5fb2b63]
+	(No symbol) [0x7ff6a6648531]
+	(No symbol) [0x7ff6a667430b]
+	(No symbol) [0x7ff6a666823e]
+	(No symbol) [0x7ff6a632523e]
+	(No symbol) [0x7ff6a61557a5]
+	(No symbol) [0x7ff6a61507e4]
+	(No symbol) [0x7ff6a6150974]
+	(No symbol) [0x7ff6a613b5fc]
+	(No symbol) [0x7ffe6434dda7]
+	(No symbol) [0x7ffe6521ee4c]
+
