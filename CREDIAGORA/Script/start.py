@@ -21,6 +21,12 @@ from openpyxl import load_workbook
 from openpyxl.formula.translate import Translator
 from openpyxl.utils import get_column_letter, range_boundaries
 from receita_cpc import coluna_data_cpc, normalizar_datas_cpc, preparar_linhas_receita
+from retorno_ligacoes import (
+    RetornoLigacoesError,
+    atualizar_retorno_ligacoes,
+    esperar_zip_novo,
+    inventariar_downloads,
+)
 from resumo_vendas import calcular_resumo, salvar_resumo
 from selenium import webdriver
 from selenium.common.exceptions import (
@@ -29,6 +35,7 @@ from selenium.common.exceptions import (
     NoSuchFrameException,
     NoSuchWindowException,
     StaleElementReferenceException,
+    TimeoutException,
 )
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.action_chains import ActionChains
@@ -155,6 +162,8 @@ ATALHO_GESTOR = caminho_env(
 
 # Arquivos finais
 ARQUIVO_FAT_VENDAS = PASTA_TABELA_FAT / "fat_vendas_Teste.xlsx"
+ARQUIVO_RETORNO_LIGACOES = PASTA_TABELA_FAT / "fat_retorno_ligacoes - teste automacao.xlsx"
+DOWNLOADS_PREEXISTENTES = set()
 
 # O script tenta encontrar a receita em alguns caminhos possíveis:
 ARQUIVOS_FAT_RECEITA_POSSIVEIS = [
@@ -490,6 +499,11 @@ def validar_caminhos(exportacao="todas"):
     if exportacao in ("todas", "receita"):
         log(f"fat_receita_gerada encontrado: {ARQUIVO_FAT_RECEITA}")
 
+    if exportacao in ("todas", "retorno-ligacoes"):
+        if not ARQUIVO_RETORNO_LIGACOES.is_file():
+            raise FileNotFoundError(f"Arquivo retorno de ligações não encontrado: {ARQUIVO_RETORNO_LIGACOES}")
+        log(f"Retorno de ligações encontrado: {ARQUIVO_RETORNO_LIGACOES}")
+
 
 def limpar_downloads():
     """
@@ -506,6 +520,8 @@ def limpar_downloads():
     for padrao in PADROES_DOWNLOAD:
         for arquivo in PASTA_DOWNLOAD.glob(padrao):
             try:
+                if arquivo.name in DOWNLOADS_PREEXISTENTES:
+                    continue
                 if arquivo.is_file():
                     arquivo.unlink()
                     apagados += 1
@@ -928,7 +944,7 @@ def esperar_download_novo(pasta, inicio=None, timeout=None):
         for arquivo in pasta.iterdir():
             try:
                 nome = arquivo.name.lower()
-                if arquivo.is_file() and nome.endswith(EXTENSOES_TEMPORARIAS_DOWNLOAD):
+                if arquivo.name not in DOWNLOADS_PREEXISTENTES and arquivo.is_file() and nome.endswith(EXTENSOES_TEMPORARIAS_DOWNLOAD):
                     temporarios.append(arquivo)
             except Exception:
                 logger.debug("Falha capturada em listar_temporarios", exc_info=True)
@@ -957,7 +973,9 @@ def esperar_download_novo(pasta, inicio=None, timeout=None):
 
                 # Aceita arquivos modificados depois do clique.
                 # Como limpamos a pasta antes, também aceitamos qualquer arquivo válido que esteja sozinho na pasta.
-                if arquivo.stat().st_mtime >= inicio or len(list(pasta.glob("*"))) <= 2:
+                if arquivo.name not in DOWNLOADS_PREEXISTENTES and (
+                    arquivo.stat().st_mtime >= inicio or len(list(pasta.glob("*"))) <= 2
+                ):
                     arquivos.append(arquivo)
 
             except Exception:
@@ -1046,6 +1064,9 @@ def criar_backups_iniciais(exportacao="todas"):
 
     if exportacao in ("todas", "receita"):
         arquivos_para_backup.append(("receita_gerada", ARQUIVO_FAT_RECEITA))
+
+    if exportacao in ("todas", "retorno-ligacoes"):
+        arquivos_para_backup.append(("retorno_ligacoes", ARQUIVO_RETORNO_LIGACOES))
 
     for nome, arquivo in arquivos_para_backup:
         arquivo = Path(arquivo)
@@ -3779,6 +3800,96 @@ def processar_receita_gerada(driver):
     return ARQUIVO_FAT_RECEITA
 
 
+def verificar_sessao_retorno(driver):
+    """Detecta somente a tela principal de login, sem vasculhar iframes ocultos."""
+    driver.switch_to.default_content()
+    formularios_login = driver.find_elements(By.CSS_SELECTOR, "#formloginid input[type='password']")
+    if any(campo.is_displayed() for campo in formularios_login):
+        raise RetornoLigacoesError(1, "Sessão do Panorama expirada; execute novamente para autenticar.")
+
+
+def localizar_exportacao_contato_normal(driver, segundos=30):
+    alvo = "gerar arquivo exportacao contato campanha normal"
+
+    def procurar():
+        candidatos = []
+        for elemento in driver.find_elements(
+            By.CSS_SELECTOR, "a, button, input[type='button'], input[type='submit'], [role='button']"
+        ):
+            if not elemento.is_displayed() or not elemento.is_enabled():
+                continue
+            textos = [elemento.text, elemento.get_attribute("value"), elemento.get_attribute("title")]
+            if any(" ".join(normalizar_texto(t or "").lower().split()) == alvo for t in textos):
+                candidatos.append(elemento)
+        if len(candidatos) > 1:
+            raise RetornoLigacoesError(1, "Mais de uma exportação Normal visível; envio cancelado.")
+        return candidatos[0] if candidatos else None
+
+    def buscar(_):
+        verificar_sessao_retorno(driver)
+        driver.switch_to.default_content()
+        return _buscar_contexto_panorama(driver, procurar)
+
+    return WebDriverWait(driver, segundos, ignored_exceptions=(StaleElementReferenceException, NoSuchFrameException)).until(buscar)
+
+
+def processar_retorno_ligacoes(driver):
+    inicio = time.monotonic()
+    download_exclusivo = False
+    log_panorama("RETORNO LIGACOES", "[ETAPA 1] Abrindo início > Exportações > contato campanha Normal.")
+    try:
+        try:
+            elemento = localizar_exportacao_contato_normal(driver, segundos=5)
+        except TimeoutException:
+            driver.switch_to.default_content()
+            inicio_portal = esperar(driver, 30).until(EC.element_to_be_clickable((
+                By.CSS_SELECTOR, "a[target='frmConteudo'][href='login.do?action=inicial']"
+            )))
+            inicio_portal.click()
+            elemento = localizar_exportacao_contato_normal(driver)
+        if elemento is None:
+            raise RetornoLigacoesError(1, "Exportação Normal não localizada.")
+        log_panorama("RETORNO LIGACOES", "[ETAPA 1] Exportação Normal localizada.")
+        # O modo allow do Chrome headless sobrescreve nomes iguais. UUID evita essa colisão.
+        driver.execute_cdp_cmd("Browser.setDownloadBehavior", {
+            "behavior": "allowAndName", "downloadPath": str(PASTA_DOWNLOAD),
+        })
+        download_exclusivo = True
+        anteriores = inventariar_downloads(PASTA_DOWNLOAD)
+        driver.execute_script("arguments[0].scrollIntoView({block:'center'});", elemento)
+        # Não repetir o clique se a resposta alterar o DOM ou a conexão falhar.
+        elemento.click()
+        log_panorama("RETORNO LIGACOES", "[ETAPA 1] Download solicitado uma única vez.")
+        with acompanhar_operacao("[PANORAMA][RETORNO LIGACOES][ETAPA 2] Aguardando ZIP", intervalo=10):
+            arquivo_zip = esperar_zip_novo(
+                PASTA_DOWNLOAD, anteriores, TIMEOUT_DOWNLOAD,
+                verificar_sessao=lambda: verificar_sessao_retorno(driver),
+            )
+        if arquivo_zip.suffix.lower() != ".zip":
+            arquivo_zip = arquivo_zip.rename(arquivo_zip.with_name(f"contato-normal-{arquivo_zip.name}.zip"))
+        log_panorama("RETORNO LIGACOES", f"[ETAPA 2] Download concluído: {arquivo_zip.name}")
+        with acompanhar_operacao("[PANORAMA][RETORNO LIGACOES] Atualizando Excel", intervalo=10):
+            resultado = atualizar_retorno_ligacoes(
+                arquivo_zip, ARQUIVO_RETORNO_LIGACOES, log,
+                aguardar_arquivo=esperar_arquivo_excel_liberar,
+            )
+    except Exception as erro:
+        salvar_diagnostico_erro(driver, "erro_retorno_ligacoes")
+        if isinstance(erro, RetornoLigacoesError):
+            raise
+        raise RetornoLigacoesError(1, f"Falha ao solicitar ou acompanhar exportação: {erro}") from erro
+    finally:
+        if download_exclusivo:
+            try:
+                driver.execute_cdp_cmd("Browser.setDownloadBehavior", {
+                    "behavior": "allow", "downloadPath": str(PASTA_DOWNLOAD),
+                })
+            except Exception:
+                logger.debug("Falha ao restaurar configuração de download do Chrome", exc_info=True)
+    log_panorama("RETORNO LIGACOES", f"Processo concluído com sucesso em {(time.monotonic() - inicio) / 60:.1f} minutos.")
+    return resultado
+
+
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(
         description="Automação Crediagora: exporta vendas/receita e atualiza as planilhas fat."
@@ -3800,7 +3911,7 @@ def parse_args(argv=None):
     )
     parser.add_argument(
         "--exportacao",
-        choices=["todas", "vendas", "receita"],
+        choices=["todas", "vendas", "receita", "retorno-ligacoes"],
         default="todas",
         help="Escolhe qual base atualizar. Padrão: todas."
     )
@@ -3895,6 +4006,8 @@ def main(argv=None):
 
     try:
         criar_pastas()
+        DOWNLOADS_PREEXISTENTES.clear()
+        DOWNLOADS_PREEXISTENTES.update(inventariar_downloads(PASTA_DOWNLOAD))
         log(
             "======= Iniciando processo de exportação: "
             f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ======="
@@ -3968,7 +4081,8 @@ def main(argv=None):
             else:
                 log("Backups desativados por --sem-backup.")
 
-            entrar_em_vendas_e_emprestimo(driver)
+            if args.exportacao != "retorno-ligacoes":
+                entrar_em_vendas_e_emprestimo(driver)
 
             if args.exportacao in ("todas", "vendas"):
                 arquivos_atualizados.append(processar_exportacao_vendas(driver))
@@ -3978,6 +4092,9 @@ def main(argv=None):
 
             if args.exportacao in ("todas", "receita"):
                 arquivos_atualizados.append(processar_receita_gerada(driver))
+
+            if args.exportacao in ("todas", "retorno-ligacoes"):
+                arquivos_atualizados.append(processar_retorno_ligacoes(driver))
 
             log("Confirmando que os arquivos finais estão liberados para edição...")
             for arquivo in arquivos_atualizados:

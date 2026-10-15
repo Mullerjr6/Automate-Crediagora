@@ -1,0 +1,133 @@
+[15/10/2026 14:14:29] ======= Iniciando processo de exportação: 2026-10-15 14:14:29 =======
+[15/10/2026 14:14:29] Validando caminhos...
+[15/10/2026 14:14:29] Retorno de ligações encontrado: C:\Users\CREDIAGORA\TJI PROMOTORA DE VENDAS EIRELI\Crediagora-doc - dados\tabela fat\fat_retorno_ligacoes - teste automacao.xlsx
+[15/10/2026 14:14:29] Resumo da configuração:
+[15/10/2026 14:14:29] - Exportação: retorno-ligacoes
+[15/10/2026 14:14:29] - URL: https://crediagora.panoramaemprestimos.com.br/login.do?action=sistema
+[15/10/2026 14:14:29] - Usuário: junior.muller
+[15/10/2026 14:14:29] - Origem das credenciais: usuário=perfil do Windows; senha=perfil do Windows
+[15/10/2026 14:14:29] - Senha carregada: sim (comprimento: 9)
+[15/10/2026 14:14:29] - Downloads: C:\Users\CREDIAGORA\Downloads\crediagora
+[15/10/2026 14:14:29] - Tabela fat: C:\Users\CREDIAGORA\TJI PROMOTORA DE VENDAS EIRELI\Crediagora-doc - dados\tabela fat
+[15/10/2026 14:14:29] - Backups/logs/erros: C:\Users\CREDIAGORA\Desktop\workspace\Automacoes\crediagora\CREDIAGORA
+[15/10/2026 14:14:29] - Perfil persistente do Chrome: C:\Users\CREDIAGORA\Desktop\workspace\Automacoes\crediagora\CREDIAGORA\chrome-profile
+[15/10/2026 14:14:29] - Timeout download: 300s
+[15/10/2026 14:14:29] - Timeout Excel: 120s
+[15/10/2026 14:14:29] - Chrome headless: sim
+[15/10/2026 14:14:29] - Manter navegador ao final: não
+[15/10/2026 14:14:29] - Manter downloads ao final: não
+[15/10/2026 14:14:29] - Criar backup antes de atualizar: sim
+[15/10/2026 14:14:31] Chrome antigo da automação encerrado: 9 processo(s).
+[15/10/2026 14:14:33] Travas antigas do perfil removidas: 1.
+[15/10/2026 14:14:35] Abrindo site...
+[15/10/2026 14:14:37] Sessão válida encontrada no perfil persistente; novo login dispensado.
+[15/10/2026 14:14:37] Criando backups dos arquivos atuais antes da atualização...
+[15/10/2026 14:14:37] Arquivo liberado para edição: C:\Users\CREDIAGORA\TJI PROMOTORA DE VENDAS EIRELI\Crediagora-doc - dados\tabela fat\fat_retorno_ligacoes - teste automacao.xlsx
+[15/10/2026 14:14:37] Backup criado: C:\Users\CREDIAGORA\Desktop\workspace\Automacoes\crediagora\CREDIAGORA\backups\fat_retorno_ligacoes - teste automacao_backup_retorno_ligacoes_2026-10-15_14-14-37.xlsx
+[15/10/2026 14:14:37] Backups dos arquivos selecionados criados com sucesso.
+[15/10/2026 14:14:37] [PANORAMA][RETORNO LIGACOES] [ETAPA 1] Abrindo início > Exportações > contato campanha Normal.
+[15/10/2026 14:14:40] [PANORAMA][RETORNO LIGACOES] [ETAPA 1] Exportação Normal localizada.
+[15/10/2026 14:14:43] [PANORAMA][RETORNO LIGACOES] [ETAPA 1] Download solicitado uma única vez.
+[15/10/2026 14:14:43] [PANORAMA][RETORNO LIGACOES][ETAPA 2] Aguardando ZIP...
+[15/10/2026 14:14:44] [PANORAMA][RETORNO LIGACOES][ETAPA 2] Aguardando ZIP concluído em 1.6s.
+[15/10/2026 14:14:44] [PANORAMA][RETORNO LIGACOES] [ETAPA 2] Download concluído: contato-normal-c4fa977d-c90f-46ce-86ca-36cd7a2b607a.zip
+[15/10/2026 14:14:44] [PANORAMA][RETORNO LIGACOES] Atualizando Excel...
+[15/10/2026 14:14:44] [PANORAMA][RETORNO LIGACOES][ETAPA 3] Lendo dados do CSV...
+[15/10/2026 14:14:44] [PANORAMA][RETORNO LIGACOES][ETAPA 2] CSV identificado: 105146-1792084481365.csv.
+[15/10/2026 14:14:44] [PANORAMA][RETORNO LIGACOES][ETAPA 3] Aviso: o CSV original contÃ©m 2 caracteres de substituiÃ§Ã£o; conteÃºdo preservado sem tentar corrigir nomes.
+[15/10/2026 14:14:44] [PANORAMA][RETORNO LIGACOES][ETAPA 3] CodificaÃ§Ã£o=utf-8-sig; delimitador=';'; colunas=9; registros=11488.
+[15/10/2026 14:14:44] Arquivo liberado para edição: C:\Users\CREDIAGORA\TJI PROMOTORA DE VENDAS EIRELI\Crediagora-doc - dados\tabela fat\fat_retorno_ligacoes - teste automacao.xlsx
+[15/10/2026 14:14:44] [PANORAMA][RETORNO LIGACOES][ETAPA 4] Abrindo Excel e identificando a aba pelos cabeÃ§alhos...
+[15/10/2026 14:14:48] [PANORAMA][RETORNO LIGACOES][ETAPA 3] Status normalizados pela aba validador: 7170.
+[15/10/2026 14:14:48] [PANORAMA][RETORNO LIGACOES][ETAPA 3] Coluna E mantida como data do Excel para as fÃ³rmulas YEAR/MONTH; demais campos preservados como texto.
+[15/10/2026 14:14:48] [PANORAMA][RETORNO LIGACOES][ETAPA 4] Aba de destino: Base; Ãºltima linha anterior: 11472.
+[15/10/2026 14:14:48] [PANORAMA][RETORNO LIGACOES][ETAPA 5] Substituindo valores antigos de A:I e removendo excedentes de J:L...
+[15/10/2026 14:14:49] [PANORAMA][RETORNO LIGACOES][ETAPA 5] Novos registros inseridos: 11488.
+[15/10/2026 14:14:50] [PANORAMA][RETORNO LIGACOES][ETAPA 6] FÃ³rmulas originais preenchidas em J2:L11489.
+[15/10/2026 14:14:50] [PANORAMA][RETORNO LIGACOES][ETAPA 7] Salvando arquivo temporÃ¡rio e conferindo todos os registros e fÃ³rmulas...
+[15/10/2026 14:14:54] [PANORAMA][RETORNO LIGACOES] Atualizando Excel em andamento... 10s decorridos.
+[15/10/2026 14:15:01] Arquivo liberado para edição: C:\Users\CREDIAGORA\TJI PROMOTORA DE VENDAS EIRELI\Crediagora-doc - dados\tabela fat\fat_retorno_ligacoes - teste automacao.xlsx
+[15/10/2026 14:15:01] [PANORAMA][RETORNO LIGACOES][ETAPA 7] Excel validado e salvo no caminho original. Registros=11488; Ãºltima linha=11489.
+[15/10/2026 14:15:01] [PANORAMA][RETORNO LIGACOES] Atualizando Excel concluído em 16.5s.
+[15/10/2026 14:15:01] [PANORAMA][RETORNO LIGACOES] Processo concluído com sucesso em 0.4 minutos.
+[15/10/2026 14:15:01] Confirmando que os arquivos finais estão liberados para edição...
+[15/10/2026 14:15:01] Arquivo liberado para edição: C:\Users\CREDIAGORA\TJI PROMOTORA DE VENDAS EIRELI\Crediagora-doc - dados\tabela fat\fat_retorno_ligacoes - teste automacao.xlsx
+[15/10/2026 14:15:01] Arquivos atualizados e liberados:
+[15/10/2026 14:15:01] - C:\Users\CREDIAGORA\TJI PROMOTORA DE VENDAS EIRELI\Crediagora-doc - dados\tabela fat\fat_retorno_ligacoes - teste automacao.xlsx
+[15/10/2026 14:15:01] ========== PROCESSO FINALIZADO COM SUCESSO ==========
+[15/10/2026 14:15:01] Opção de saída não encontrada; o navegador será fechado normalmente.
+[15/10/2026 14:15:01] Fechando navegador...
+[15/10/2026 14:15:03] Limpando arquivos baixados...
+[15/10/2026 14:15:03] Limpando pasta de downloads...
+[15/10/2026 14:15:03] Arquivo removido: contato-normal-c4fa977d-c90f-46ce-86ca-36cd7a2b607a.zip
+[15/10/2026 14:15:03] Limpeza concluída. Arquivos apagados: 1
+[15/10/2026 14:15:03] Limpando recursos finais da automação...
+[15/10/2026 14:15:05] ======= Processo de exportação finalizado: 2026-10-15 14:15:05 =======
+[15/10/2026 14:15:05] ====== O processo de exportação foi concluído em 0.6 minutos.======
+Log da execução salvo em: C:\Users\CREDIAGORA\Desktop\workspace\Automacoes\crediagora\CREDIAGORA\logs\log_automacao_crediagora_sucesso_2026-10-15_14-15-05.txt
+[15/10/2026 14:17:03] ======= Iniciando processo de exportação: 2026-10-15 14:17:03 =======
+[15/10/2026 14:17:03] Validando caminhos...
+[15/10/2026 14:17:03] Retorno de ligações encontrado: C:\Users\CREDIAGORA\TJI PROMOTORA DE VENDAS EIRELI\Crediagora-doc - dados\tabela fat\fat_retorno_ligacoes - teste automacao.xlsx
+[15/10/2026 14:17:03] Resumo da configuração:
+[15/10/2026 14:17:03] - Exportação: retorno-ligacoes
+[15/10/2026 14:17:03] - URL: https://crediagora.panoramaemprestimos.com.br/login.do?action=sistema
+[15/10/2026 14:17:03] - Usuário: junior.muller
+[15/10/2026 14:17:03] - Origem das credenciais: usuário=perfil do Windows; senha=perfil do Windows
+[15/10/2026 14:17:03] - Senha carregada: sim (comprimento: 9)
+[15/10/2026 14:17:03] - Downloads: C:\Users\CREDIAGORA\Downloads\crediagora
+[15/10/2026 14:17:03] - Tabela fat: C:\Users\CREDIAGORA\TJI PROMOTORA DE VENDAS EIRELI\Crediagora-doc - dados\tabela fat
+[15/10/2026 14:17:03] - Backups/logs/erros: C:\Users\CREDIAGORA\Desktop\workspace\Automacoes\crediagora\CREDIAGORA
+[15/10/2026 14:17:03] - Perfil persistente do Chrome: C:\Users\CREDIAGORA\Desktop\workspace\Automacoes\crediagora\CREDIAGORA\chrome-profile
+[15/10/2026 14:17:03] - Timeout download: 300s
+[15/10/2026 14:17:03] - Timeout Excel: 120s
+[15/10/2026 14:17:03] - Chrome headless: sim
+[15/10/2026 14:17:03] - Manter navegador ao final: não
+[15/10/2026 14:17:03] - Manter downloads ao final: não
+[15/10/2026 14:17:03] - Criar backup antes de atualizar: sim
+[15/10/2026 14:17:06] Travas antigas do perfil removidas: 1.
+[15/10/2026 14:17:07] Abrindo site...
+[15/10/2026 14:17:09] Sessão válida encontrada no perfil persistente; novo login dispensado.
+[15/10/2026 14:17:09] Criando backups dos arquivos atuais antes da atualização...
+[15/10/2026 14:17:09] Arquivo liberado para edição: C:\Users\CREDIAGORA\TJI PROMOTORA DE VENDAS EIRELI\Crediagora-doc - dados\tabela fat\fat_retorno_ligacoes - teste automacao.xlsx
+[15/10/2026 14:17:09] Backup criado: C:\Users\CREDIAGORA\Desktop\workspace\Automacoes\crediagora\CREDIAGORA\backups\fat_retorno_ligacoes - teste automacao_backup_retorno_ligacoes_2026-10-15_14-17-09.xlsx
+[15/10/2026 14:17:09] Backups dos arquivos selecionados criados com sucesso.
+[15/10/2026 14:17:09] [PANORAMA][RETORNO LIGACOES] [ETAPA 1] Abrindo início > Exportações > contato campanha Normal.
+[15/10/2026 14:17:12] [PANORAMA][RETORNO LIGACOES] [ETAPA 1] Exportação Normal localizada.
+[15/10/2026 14:17:14] [PANORAMA][RETORNO LIGACOES] [ETAPA 1] Download solicitado uma única vez.
+[15/10/2026 14:17:14] [PANORAMA][RETORNO LIGACOES][ETAPA 2] Aguardando ZIP...
+[15/10/2026 14:17:16] [PANORAMA][RETORNO LIGACOES][ETAPA 2] Aguardando ZIP concluído em 1.6s.
+[15/10/2026 14:17:16] [PANORAMA][RETORNO LIGACOES] [ETAPA 2] Download concluído: contato-normal-6adbb9a6-d8c5-4d42-9ffa-a9f07123d06b.zip
+[15/10/2026 14:17:16] [PANORAMA][RETORNO LIGACOES] Atualizando Excel...
+[15/10/2026 14:17:16] [PANORAMA][RETORNO LIGACOES][ETAPA 3] Lendo dados do CSV...
+[15/10/2026 14:17:16] [PANORAMA][RETORNO LIGACOES][ETAPA 2] CSV identificado: 105146-1792084632687.csv.
+[15/10/2026 14:17:16] [PANORAMA][RETORNO LIGACOES][ETAPA 3] Aviso: o CSV original contÃ©m 2 caracteres de substituiÃ§Ã£o; conteÃºdo preservado sem tentar corrigir nomes.
+[15/10/2026 14:17:16] [PANORAMA][RETORNO LIGACOES][ETAPA 3] CodificaÃ§Ã£o=utf-8-sig; delimitador=';'; colunas=9; registros=11495.
+[15/10/2026 14:17:16] Arquivo liberado para edição: C:\Users\CREDIAGORA\TJI PROMOTORA DE VENDAS EIRELI\Crediagora-doc - dados\tabela fat\fat_retorno_ligacoes - teste automacao.xlsx
+[15/10/2026 14:17:16] [PANORAMA][RETORNO LIGACOES][ETAPA 4] Abrindo Excel e identificando a aba pelos cabeÃ§alhos...
+[15/10/2026 14:17:19] [PANORAMA][RETORNO LIGACOES][ETAPA 3] Status normalizados pela aba validador: 7175.
+[15/10/2026 14:17:19] [PANORAMA][RETORNO LIGACOES][ETAPA 3] Coluna E mantida como data do Excel para as fÃ³rmulas YEAR/MONTH; demais campos preservados como texto.
+[15/10/2026 14:17:19] [PANORAMA][RETORNO LIGACOES][ETAPA 4] Aba de destino: Base; Ãºltima linha anterior: 11489.
+[15/10/2026 14:17:19] [PANORAMA][RETORNO LIGACOES][ETAPA 5] Substituindo valores antigos de A:I e removendo excedentes de J:L...
+[15/10/2026 14:17:20] [PANORAMA][RETORNO LIGACOES][ETAPA 5] Novos registros inseridos: 11495.
+[15/10/2026 14:17:21] [PANORAMA][RETORNO LIGACOES][ETAPA 6] FÃ³rmulas originais preenchidas em J2:L11496.
+[15/10/2026 14:17:21] [PANORAMA][RETORNO LIGACOES][ETAPA 7] Salvando arquivo temporÃ¡rio e conferindo todos os registros e fÃ³rmulas...
+[15/10/2026 14:17:26] [PANORAMA][RETORNO LIGACOES] Atualizando Excel em andamento... 10s decorridos.
+[15/10/2026 14:17:31] Arquivo liberado para edição: C:\Users\CREDIAGORA\TJI PROMOTORA DE VENDAS EIRELI\Crediagora-doc - dados\tabela fat\fat_retorno_ligacoes - teste automacao.xlsx
+[15/10/2026 14:17:31] [PANORAMA][RETORNO LIGACOES][ETAPA 7] Excel validado e salvo no caminho original. Registros=11495; Ãºltima linha=11496.
+[15/10/2026 14:17:31] [PANORAMA][RETORNO LIGACOES] Atualizando Excel concluído em 15.5s.
+[15/10/2026 14:17:31] [PANORAMA][RETORNO LIGACOES] Processo concluído com sucesso em 0.4 minutos.
+[15/10/2026 14:17:31] Confirmando que os arquivos finais estão liberados para edição...
+[15/10/2026 14:17:31] Arquivo liberado para edição: C:\Users\CREDIAGORA\TJI PROMOTORA DE VENDAS EIRELI\Crediagora-doc - dados\tabela fat\fat_retorno_ligacoes - teste automacao.xlsx
+[15/10/2026 14:17:31] Arquivos atualizados e liberados:
+[15/10/2026 14:17:31] - C:\Users\CREDIAGORA\TJI PROMOTORA DE VENDAS EIRELI\Crediagora-doc - dados\tabela fat\fat_retorno_ligacoes - teste automacao.xlsx
+[15/10/2026 14:17:31] ========== PROCESSO FINALIZADO COM SUCESSO ==========
+[15/10/2026 14:17:31] Opção de saída não encontrada; o navegador será fechado normalmente.
+[15/10/2026 14:17:31] Fechando navegador...
+[15/10/2026 14:17:34] Limpando arquivos baixados...
+[15/10/2026 14:17:34] Limpando pasta de downloads...
+[15/10/2026 14:17:34] Arquivo removido: contato-normal-6adbb9a6-d8c5-4d42-9ffa-a9f07123d06b.zip
+[15/10/2026 14:17:34] Limpeza concluída. Arquivos apagados: 1
+[15/10/2026 14:17:34] Limpando recursos finais da automação...
+[15/10/2026 14:17:36] ======= Processo de exportação finalizado: 2026-10-15 14:17:36 =======
+[15/10/2026 14:17:36] ====== O processo de exportação foi concluído em 0.5 minutos.======
+Log da execução salvo em: C:\Users\CREDIAGORA\Desktop\workspace\Automacoes\crediagora\CREDIAGORA\logs\log_automacao_crediagora_sucesso_2026-10-15_14-17-36.txt
