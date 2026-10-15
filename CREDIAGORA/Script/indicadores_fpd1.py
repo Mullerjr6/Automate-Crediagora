@@ -14,23 +14,20 @@ from pathlib import Path
 
 from openpyxl import load_workbook
 from openpyxl.cell.cell import Cell
+from openpyxl.formula.translate import Translator
 from openpyxl.utils import get_column_letter
 
 ABA_DADOS = "Tabela Conta"
 COLUNAS_DADOS = 50
 COLUNA_MODELO_INICIAL = 51
-COLUNA_MODELO_FINAL = 91
+COLUNA_MODELO_FINAL = 90
+COLUNA_FORMULA_LEGADA_FINAL = 91
 COLUNAS_DATA = {
     "DataContabil", "DataEfetivacao", "Nascimento", "PrimeiroVencimento",
     "DataPagamentoPrimeiraParcela",
 }
 COLUNAS_TEXTO = {"Proposta", "Cpf", "Fone01", "Fone02"}
 CABECALHOS_VAZIOS_PERMITIDOS = {23: "Fone01", 24: "Fone02"}
-REFERENCIA_LINHA_MODELO = re.compile(
-    r"(?<![A-Z0-9_])(?P<coluna>\$?[A-Z]{1,3})(?P<absoluta>\$?)(?P<linha>2)(?!\d)"
-)
-
-
 class AtualizacaoIndicadoresError(RuntimeError):
     def __init__(self, etapa, mensagem):
         self.etapa = etapa
@@ -166,26 +163,130 @@ def _validar_cabecalhos(cabecalho_csv, cabecalhos_xlsx):
 
 
 def _traduzir(modelo, origem, destino):
-    """Move referencias relativas da linha-modelo 2 para a linha de destino.
+    """Traduz uma formula como o preenchimento da alca do Excel.
 
-    As formulas AY:CM sao todas copiadas a partir da linha 2. Usar o
-    Translator do openpyxl em cada celula tornava a atualizacao muito lenta.
+    As formulas do modelo possuem referencias externas, intervalos e referencias
+    absolutas. Uma troca textual de numeros de linha nao cobre todos esses casos.
     """
     if isinstance(modelo, str) and modelo.startswith("="):
-        destino_linha = re.search(r"\d+$", destino)
-        if destino_linha is None:
+        try:
+            return Translator(modelo, origin=origem).translate_formula(destino)
+        except Exception as erro:
             raise AtualizacaoIndicadoresError(
-                "Formulas", f"Destino de formula invalido: {destino}"
-            )
-        linha = destino_linha.group()
-
-        def substituir(referencia):
-            if referencia.group("absoluta"):
-                return referencia.group()
-            return f"{referencia.group('coluna')}{linha}"
-
-        return REFERENCIA_LINHA_MODELO.sub(substituir, modelo)
+                "Formulas", f"Nao foi possivel traduzir {origem} para {destino}."
+            ) from erro
     return modelo
+
+
+def reparar_formulas_indicadores_fpd1(xlsx_destino, pasta_backup, log=print):
+    """Reconstroi apenas AY:CL de uma planilha ja atualizada.
+
+    Os dados de A:AX permanecem intactos. A linha 2 e o modelo e cada linha
+    seguinte recebe a traducao equivalente ao preenchimento de formula no Excel.
+    """
+    inicio = time.monotonic()
+    xlsx_destino = Path(xlsx_destino)
+    pasta_backup = Path(pasta_backup)
+    if not xlsx_destino.exists():
+        raise AtualizacaoIndicadoresError("Reparo", f"Destino nao encontrado: {xlsx_destino}")
+
+    wb = None
+    temporario = xlsx_destino.with_name(f".{xlsx_destino.stem}.{uuid.uuid4().hex}.tmp.xlsx")
+    backup = None
+    substituido = False
+    try:
+        with _progresso_continuo(log, "Carregamento do XLSX para reparo"):
+            wb = load_workbook(xlsx_destino, data_only=False, keep_links=True)
+        if ABA_DADOS not in wb.sheetnames:
+            raise AtualizacaoIndicadoresError("Reparo", f"Aba {ABA_DADOS!r} ausente.")
+        ws = wb[ABA_DADOS]
+        ultima = ws.max_row
+        if ultima < 2:
+            raise AtualizacaoIndicadoresError("Reparo", "Planilha sem linha-modelo para formulas.")
+
+        modelo = tuple(
+            ws.cell(2, coluna).value
+            for coluna in range(COLUNA_MODELO_INICIAL, COLUNA_MODELO_FINAL + 1)
+        )
+        formulas = sum(isinstance(valor, str) and valor.startswith("=") for valor in modelo)
+        if not formulas:
+            raise AtualizacaoIndicadoresError("Reparo", "AY2:CL2 sem formulas-modelo.")
+
+        _log(log, f"Recompondo AY:CL da linha 2 ate a linha {ultima}.")
+        with _progresso_continuo(log, "Reconstrucao das formulas"):
+            for linha in range(3, ultima + 1):
+                for coluna, valor in enumerate(modelo, start=COLUNA_MODELO_INICIAL):
+                    destino = f"{get_column_letter(coluna)}{linha}"
+                    celula = ws.cell(linha, coluna)
+                    if not isinstance(celula, Cell):
+                        raise AtualizacaoIndicadoresError(
+                            "Reparo", f"Celula mesclada inesperada em {destino}."
+                        )
+                    celula.value = _traduzir(
+                        valor, f"{get_column_letter(coluna)}2", destino
+                    )
+                if linha % 1000 == 0:
+                    _log(log, f"Reparo de formulas: linha {linha} de {ultima}.")
+
+        # CM era controlada pela automacao antiga. Remove somente formulas
+        # residuais para nao apagar um eventual valor fixo preenchido pelo usuario.
+        for linha in range(2, ultima + 1):
+            celula_legada = ws.cell(linha, COLUNA_FORMULA_LEGADA_FINAL)
+            if not isinstance(celula_legada, Cell):
+                raise AtualizacaoIndicadoresError(
+                    "Reparo", f"Celula mesclada inesperada em {celula_legada.coordinate}."
+                )
+            if isinstance(celula_legada.value, str) and celula_legada.value.startswith("="):
+                celula_legada.value = None
+
+        linhas_amostra = sorted({2, min(3, ultima), (ultima + 2) // 2, ultima})
+        for linha in linhas_amostra:
+            for coluna, valor in enumerate(modelo, start=COLUNA_MODELO_INICIAL):
+                origem = f"{get_column_letter(coluna)}2"
+                destino = f"{get_column_letter(coluna)}{linha}"
+                esperado = _traduzir(valor, origem, destino)
+                if ws.cell(linha, coluna).value != esperado:
+                    raise AtualizacaoIndicadoresError(
+                        "Reparo", f"Formula nao confirmada em {destino}."
+                    )
+
+        wb.calculation.fullCalcOnLoad = True
+        wb.calculation.forceFullCalc = True
+        wb.calculation.calcMode = "auto"
+        with _progresso_continuo(log, "Salvamento do XLSX reparado"):
+            wb.save(temporario)
+        wb.close()
+        wb = None
+        _validar_arquivo_salvo(temporario)
+
+        pasta_backup.mkdir(parents=True, exist_ok=True)
+        backup = pasta_backup / (
+            f"{xlsx_destino.stem}_antes_reparo_formulas_"
+            f"{datetime.now().strftime('%Y%m%d_%H%M%S')}{xlsx_destino.suffix}"
+        )
+        shutil.copy2(xlsx_destino, backup)
+        os.replace(temporario, xlsx_destino)
+        substituido = True
+        _validar_arquivo_salvo(xlsx_destino)
+        substituido = False
+        _log(log, f"Backup preservado: {backup}")
+        _log(log, f"Formulas reparadas: AY2:CL{ultima} ({formulas} formulas-modelo).")
+        _log(log, f"Duracao do reparo: {time.monotonic() - inicio:.1f}s.")
+        return xlsx_destino, backup, ultima, formulas
+    except AtualizacaoIndicadoresError:
+        raise
+    except PermissionError as erro:
+        raise AtualizacaoIndicadoresError(
+            "Reparo", "Planilha em uso no Excel. Feche a planilha TESTE e execute novamente."
+        ) from erro
+    except Exception as erro:
+        raise AtualizacaoIndicadoresError("Reparo", str(erro)) from erro
+    finally:
+        if wb is not None:
+            wb.close()
+        temporario.unlink(missing_ok=True)
+        if substituido and backup is not None and backup.exists():
+            os.replace(backup, xlsx_destino)
 
 
 def _validar_planilha(ws, cabecalhos, modelo, registros, ultima, antiga_ultima):
@@ -268,22 +369,31 @@ def atualizar_indicadores_fpd1(csv_atual, xlsx_destino, log=print):
             )
             _log(log, mensagem)
             raise AtualizacaoIndicadoresError("Quantidade de registros", mensagem)
-        modelo = tuple(ws.cell(2, c).value for c in range(51, 92))
+        modelo = tuple(
+            ws.cell(2, coluna).value
+            for coluna in range(COLUNA_MODELO_INICIAL, COLUNA_MODELO_FINAL + 1)
+        )
         formulas = sum(isinstance(v, str) and v.startswith("=") for v in modelo)
         if not formulas:
-            raise AtualizacaoIndicadoresError("Formulas", "AY2:CM2 sem formulas-modelo.")
+            raise AtualizacaoIndicadoresError("Formulas", "AY2:CL2 sem formulas-modelo.")
         registros = [
             tuple(_converter(v, cabecalhos_efetivos[i]) for i, v in enumerate(linha))
             for linha in linhas_csv
         ]
         ultima = len(registros) + 1
         limite = max(antiga_ultima, ultima)
-        estilos_modelo = [copy(ws.cell(2, c)._style) for c in range(1, 92)]
+        estilos_modelo = [
+            copy(ws.cell(2, coluna)._style)
+            for coluna in range(1, COLUNA_MODELO_FINAL + 1)
+        ]
 
         _log(log, f"Removendo base anterior ate a linha {limite}.")
         coordenadas_antigas = [
             coordenada for coordenada in ws._cells
-            if coordenada[0] >= 2 and coordenada[1] <= COLUNA_MODELO_FINAL
+            if (
+                coordenada[0] >= 2
+                and coordenada[1] <= COLUNA_FORMULA_LEGADA_FINAL
+            )
         ]
         for coordenada in coordenadas_antigas:
             del ws._cells[coordenada]
@@ -297,7 +407,7 @@ def atualizar_indicadores_fpd1(csv_atual, xlsx_destino, log=print):
                     celula._style = copy(estilos_modelo[coluna - 1])
                 if isinstance(valor, datetime):
                     celula.number_format = "dd/mm/yyyy"
-            for coluna, valor in enumerate(modelo, start=51):
+            for coluna, valor in enumerate(modelo, start=COLUNA_MODELO_INICIAL):
                 celula = ws.cell(numero_linha, coluna)
                 if not isinstance(celula, Cell):
                     raise AtualizacaoIndicadoresError(
@@ -330,12 +440,12 @@ def atualizar_indicadores_fpd1(csv_atual, xlsx_destino, log=print):
 
         resultado = ResultadoAtualizacaoIndicadores(
             csv_atual, xlsx_destino, len(linhas_csv) + 1, len(registros), 2,
-            ultima, 50, 41, formulas,
+            ultima, 50, len(modelo), formulas,
         )
         _log(log, f"Registros importados: {len(registros)}.")
         _log(log, f"Ultima linha escrita: {ultima}.")
         _log(log, "Colunas importadas: 50 (A:AX).")
-        _log(log, f"Colunas-modelo: 41 (AY:CM); formulas-modelo: {formulas}.")
+        _log(log, f"Colunas-modelo: {len(modelo)} (AY:CL); formulas-modelo: {formulas}.")
         primeira_formula = next(v for v in modelo if isinstance(v, str) and v.startswith("="))
         _log(log, f"Primeira formula: {primeira_formula}")
         _log(log, f"Ultima linha com formulas: {ultima}.")

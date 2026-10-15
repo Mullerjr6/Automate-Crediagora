@@ -260,6 +260,19 @@ class ReceitaTests(unittest.TestCase):
             start.processar_exportacao_vendas(object())
         self.assertTrue(copiar.call_args.kwargs["normalizar_cpc"])
 
+    def test_fluxo_receita_aplica_formulas_ate_aa(self):
+        import start
+
+        with patch.object(start, "baixar_exportacao", return_value=Path("receita.csv")), \
+             patch.object(start, "copiar_dados_excel_origem_para_destino") as copiar, \
+             patch.object(start, "log"):
+            start.processar_receita_gerada(object())
+
+        self.assertEqual(
+            copiar.call_args.kwargs["colunas_formula"], ["W", "X", "Y", "Z", "AA"]
+        )
+        self.assertEqual(copiar.call_args.kwargs["ultima_coluna_total"], "AA")
+
     def test_mudanca_real_durante_correcao_nao_e_sobrescrita(self):
         with tempfile.TemporaryDirectory() as pasta:
             arquivo = Path(pasta) / "teste.xlsx"

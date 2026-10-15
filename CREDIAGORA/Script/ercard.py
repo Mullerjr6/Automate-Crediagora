@@ -1222,22 +1222,33 @@ def realizar_login_sistema_canvas(driver, config, log):
 
     x, y, largura, altura, largura_imagem, altura_imagem = painel
     canvas = _canvas_principal(driver)
+
+    def preencher_campo(y_relativo, texto):
+        # A sessão remota precisa receber o foco antes das teclas seguintes.
+        _acao_canvas(
+            driver, canvas, x + int(largura * 0.75),
+            y + int(altura * y_relativo), largura_imagem, altura_imagem,
+        )
+        time.sleep(0.5)
+        ActionChains(driver).key_down(Keys.CONTROL).send_keys("a").key_up(
+            Keys.CONTROL
+        ).perform()
+        time.sleep(0.2)
+        acao = ActionChains(driver)
+        for caractere in texto:
+            acao.send_keys(caractere).pause(0.1)
+        acao.perform()
+        time.sleep(0.5)
+
     log_ercard(log, "Preenchendo usuário do Login 2...")
-    _acao_canvas(
-        driver,
-        canvas,
-        x + int(largura * 0.75),
-        y + int(altura * 0.77),
-        largura_imagem,
-        altura_imagem,
-        config.sistema_usuario,
-    )
+    preencher_campo(0.77, config.sistema_usuario)
     log_ercard(log, "Preenchendo senha do Login 2...")
-    ActionChains(driver).send_keys(Keys.TAB).key_down(Keys.CONTROL).send_keys(
-        "a"
-    ).key_up(Keys.CONTROL).send_keys(config.sistema_senha).send_keys(
-        Keys.ENTER
-    ).perform()
+    preencher_campo(0.825, config.sistema_senha)
+    # Clique explícito em Ok, após o preenchimento, sem depender de Tab/Enter.
+    _acao_canvas(
+        driver, canvas, x + int(largura * 0.40),
+        y + int(altura * 0.94), largura_imagem, altura_imagem,
+    )
     log_ercard(log, "Login 2 enviado; aguardando a aplicação principal...")
 
     fim = time.monotonic() + config.timeout_remoto

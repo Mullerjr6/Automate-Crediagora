@@ -30,6 +30,22 @@ def carregar_start():
 
 
 class StartTests(unittest.TestCase):
+    def test_reparo_indicadores_nao_abre_navegador(self):
+        modulo, _ = carregar_start()
+        resultado = (Path("indicadores.xlsx"), Path("backup.xlsx"), 25, 38)
+        with patch.object(modulo, "criar_pastas"), \
+             patch.object(modulo, "reparar_formulas_indicadores_fpd1", return_value=resultado) as reparar, \
+             patch.object(modulo, "iniciar_chrome") as abrir, \
+             patch.object(modulo, "limpar_downloads"), \
+             patch.object(modulo, "salvar_log_ativacao"), \
+             patch.object(modulo, "log"), \
+             patch.object(modulo.time, "sleep"):
+            self.assertEqual(modulo.main(["--reparar-formulas-indicadores"]), 0)
+        reparar.assert_called_once_with(
+            modulo.ARQUIVO_INDICADORES_FPD1, modulo.PASTA_BACKUP, unittest.mock.ANY
+        )
+        abrir.assert_not_called()
+
     def test_encerramento_sessao_inativa_nao_registra_falha(self):
         for erro in ("sem_janelas", "sessao_invalida", "janela_fechada"):
             with self.subTest(erro=erro):
@@ -534,6 +550,45 @@ class StartTests(unittest.TestCase):
                 modulo.fazer_login(driver)
 
         driver.get.assert_not_called()
+
+    def test_login_aguarda_novo_body_apos_stale_element(self):
+        modulo, _ = carregar_start()
+        driver = unittest.mock.MagicMock()
+        senha = unittest.mock.MagicMock()
+        campo_usuario = unittest.mock.MagicMock()
+        campo_usuario.get_attribute.return_value = modulo.USUARIO
+        campo_senha = unittest.mock.MagicMock()
+        campo_senha.get_attribute.return_value = modulo.SENHA
+        corpo_inicial = unittest.mock.MagicMock()
+        corpo_inicial.text = "Login"
+        corpo_principal = unittest.mock.MagicMock()
+        corpo_principal.text = "Vendas"
+        driver.find_elements.return_value = [senha]
+        driver.find_element.side_effect = [
+            corpo_inicial,
+            modulo.StaleElementReferenceException("pagina atualizada"),
+            corpo_principal,
+        ]
+
+        botao = unittest.mock.MagicMock()
+        teste = self
+
+        class EsperaBotao:
+            def until(self, _condicao):
+                return botao
+
+        class EsperaResultado:
+            def until(self, condicao):
+                teste.assertFalse(condicao(driver))
+                return condicao(driver)
+
+        with patch.object(modulo, "preencher_campo_por_xpath", side_effect=[campo_usuario, campo_senha]), \
+             patch.object(modulo, "clicar_elemento_seguro"), \
+             patch.object(modulo, "salvar_estado_login"), \
+             patch.object(modulo, "esperar", side_effect=[EsperaBotao(), EsperaResultado()]):
+            modulo.fazer_login(driver, preparar_janela=False)
+
+        driver.get.assert_called_once_with(modulo.URL)
 
 
 if __name__ == "__main__":

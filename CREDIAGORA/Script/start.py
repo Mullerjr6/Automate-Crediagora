@@ -16,7 +16,7 @@ from pathlib import Path
 import pandas as pd
 from ercard import ErCardConfig, executar_fase_ercard
 from gestor import GestorConfig, executar_fase_gestor, formatar_brasileiro
-from indicadores_fpd1 import atualizar_indicadores_fpd1
+from indicadores_fpd1 import atualizar_indicadores_fpd1, reparar_formulas_indicadores_fpd1
 from openpyxl import load_workbook
 from openpyxl.formula.translate import Translator
 from openpyxl.utils import get_column_letter, range_boundaries
@@ -183,9 +183,9 @@ ULTIMA_COLUNA_DADOS_VENDAS = "T"
 ULTIMA_COLUNA_TOTAL_VENDAS = "V"
 
 # Receita gerada: dados de A até V; fórmulas em W, X e Y
-COLUNAS_FORMULA_RECEITA = ["W", "X", "Y"]
+COLUNAS_FORMULA_RECEITA = ["W", "X", "Y", "Z", "AA"]
 ULTIMA_COLUNA_DADOS_RECEITA = "V"
-ULTIMA_COLUNA_TOTAL_RECEITA = "Y"
+ULTIMA_COLUNA_TOTAL_RECEITA = "AA"
 
 # O script fica na subpasta Script; por padrão, os artefatos pertencem à pasta CREDIAGORA.
 PASTA_SCRIPT = Path(__file__).resolve().parent
@@ -1181,9 +1181,14 @@ def fazer_login(driver, preparar_janela=True):
     log("Aguardando tela principal...")
 
     def identificar_resultado_login(navegador):
-        texto_pagina = normalizar_texto(
-            navegador.find_element(By.TAG_NAME, "body").text
-        ).lower()
+        try:
+            texto_pagina = normalizar_texto(
+                navegador.find_element(By.TAG_NAME, "body").text
+            ).lower()
+        except StaleElementReferenceException:
+            # O portal recria o documento imediatamente apos o clique. O body
+            # anterior deixa de existir, mas isso nao representa uma falha de login.
+            return False
 
         correspondencia_tentativas = re.search(
             r"tentativas? restantes?\s*(\d+)", texto_pagina
@@ -3744,7 +3749,7 @@ def processar_exportacao_vendas(driver):
 
     log_panorama(
         "VENDAS",
-        f"Processo concluído com sucesso em {time.monotonic() - inicio:.1f}s.",
+        f"====Processo concluído com sucesso em {(time.monotonic() - inicio) / 60:.1f} minutos.====",
     )
     return ARQUIVO_FAT_VENDAS
 
@@ -3769,7 +3774,7 @@ def processar_receita_gerada(driver):
 
     log_panorama(
         "RECEITA",
-        f"Processo concluído com sucesso em {time.monotonic() - inicio:.1f}s.",
+        f"====Processo concluído com sucesso em {(time.monotonic() - inicio) / 60:.1f} minutos.====",
     )
     return ARQUIVO_FAT_RECEITA
 
@@ -3840,16 +3845,35 @@ def parse_args(argv=None):
         action="store_true",
         help="Executa somente a Fase 3 do Gestor ERP."
     )
+    parser.add_argument(
+        "--reparar-formulas-indicadores",
+        action="store_true",
+        help=(
+            "Reconstroi somente as formulas AY:CL da planilha TESTE de indicadores, "
+            "sem abrir navegador nem executar exportacoes."
+        ),
+    )
     args = parser.parse_args(argv)
     if args.somente_gestor and (args.somente_ercard or args.sem_gestor):
         parser.error("--somente-gestor nao pode ser combinado com --somente-ercard/--sem-gestor")
     if args.somente_gestor and args.check_login:
         parser.error("--somente-gestor nao pode ser combinado com --check-login")
+    if args.reparar_formulas_indicadores and any((
+        args.check,
+        args.check_login,
+        args.liberar_bloqueio_login,
+        args.somente_ercard,
+        args.sem_ercard,
+        args.somente_gestor,
+        args.sem_gestor,
+    )):
+        parser.error("--reparar-formulas-indicadores deve ser executado sozinho")
     return args
 
 
 def main(argv=None):
     args = parse_args(argv)
+    inicio = time.monotonic()
     driver = None
     status_log = "erro"
     headless = MODO_HEADLESS or args.headless
@@ -3879,6 +3903,19 @@ def main(argv=None):
             liberar_bloqueio_local_login()
             log("Proteção local de login liberada. Nenhuma autenticação foi realizada.")
             status_log = "check"
+            return 0
+
+        if args.reparar_formulas_indicadores:
+            arquivo, backup, ultima_linha, formulas = reparar_formulas_indicadores_fpd1(
+                ARQUIVO_INDICADORES_FPD1,
+                PASTA_BACKUP,
+                log,
+            )
+            log(f"Indicadores reparados={arquivo}")
+            log(f"Backup antes do reparo={backup}")
+            log(f"Formulas reconstituidas=AY2:CL{ultima_linha}; modelo={formulas}")
+            log("========== REPARO DAS FORMULAS CONCLUIDO COM SUCESSO ==========")
+            status_log = "reparo_indicadores"
             return 0
 
         if executar_crediagora:
@@ -3951,7 +3988,10 @@ def main(argv=None):
                 log(f"- {arquivo}")
 
         if executar_ercard:
+            inicio_ercard = time.monotonic()
             csv_contratos = executar_fase_ercard(driver, config_ercard, log)
+            log(f"====[ERCARD] Etapa concluída em {(time.monotonic() - inicio_ercard) / 60:.1f} minutos.====")
+            inicio_indicadores = time.monotonic()
             resultado_indicadores = atualizar_indicadores_fpd1(
                 csv_contratos,
                 ARQUIVO_INDICADORES_FPD1,
@@ -3964,10 +4004,12 @@ def main(argv=None):
             log(f"Última linha={resultado_indicadores.ultima_linha}")
             log(
                 "Fórmulas preenchidas="
-                f"AY2:CM{resultado_indicadores.ultima_linha}"
+                f"AY2:CL{resultado_indicadores.ultima_linha}"
             )
+            log(f"====[INDICADORES] Etapa concluída em {(time.monotonic() - inicio_indicadores) / 60:.1f} minutos.====")
 
         if executar_gestor:
+            inicio_gestor = time.monotonic()
             resultado_gestor = executar_fase_gestor(config_gestor, log)
             log(f"Data do relatorio Gestor={resultado_gestor.data_relatorio}")
             for loja, valor in resultado_gestor.valores.items():
@@ -3978,6 +4020,7 @@ def main(argv=None):
             )
             log(f"Excel Gestor={resultado_gestor.arquivo_excel}")
             log(f"Screenshot Gestor={resultado_gestor.screenshot}")
+            log(f"====[GESTOR] Etapa concluída em {(time.monotonic() - inicio_gestor) / 60:.1f} minutos.====")
 
         log("========== PROCESSO FINALIZADO COM SUCESSO ==========")
         status_log = "sucesso"
@@ -4009,7 +4052,11 @@ def main(argv=None):
         try:
             if driver is not None:
                 if executar_crediagora and status_log in ("sucesso", "check_login"):
-                    encerrar_sessao_portal(driver)
+                    try:
+                        encerrar_sessao_portal(driver)
+                    except Exception as erro:
+                        logger.debug("Falha ao encerrar a sessão do portal", exc_info=True)
+                        log(f"Falha ao encerrar a sessão do portal: {erro}")
 
                 if not manter_navegador:
                     log("Fechando navegador...")
@@ -4023,7 +4070,7 @@ def main(argv=None):
             log(f"Falha ao finalizar o navegador: {erro}")
 
         try:
-            if status_log in ("check", "check_login"):
+            if status_log in ("check", "check_login", "reparo_indicadores"):
                 log("Diagnóstico encerrado; downloads preservados.")
             elif manter_downloads:
                 log("Arquivos baixados mantidos conforme configuração.")
@@ -4043,6 +4090,8 @@ def main(argv=None):
                 "======= Processo de exportação finalizado: "
                 f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ======="
             )
+            log(f"====== O processo de exportação foi concluído em {(time.monotonic() - inicio) / 60:.1f} minutos.======")
+
         except Exception:
             logger.debug("Falha capturada em main", exc_info=True)
 

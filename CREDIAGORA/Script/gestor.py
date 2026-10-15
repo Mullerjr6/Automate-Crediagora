@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
+from typing import Any
 
 from ctypes import wintypes
 from openpyxl import load_workbook
@@ -30,7 +31,7 @@ def _configurar_dpi_windows():
 
 _configurar_dpi_windows()
 
-from PIL import Image, ImageChops, ImageGrab, ImageOps
+from PIL import Image, ImageChops, ImageGrab, ImageOps, ImageStat
 
 
 LOJAS = ("TUC", "GMI", "DMC", "RGO", "CMI", "CAT", "SPM", "SCR")
@@ -859,32 +860,20 @@ def _data_campo_corresponde(texto, data_esperada):
 def _ler_data_visual_campo(hwnd, x, y):
     _ativar(hwnd)
     time.sleep(0.3)
-    left, top, right, bottom = _retangulo_visivel(hwnd)
-    largura = right - left
-    altura = bottom - top
-    centro_x = left + int(largura * x)
-    centro_y = top + int(altura * y)
-    meia_largura = max(44, int(largura * 0.036))
-    meia_altura = max(13, int(altura * 0.018))
-    imagem = ImageGrab.grab(
-        bbox=(
-            centro_x - meia_largura,
-            centro_y - meia_altura,
-            centro_x + meia_largura,
-            centro_y + meia_altura,
-        ),
-        all_screens=True,
-    )
+    imagem = _capturar_campo_data_canvas(hwnd, x, y)
     cinza = ImageOps.autocontrast(ImageOps.grayscale(imagem))
     # O texto pequeno do RemoteApp pode virar 23/03 no OCR mesmo exibindo 25/09.
     # Preserve os pixels com outro limiar, sem interpolacao, e margem branca.
+    def limiar(pixel: Any, limite: int) -> int:
+        return 255 if pixel > limite else 0
+
     contraste_alternativo = ImageOps.grayscale(imagem).point(
-        lambda pixel: 255 if pixel > 200 else 0
+        lambda pixel: limiar(pixel, 200)
     )
     variantes = (
         imagem.resize((imagem.width * 8, imagem.height * 8), Image.Resampling.LANCZOS),
         cinza.resize((imagem.width * 8, imagem.height * 8), Image.Resampling.LANCZOS),
-        cinza.point(lambda pixel: 255 if pixel > 180 else 0).resize(
+        cinza.point(lambda pixel: limiar(pixel, 180)).resize(
             (imagem.width * 8, imagem.height * 8), Image.Resampling.NEAREST
         ),
         ImageOps.expand(
@@ -911,6 +900,34 @@ def _ler_data_visual_campo(hwnd, x, y):
         finally:
             temporario.unlink(missing_ok=True)
     return " | ".join(textos)
+
+
+def _capturar_campo_data_canvas(hwnd, x, y):
+    left, top, right, bottom = _retangulo_visivel(hwnd)
+    largura = right - left
+    altura = bottom - top
+    centro_x = left + int(largura * x)
+    centro_y = top + int(altura * y)
+    meia_largura = max(44, int(largura * 0.036))
+    meia_altura = max(13, int(altura * 0.018))
+    return ImageGrab.grab(
+        bbox=(
+            centro_x - meia_largura,
+            centro_y - meia_altura,
+            centro_x + meia_largura,
+            centro_y + meia_altura,
+        ),
+        all_screens=True,
+    )
+
+
+def _campo_data_permaneceu_igual(antes, depois, media_maxima=2.0):
+    if antes.size != depois.size:
+        return False
+    diferenca = ImageChops.difference(antes.convert("RGB"), depois.convert("RGB"))
+    if diferenca.getbbox() is None:
+        return True
+    return max(ImageStat.Stat(diferenca).mean) <= media_maxima
 
 
 def _preencher_validar_data_canvas(hwnd, x, y, data, intervalo, nome):
@@ -962,31 +979,38 @@ def _validar_mudanca_visual_campo(antes, depois, nome):
 
 
 def autenticar_comercial(gestor, config, log):
-    anteriores = _estado_janelas()
-    _clicar_modulo_comercial(gestor["hwnd"], log)
-    try:
-        acesso = aguardar_janela(
-            ("controle", "acesso"),
-            min(12, config.timeout_janela),
-            novos_desde=anteriores,
-            etapa="Controle de acesso",
-        )
-    except GestorError:
-        log_gestor(
-            log,
-            "O primeiro clique em Comercial nao gerou janela; repetindo uma vez no mesmo icone.",
-        )
+    hwnd_acesso = None
+    for tentativa in range(1, 3):
+        anteriores = _estado_janelas()
         _clicar_modulo_comercial(gestor["hwnd"], log)
-        acesso = aguardar_janela(
-            ("controle", "acesso"),
-            config.timeout_janela,
-            novos_desde=anteriores,
-            etapa="Controle de acesso",
-        )
-    preparar_janela_gestor(acesso["hwnd"], log)
+        try:
+            acesso = aguardar_janela(
+                ("controle", "acesso"),
+                min(12, config.timeout_janela),
+                novos_desde=anteriores,
+                etapa="Controle de acesso",
+            )
+            preparar_janela_gestor(acesso["hwnd"], log)
+            _aguardar_formulario_acesso_pronto(
+                acesso["hwnd"], config.timeout_janela, log
+            )
+            hwnd_acesso = acesso["hwnd"]
+            break
+        except GestorError:
+            if tentativa == 2:
+                raise
+            log_gestor(
+                log,
+                "A janela inicial de Controle de acesso fechou antes das credenciais; "
+                "repetindo uma unica vez o mesmo icone Comercial.",
+            )
+            time.sleep(1)
 
-    hwnd_acesso = acesso["hwnd"]
-    _aguardar_formulario_acesso_pronto(hwnd_acesso, config.timeout_janela, log)
+    if hwnd_acesso is None:
+        raise GestorError(
+            "Controle de acesso", "Nao foi possivel manter a janela de acesso aberta."
+        )
+
     _preparar_teclado_credenciais(hwnd_acesso, log)
     usuario_antes = _capturar_campo_canvas_acesso(hwnd_acesso, 0.33, 0.38)
     _preencher_campo_canvas_acesso(
@@ -1155,6 +1179,9 @@ def gerar_relatorio_metas(metas, config, log, agora=None):
     inicial_lida = _preencher_validar_data_canvas(
         metas["hwnd"], 0.228, y_periodo, agora, config.intervalo_tecla, "Data inicial"
     )
+    imagem_inicial_confirmada = _capturar_campo_data_canvas(
+        metas["hwnd"], 0.228, y_periodo
+    )
     time.sleep(0.5)
     final_lida = _preencher_validar_data_canvas(
         metas["hwnd"], 0.312, y_periodo, agora, config.intervalo_tecla, "Data final"
@@ -1162,12 +1189,25 @@ def gerar_relatorio_metas(metas, config, log, agora=None):
     # Releia o primeiro campo depois do segundo. Isso detecta o atraso de foco
     # que anteriormente enviava as duas datas para o mesmo controle.
     inicial_revalidada = _ler_data_visual_campo(metas["hwnd"], 0.228, y_periodo)
-    if not _data_campo_corresponde(inicial_revalidada, agora):
+    imagem_inicial_revalidada = _capturar_campo_data_canvas(
+        metas["hwnd"], 0.228, y_periodo
+    )
+    inicial_confirmada_por_ocr = _data_campo_corresponde(inicial_revalidada, agora)
+    inicial_igual_visual = _campo_data_permaneceu_igual(
+        imagem_inicial_confirmada, imagem_inicial_revalidada
+    )
+    if not inicial_confirmada_por_ocr and not inicial_igual_visual:
         raise GestorError(
             "Periodo do relatorio",
             "A Data inicial mudou depois do preenchimento da Data final: "
             f"{inicial_revalidada!r}.",
             hwnd=metas["hwnd"],
+        )
+    if not inicial_confirmada_por_ocr:
+        log_gestor(
+            log,
+            "OCR da Data inicial ficou inconclusivo apos a Data final; "
+            "campo confirmado pela comparacao visual.",
         )
     log_gestor(
         log,
