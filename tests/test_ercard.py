@@ -20,6 +20,30 @@ def carregar_ercard():
 
 
 class ErCardTests(unittest.TestCase):
+    def test_login_canvas_preenche_campos_separados_e_clica_ok(self):
+        modulo = carregar_ercard()
+        driver = unittest.mock.Mock()
+        config = unittest.mock.Mock(
+            timeout_remoto=20, sistema_usuario="teste", sistema_senha="segredo"
+        )
+        canvas = object()
+        painel = (710, 214, 501, 533, 1920, 962)
+        with patch.object(modulo, "_localizar_dialogo_login", side_effect=[painel, None]), \
+             patch.object(modulo, "_canvas_principal", return_value=canvas), \
+             patch.object(modulo, "_acao_canvas") as clicar, \
+             patch.object(modulo, "ActionChains") as acoes, \
+             patch.object(modulo.time, "sleep"):
+            modulo.realizar_login_sistema_canvas(driver, config, lambda _: None)
+
+        self.assertEqual(clicar.call_args_list, [
+            unittest.mock.call(driver, canvas, 1085, 624, 1920, 962),
+            unittest.mock.call(driver, canvas, 1085, 653, 1920, 962),
+            unittest.mock.call(driver, canvas, 910, 715, 1920, 962),
+        ])
+        digitacao = acoes.return_value.send_keys.call_args_list
+        self.assertEqual(digitacao, [unittest.mock.call(c) for c in "testesegredo"])
+        self.assertEqual(acoes.return_value.send_keys.return_value.pause.call_count, len("testesegredo"))
+
     def test_csv_bloqueado_e_retentado_sem_reiniciar_exportacao(self):
         modulo = carregar_ercard()
         with tempfile.TemporaryDirectory() as pasta:

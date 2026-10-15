@@ -1,53 +1,46 @@
-"""Fluxo separado de exportacoes gerenciais do ERCard.
+"""Fluxo separado de relatorios gerenciais do ERCard."""
 
-Executa, na mesma sessao autenticada, Carteira, Tabela Propostas - Credito
-e Tabela Contratos, salvando os CSVs em Desktop\\ATT manha.
-"""
-
+import time
 from pathlib import Path
 
 import ercard
 from ercard import executar_fase_ercard
-from start import (
-    PASTA_AUTOMACAO,
-    criar_configuracao_ercard,
-    iniciar_chrome,
-    log,
-)
-
+from start import criar_configuracao_ercard, iniciar_chrome, log
 
 PASTA_EXPORTACAO = Path.home() / "Desktop" / "ATT manh\u00e3"
 CONSULTAS = [
-    ("RELATORIO GERENCIAL - CARTEIRA", "Relatorio gerencial - carteira", "relatorio gerencial - carteira"),
-    ("06 - TABELA PROPOSTAS - CREDITO", "Tabela propostas - credito", "tabela propostas - credito"),
-    ("14 - TABELA CONTRATOS", "Tabela contratos", "tabela contratos"),
+    ("Relat\u00f3rio Gerencial - Carteira", "RELATORIO GERENCIAL - CARTEIRA", "Relatorio gerencial - carteira"),
+    ("06 - Tabela Propostas - Cr\u00e9dito", "06 - TABELA PROPOSTAS - CREDITO", "Tabela propostas - credito"),
+    ("14 - Tabela Contratos", "14 - TABELA CONTRATOS", "Tabela contratos"),
 ]
 
-
 def main():
+    inicio_total = time.monotonic()
     PASTA_EXPORTACAO.mkdir(parents=True, exist_ok=True)
     config = criar_configuracao_ercard(PASTA_EXPORTACAO)
     driver = None
     try:
-        log("========== INICIO FLUXO ERCARD CARTEIRA ==========")
-        log(f"Pasta de exportacao: {PASTA_EXPORTACAO}")
-        for consulta, prefixo, _ in CONSULTAS:
-            # O ercard.py permanece no fluxo original (consulta 14). Este
-            # processo separado altera apenas a consulta desta execução.
+        log("========== INICIO FLUXO ERCard - RELATORIOS ==========")
+        log(f"Pasta de destino: {PASTA_EXPORTACAO}")
+        for nome_relatorio, consulta, prefixo in CONSULTAS:
+            inicio_relatorio = time.monotonic()
+            log(f"[ERCard][INICIO] {nome_relatorio}")
+            log(f"[ERCard][DOWNLOAD] Solicitação iniciada: {nome_relatorio}")
             ercard.CONSULTA_CONTRATOS = consulta
-            ercard.gerar_nome_tabela_contratos = (
-                lambda agora=None, prefixo=prefixo: f"Tabela contratos - {prefixo} "
-                f"{(agora or __import__('datetime').datetime.now()):%d-%m-%Y %H-%M}.csv"
-            )
+            ercard.gerar_nome_tabela_contratos = (lambda agora=None, prefixo=prefixo: f"Tabela contratos - {prefixo} {(agora or __import__('datetime').datetime.now()):%d-%m-%Y %H-%M}.csv")
             driver = iniciar_chrome(headless=False, manter_navegador=False)
             arquivo = executar_fase_ercard(driver, config, log)
-            log(f"[ERCARD CARTEIRA] {consulta} concluído: {arquivo}")
+            duracao = (time.monotonic() - inicio_relatorio) / 60
+            log(f"[ERCard][IMPORTACAO] Arquivo salvo na pasta de destino: {arquivo}")
+            log(f"[ERCard][FIM] {nome_relatorio} concluido em {duracao:.1f} minutos")
             driver.quit()
             driver = None
-        log("========== FLUXO ERCARD CARTEIRA CONCLUIDO ==========")
+        total = (time.monotonic() - inicio_total) / 60
+        log(f"========== FLUXO ERCard CONCLUIDO EM {total:.1f} MINUTOS ==========")
         return 0
     except Exception as erro:
-        log(f"[ERCARD CARTEIRA][ERRO] {erro}")
+        total = (time.monotonic() - inicio_total) / 60
+        log(f"[ERCard][ERRO] Processo interrompido apos {total:.1f} minutos: {erro}")
         return 1
     finally:
         if driver is not None:
@@ -55,7 +48,6 @@ def main():
                 driver.quit()
             except Exception:
                 pass
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -10,6 +10,7 @@ from unittest.mock import ANY, call, patch
 
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import PatternFill
+from PIL import Image, ImageDraw
 
 
 RAIZ = Path(__file__).resolve().parents[1]
@@ -140,6 +141,47 @@ class GestorTests(unittest.TestCase):
             with self.assertRaisesRegex(self.modulo.GestorError, "nenhum novo clique"):
                 self.modulo._aguardar_empresas_acesso(123, 10)
 
+    def test_controle_de_acesso_transitorio_reabre_comercial_uma_vez(self):
+        config = SimpleNamespace(
+            timeout_janela=20,
+            usuario="JUNIORM",
+            senha="SENHA",
+            intervalo_tecla=0.1,
+        )
+        acesso_primeiro = {"hwnd": 101}
+        acesso_segundo = {"hwnd": 102}
+        local = {"hwnd": 201}
+        with (
+            patch.object(self.modulo, "_estado_janelas", return_value={}),
+            patch.object(self.modulo, "_clicar_modulo_comercial") as clicar_comercial,
+            patch.object(
+                self.modulo,
+                "aguardar_janela",
+                side_effect=[acesso_primeiro, acesso_segundo, local],
+            ),
+            patch.object(self.modulo, "preparar_janela_gestor"),
+            patch.object(
+                self.modulo,
+                "_aguardar_formulario_acesso_pronto",
+                side_effect=[
+                    self.modulo.GestorError("Controle de acesso", "janela fechou"),
+                    None,
+                ],
+            ),
+            patch.object(self.modulo, "_preparar_teclado_credenciais"),
+            patch.object(self.modulo, "_capturar_campo_canvas_acesso", side_effect=["antes", "depois", "antes", "depois"]),
+            patch.object(self.modulo, "_preencher_campo_canvas_acesso"),
+            patch.object(self.modulo, "_validar_mudanca_visual_campo"),
+            patch.object(self.modulo, "_clicar_canvas_acesso"),
+            patch.object(self.modulo, "_aguardar_empresas_acesso", return_value=False),
+            patch.object(self.modulo, "_aguardar_fechar"),
+            patch.object(self.modulo.time, "sleep"),
+        ):
+            resultado = self.modulo.autenticar_comercial({"hwnd": 1}, config, lambda _: None)
+
+        self.assertEqual(resultado, local)
+        self.assertEqual(clicar_comercial.call_count, 3)
+
     def test_diagnostico_modal_usa_captura_sem_ativar_janela(self):
         with tempfile.TemporaryDirectory() as pasta, \
              patch.object(self.modulo, "_janela_existe", return_value=True), \
@@ -216,6 +258,16 @@ class GestorTests(unittest.TestCase):
         self.assertTrue(self.modulo._data_campo_corresponde("211092026", data))
         self.assertTrue(self.modulo._data_campo_corresponde("2110912026", data))
         self.assertFalse(self.modulo._data_campo_corresponde("20/09/2026", data))
+
+    def test_comparacao_visual_do_campo_tolera_ruido_e_detecta_data_alterada(self):
+        antes = Image.new("RGB", (100, 30), "white")
+        igual = antes.copy()
+        igual.putpixel((0, 0), (253, 253, 253))
+        alterado = antes.copy()
+        ImageDraw.Draw(alterado).rectangle((20, 8, 80, 22), fill="black")
+
+        self.assertTrue(self.modulo._campo_data_permaneceu_igual(antes, igual))
+        self.assertFalse(self.modulo._campo_data_permaneceu_igual(antes, alterado))
 
     def test_leitura_data_inclui_contraste_alternativo_sem_trocar_digitos(self):
         from PIL import Image
@@ -319,6 +371,11 @@ class GestorTests(unittest.TestCase):
             ) as preencher,
             patch.object(
                 self.modulo, "_ler_data_visual_campo", return_value="21/09/2026"
+            ),
+            patch.object(
+                self.modulo,
+                "_capturar_campo_data_canvas",
+                return_value=Image.new("RGB", (100, 30), "white"),
             ),
             patch.object(self.modulo, "_estado_janelas", return_value={}),
             patch.object(self.modulo, "_clicar"),

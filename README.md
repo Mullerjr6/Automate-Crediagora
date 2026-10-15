@@ -93,6 +93,43 @@ Como alternativa aos comandos, dê dois cliques em `CREDIAGORA/Script/configurar
 
 ## Uso
 
+### Retorno de ligações (Panorama)
+
+O fluxo padrão inclui Vendas, Receita e Retorno de ligações, nesta ordem, antes
+das fases ERCard/Indicadores e Gestor. Para executar somente a nova base, na pasta `CREDIAGORA/Script`:
+
+```powershell
+python start.py --exportacao retorno-ligacoes --sem-ercard --sem-gestor
+```
+
+Para executar todas as bases do Panorama:
+
+```powershell
+python start.py --sem-ercard --sem-gestor
+```
+
+A nova rotina seleciona exclusivamente `Gerar Arquivo exportacao contato campanha Normal`
+em Exportações na tela inicial. Reutiliza a tela após o login e retorna ao início
+quando necessário depois de Vendas/Receita. O ZIP novo é lido diretamente na pasta de downloads já configurada.
+Arquivos existentes antes da execução são preservados. Downloads desta execução
+são removidos após sucesso, exceto com `--manter-downloads`; em erro são mantidos.
+
+O módulo `retorno_ligacoes.py` substitui A2:I da aba identificada pelos cabeçalhos
+de `fat_retorno_ligacoes - teste automacao.xlsx`, dentro de `CREDIAGORA_TABELA_FAT_DIR`.
+Preserva os campos como texto, inclusive CPF e telefones com zeros iniciais.
+A coluna E (`datacontato` no CSV, `Data_Contrato` no modelo) mantém datas nativas
+do Excel quando o modelo usa formato de data, para preservar o cálculo de AnoMes.
+As fórmulas existentes de J:L são traduzidas até a última linha nova; valores e
+fórmulas excedentes são limpos, preservando estilos, cabeçalhos e outras abas.
+O Excel recalcula as fórmulas ao abrir o arquivo.
+
+O backup segue a pasta e a opção `--sem-backup` existentes. A gravação é feita
+em arquivo temporário no mesmo diretório: todos os registros e fórmulas são
+conferidos depois de reabrir o XLSX, antes da substituição atômica do original.
+ZIP inválido, CSV vazio/inconsistente, cabeçalhos incompatíveis, aba ambígua,
+fórmula ausente ou alteração concorrente interrompem a atualização.
+Cada etapa registra seu andamento e a duração total da nova base em minutos.
+
 Diagnóstico sem login/download:
 
 ```powershell

@@ -30,6 +30,60 @@ def carregar_start():
 
 
 class StartTests(unittest.TestCase):
+    def test_retorno_reutiliza_tela_inicial_e_nao_repete_exportacao_apos_timeout(self):
+        modulo, _ = carregar_start()
+        driver = unittest.mock.MagicMock()
+        elemento = unittest.mock.Mock()
+        with patch.object(modulo, "localizar_exportacao_contato_normal", return_value=elemento), \
+             patch.object(modulo, "inventariar_downloads", return_value={"antigo.zip"}), \
+             patch.object(modulo, "esperar_zip_novo", side_effect=TimeoutError("download pendente")), \
+             patch.object(modulo, "atualizar_retorno_ligacoes") as atualizar, \
+             patch.object(modulo, "salvar_diagnostico_erro"), \
+             patch.object(modulo, "log"):
+            with self.assertRaises(modulo.RetornoLigacoesError):
+                modulo.processar_retorno_ligacoes(driver)
+        elemento.click.assert_called_once()
+        driver.find_element.assert_not_called()
+        atualizar.assert_not_called()
+
+    def test_fluxo_panorama_inclui_retorno_depois_da_receita(self):
+        for opcao, esperado in (("todas", ["vendas", "receita", "retorno"]),
+                                ("retorno-ligacoes", ["retorno"]),
+                                ("vendas", ["vendas"])):
+            with self.subTest(opcao=opcao), contextlib.ExitStack() as pilha:
+                modulo, _ = carregar_start()
+                ordem = []
+                for nome in ("criar_pastas", "validar_configuracao", "validar_caminhos",
+                             "mostrar_resumo_configuracao", "fazer_login", "criar_backups_iniciais",
+                             "entrar_em_vendas_e_emprestimo", "voltar_para_emprestimos",
+                             "esperar_arquivo_excel_liberar", "encerrar_sessao_portal",
+                             "limpar_downloads", "salvar_log_ativacao", "log", "iniciar_chrome"):
+                    pilha.enter_context(patch.object(modulo, nome))
+                pilha.enter_context(patch.object(modulo, "inventariar_downloads", return_value=set()))
+                pilha.enter_context(patch.object(modulo.time, "sleep"))
+                for nome, rotulo in (("processar_exportacao_vendas", "vendas"),
+                                     ("processar_receita_gerada", "receita"),
+                                     ("processar_retorno_ligacoes", "retorno")):
+                    pilha.enter_context(patch.object(modulo, nome, side_effect=lambda _, r=rotulo: (ordem.append(r), Path(r))[1]))
+                self.assertEqual(modulo.main(["--sem-ercard", "--sem-gestor", "--exportacao", opcao]), 0)
+                self.assertEqual(ordem, esperado)
+
+    def test_seletor_contato_normal_ignora_loja_e_aniversariantes(self):
+        modulo, _ = carregar_start()
+        driver = unittest.mock.MagicMock()
+        elementos = []
+        for texto in ("Gerar Arquivo exportacao contato campanha Loja",
+                      "Gerar Arquivo exportacao contato campanha Normal",
+                      "Exportação cliente aniversariantes período"):
+            elemento = unittest.mock.Mock(text=texto)
+            elemento.get_attribute.return_value = ""
+            elementos.append(elemento)
+        driver.find_elements.return_value = elementos
+        with patch.object(modulo, "verificar_sessao_retorno"):
+            self.assertIs(modulo.localizar_exportacao_contato_normal(driver), elementos[1])
+        for elemento in elementos:
+            elemento.click.assert_not_called()
+
     def test_reparo_indicadores_nao_abre_navegador(self):
         modulo, _ = carregar_start()
         resultado = (Path("indicadores.xlsx"), Path("backup.xlsx"), 25, 38)
