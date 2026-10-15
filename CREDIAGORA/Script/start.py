@@ -430,13 +430,13 @@ def validar_configuracao():
     validar_pasta_download_segura()
 
 
-def criar_configuracao_ercard():
+def criar_configuracao_ercard(pasta_exportacao=None):
     return ErCardConfig(
         portal_usuario=ERCARD_PORTAL_USUARIO,
         portal_senha=ERCARD_PORTAL_SENHA,
         sistema_usuario=ERCARD_SISTEMA_USUARIO,
         sistema_senha=ERCARD_SISTEMA_SENHA,
-        pasta_exportacao=PASTA_EXPORTACOES_ERCARD,
+        pasta_exportacao=pasta_exportacao or PASTA_EXPORTACOES_ERCARD,
         pasta_erros=PASTA_ERROS,
         pasta_download=PASTA_DOWNLOAD,
         timeout_normal=ERCARD_TIMEOUT_NORMAL,
@@ -785,7 +785,11 @@ def clicar_elemento_seguro(driver, elemento, descricao="elemento"):
         logger.debug("Falha capturada em clicar_elemento_seguro", exc_info=True)
 
     try:
-        elemento.click()
+        try:
+            elemento.click()
+        except (ElementClickInterceptedException, StaleElementReferenceException):
+            fechar_avisos_exportacao_panorama(driver, aguardar_segundos=0)
+            driver.execute_script("arguments[0].scrollIntoView({block:'center'}); arguments[0].click();", elemento)
     except Exception:
         logger.debug("Falha capturada em clicar_elemento_seguro", exc_info=True)
         driver.execute_script("arguments[0].click();", elemento)
@@ -3839,6 +3843,7 @@ def processar_retorno_ligacoes(driver):
     log_panorama("RETORNO LIGACOES", "[ETAPA 1] Abrindo início > Exportações > contato campanha Normal.")
     try:
         try:
+            fechar_avisos_exportacao_panorama(driver, aguardar_segundos=0)
             elemento = localizar_exportacao_contato_normal(driver, segundos=5)
         except TimeoutException:
             driver.switch_to.default_content()
@@ -3857,8 +3862,12 @@ def processar_retorno_ligacoes(driver):
         download_exclusivo = True
         anteriores = inventariar_downloads(PASTA_DOWNLOAD)
         driver.execute_script("arguments[0].scrollIntoView({block:'center'});", elemento)
-        # Não repetir o clique se a resposta alterar o DOM ou a conexão falhar.
-        elemento.click()
+        try:
+            elemento.click()
+        except (ElementClickInterceptedException, StaleElementReferenceException):
+            fechar_avisos_exportacao_panorama(driver, aguardar_segundos=0)
+            elemento = localizar_exportacao_contato_normal(driver, segundos=10)
+            driver.execute_script("arguments[0].scrollIntoView({block:'center'}); arguments[0].click();", elemento)
         log_panorama("RETORNO LIGACOES", "[ETAPA 1] Download solicitado uma única vez.")
         with acompanhar_operacao("[PANORAMA][RETORNO LIGACOES][ETAPA 2] Aguardando ZIP", intervalo=10):
             arquivo_zip = esperar_zip_novo(
@@ -4000,6 +4009,12 @@ def main(argv=None):
         (args.somente_gestor or (not args.sem_gestor and not args.somente_ercard))
         and not args.check_login
     )
+    if executar_ercard and headless:
+        # O ERCard usa uma janela remota/canvas que nÃ£o funciona no Chrome
+        # headless. Mantemos o modo visÃ­vel automaticamente no processo completo.
+        headless = False
+        log("[CONFIGURAÃ‡ÃƒO] ERCard exige Chrome visÃ­vel; modo headless desativado.")
+        manter_navegador = MANTER_NAVEGADOR or args.manter_navegador
     config_ercard = criar_configuracao_ercard()
     config_gestor = criar_configuracao_gestor()
     LOGS_ATIVACAO.clear()
@@ -4081,6 +4096,12 @@ def main(argv=None):
             else:
                 log("Backups desativados por --sem-backup.")
 
+            # O Retorno de Ligações usa a tela inicial do Panorama. Execute-o
+            # antes das demais exportações para evitar overlays e estados
+            # deixados pelas telas de Vendas/Receita.
+            if args.exportacao in ("todas", "retorno-ligacoes"):
+                arquivos_atualizados.append(processar_retorno_ligacoes(driver))
+
             if args.exportacao != "retorno-ligacoes":
                 entrar_em_vendas_e_emprestimo(driver)
 
@@ -4092,9 +4113,6 @@ def main(argv=None):
 
             if args.exportacao in ("todas", "receita"):
                 arquivos_atualizados.append(processar_receita_gerada(driver))
-
-            if args.exportacao in ("todas", "retorno-ligacoes"):
-                arquivos_atualizados.append(processar_retorno_ligacoes(driver))
 
             log("Confirmando que os arquivos finais estão liberados para edição...")
             for arquivo in arquivos_atualizados:
