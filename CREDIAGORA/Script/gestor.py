@@ -218,11 +218,14 @@ def _enumerar_janelas():
             retangulo = _retangulo_visivel(int(hwnd))
         except Exception:
             return True
+        pid = wintypes.DWORD()
+        user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
         janelas.append(
             {
                 "hwnd": int(hwnd),
                 "titulo": titulo.value,
                 "classe": classe.value,
+                "pid": int(pid.value),
                 "retangulo": retangulo,
             }
         )
@@ -333,6 +336,49 @@ def _fechar_janela_gestor(hwnd, timeout=20):
             f"Nao foi possivel fechar a janela do Gestor de Vendas: {erro}",
             hwnd=hwnd,
         ) from erro
+
+
+def _fechar_todas_janelas_gestor(hwnd_referencia, timeout=20):
+    """Fecha a janela principal e todas as telas filhas do mesmo Gestor."""
+    if not hwnd_referencia:
+        return
+    user32 = ctypes.windll.user32
+    pid = wintypes.DWORD()
+    user32.GetWindowThreadProcessId(hwnd_referencia, ctypes.byref(pid))
+    pid_referencia = int(pid.value)
+    termos_gestor = ("gestor", "absgm", "lctos de metas", "report preview")
+
+    def relacionadas():
+        resultado = []
+        for janela in _enumerar_janelas():
+            titulo = normalizar(janela["titulo"])
+            mesmo_processo = pid_referencia and janela.get("pid") == pid_referencia
+            titulo_gestor = any(termo in titulo for termo in termos_gestor)
+            if mesmo_processo or titulo_gestor:
+                resultado.append(janela["hwnd"])
+        return list(dict.fromkeys(resultado))
+
+    handles = relacionadas()
+    for handle in handles:
+        if _janela_existe(handle):
+            user32.PostMessageW(handle, 0x0010, 0, 0)  # WM_CLOSE
+    fim = time.monotonic() + timeout
+    while time.monotonic() < fim:
+        restantes = [handle for handle in relacionadas() if _janela_existe(handle)]
+        if not restantes:
+            return
+        time.sleep(0.5)
+
+    # Algumas telas remotas não processam WM_CLOSE; força o fechamento delas.
+    for handle in relacionadas():
+        if _janela_existe(handle):
+            user32.PostMessageW(handle, 0x0010, 0, 0)
+    if any(_janela_existe(handle) for handle in relacionadas()):
+        raise GestorError(
+            "Janela",
+            "Nem todas as janelas do Gestor de Vendas foram fechadas.",
+            hwnd=hwnd_referencia,
+        )
 
 
 def _retangulo_contido(retangulo, limite, tolerancia=20):
@@ -1341,7 +1387,10 @@ def capturar_report_preview(preview, config, log):
 
 
 def _executar_ocr(caminho):
-    script = Path(__file__).resolve().with_name("ocr_windows.ps1")
+    raiz_script = Path(__file__).resolve().parent
+    script = raiz_script / "ocr_windows.ps1"
+    if not script.exists():
+        script = raiz_script / "ferramentas" / "ocr_windows.ps1"
     processo = subprocess.run(
         [
             "powershell.exe",
@@ -1825,6 +1874,7 @@ def salvar_diagnostico_gestor(config, etapa, log, hwnd=None):
 def executar_fase_gestor(config, log):
     inicio = time.monotonic()
     preview = None
+    gestor = None
     ultima_janela = None
     config.validar()
     config.pasta_logs.mkdir(parents=True, exist_ok=True)
@@ -1889,26 +1939,20 @@ def executar_fase_gestor(config, log):
         if isinstance(erro, GestorError):
             raise
         raise GestorError(etapa, str(erro)) from erro
-    log_gestor(log, "Fase 3 finalizada.")
-    log_gestor(log, f"Fim da Fase 3: {datetime.now(timezone.utc).strftime('%d/%m/%Y %H:%M:%S')}")
-    log_gestor(log, f"fechar_janela_gestor({gestor['hwnd']})")
-    _fechar_janela_gestor(gestor["hwnd"])
-    if _janela_existe(gestor["hwnd"]):
-        log_gestor(log, "Falha ao fechar a janela do Gestor de Vendas.")
-    else:
-        log_gestor(log, "Janela do Gestor de Vendas fechada com sucesso.")
-        try:
-            _aguardar_fechar(gestor["hwnd"], 15)
-        except GestorError:
-            log_gestor(log, "Falha ao aguardar o fechamento da janela do Gestor de Vendas.")
-            def _forcar_fechar(hwnd):
-                user32 = ctypes.windll.user32
-                user32.PostMessageW(hwnd, 0x0010, 0, 0)
-            _forcar_fechar(gestor["hwnd"])
-            def _aguardar_fechar_forcado(hwnd, timeout=15):
-                fim = time.monotonic() + timeout
-                while time.monotonic() < fim:
-                    if not _janela_existe(hwnd):
-                        return
-                    time.sleep(0.5)
-                raise GestorError("fechar_janela_gestor", "Falha ao forcar o fechamento da janela do Gestor de Vendas.")
+    finally:
+        # O fechamento precisa ficar em ``finally``: o retorno de sucesso
+        # encerra o bloco ``try`` antes de qualquer código colocado depois
+        # do ``except``. Assim a janela do Gestor também é fechada quando a
+        # fase termina normalmente, sem mascarar um erro da automação.
+        log_gestor(log, "Fase 3 finalizada.")
+        log_gestor(log, f"Fim da Fase 3: {datetime.now(timezone.utc).strftime('%d/%m/%Y %H:%M:%S')}")
+        hwnd_gestor = gestor.get("hwnd") if gestor else None
+        if hwnd_gestor:
+            log_gestor(log, f"Fechando janela do Gestor de Vendas (hwnd={hwnd_gestor}).")
+            try:
+                _fechar_todas_janelas_gestor(hwnd_gestor)
+                log_gestor(log, "Todas as janelas do Gestor de Vendas foram fechadas com sucesso.")
+            except Exception as erro_fechar:
+                # O encerramento é uma limpeza; nunca substitui o resultado
+                # da fase nem o erro original.
+                log_gestor(log, f"Falha ao fechar a janela do Gestor de Vendas: {erro_fechar}")

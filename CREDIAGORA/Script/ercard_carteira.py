@@ -8,7 +8,7 @@ from pathlib import Path
 
 import ercard
 from ercard import executar_fase_ercard
-from start import criar_configuracao_ercard, iniciar_chrome, log
+from start import criar_configuracao_ercard, iniciar_chrome, limpar_pagina_para_reinicio, log
 
 PASTA_EXPORTACAO = Path.home() / "Desktop" / "ATT manh\u00e3"
 ESTADO_FLUXO = Path(__file__).resolve().parent / "logs" / "ercard_carteira_estado.json"
@@ -34,14 +34,12 @@ def limpar_pasta_exportacao():
 def main(argv=None):
     parser = argparse.ArgumentParser()
     parser.add_argument("--a-partir", type=int, default=1, choices=(1, 2, 3))
-    args = parser.parse_args(argv)
-    parser = argparse.ArgumentParser()
     parser.add_argument(
         "--limpar-pasta",
         action="store_true",
         help="Limpa somente os CSVs exportados da pasta ATT manhã.",
     )
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     if args.limpar_pasta:
         limpar_pasta_exportacao()
         return 0
@@ -81,6 +79,7 @@ def main(argv=None):
         return 0
     except Exception as erro:
         total = (time.monotonic() - inicio_total) / 60
+        limpar_pagina_para_reinicio(driver, f"ercard-carteira etapa {etapa_atual}")
         log(f"[ERCard][ERRO] Processo interrompido apos {total:.1f} minutos: {erro}")
         ESTADO_FLUXO.write_text(json.dumps({"etapa": etapa_atual, "status": "erro", "erro": str(erro)}, ensure_ascii=False), encoding="utf-8")
         return 1

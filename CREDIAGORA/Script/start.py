@@ -208,6 +208,7 @@ PASTA_LOGS = PASTA_AUTOMACAO / "logs"
 PASTA_RESUMOS_VENDAS = PASTA_SCRIPT.parent / "logs de vendas"
 PASTA_ERROS = PASTA_AUTOMACAO / "erros"
 ARQUIVO_ESTADO_LOGIN = PASTA_AUTOMACAO / "estado_login.json"
+ARQUIVO_ESTADO_PROCESSO = PASTA_LOGS / "processo_estado.json"
 
 # Por padrão, remove arquivos exportados depois do processo. Defina como 1/sim
 # se quiser manter os arquivos baixados para conferência manual.
@@ -257,6 +258,59 @@ def log(msg):
     agora = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
     texto = f"[{agora}] {msg}"
     print(texto)
+
+
+def registrar_estado_processo(etapa, status="executando", erro=None, **dados):
+    """Grava o ponto de retomada antes/depois de cada etapa do processo."""
+    estado = {
+        "etapa": etapa,
+        "status": status,
+        "atualizado_em": datetime.now().astimezone().isoformat(timespec="seconds"),
+        **dados,
+    }
+    if erro:
+        estado["erro"] = str(erro)
+    try:
+        PASTA_LOGS.mkdir(parents=True, exist_ok=True)
+        ARQUIVO_ESTADO_PROCESSO.write_text(
+            json.dumps(estado, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+    except OSError as falha:
+        logger.debug("Falha ao salvar estado do processo: %s", falha, exc_info=True)
+
+
+def ler_estado_processo():
+    try:
+        return json.loads(ARQUIVO_ESTADO_PROCESSO.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def limpar_pagina_para_reinicio(driver, etapa):
+    """Remove avisos, fecha abas secundárias e deixa o navegador encerrável."""
+    if driver is None:
+        return
+    try:
+        fechar_avisos_exportacao_panorama(driver, etapa=f"LIMPEZA {etapa}", limite=3)
+    except Exception:
+        logger.debug("Falha ao fechar avisos da etapa %s", etapa, exc_info=True)
+    try:
+        abas = list(driver.window_handles)
+        if abas:
+            principal = abas[0]
+            for aba in abas[1:]:
+                try:
+                    driver.switch_to.window(aba)
+                    driver.close()
+                except Exception:
+                    logger.debug("Falha ao fechar aba secundária", exc_info=True)
+            try:
+                driver.switch_to.window(principal)
+            except Exception:
+                pass
+        log(f"[RECUPERAÇÃO][{etapa}] Avisos e páginas secundárias fechados.")
+    except Exception:
+        logger.debug("Falha ao limpar páginas da etapa %s", etapa, exc_info=True)
 
     try:
         LOGS_ATIVACAO.append(texto)
@@ -3995,6 +4049,7 @@ def main(argv=None):
     args = parse_args(argv)
     inicio = time.monotonic()
     driver = None
+    etapa_atual = "inicializacao"
     status_log = "erro"
     headless = MODO_HEADLESS or args.headless
     manter_downloads = MANTER_DOWNLOADS or args.manter_downloads
@@ -4053,6 +4108,7 @@ def main(argv=None):
                 config_ercard,
                 somente_ercard=args.somente_ercard,
             )
+
         if executar_gestor:
             config_gestor.validar()
         if executar_crediagora and not args.check_login:
@@ -4100,19 +4156,34 @@ def main(argv=None):
             # antes das demais exportações para evitar overlays e estados
             # deixados pelas telas de Vendas/Receita.
             if args.exportacao in ("todas", "retorno-ligacoes"):
+                etapa_atual = "retorno-ligacoes"
+                registrar_estado_processo(etapa_atual)
                 arquivos_atualizados.append(processar_retorno_ligacoes(driver))
+                registrar_estado_processo(etapa_atual, "concluido")
 
             if args.exportacao != "retorno-ligacoes":
+                etapa_atual = "navegacao-vendas"
+                registrar_estado_processo(etapa_atual)
                 entrar_em_vendas_e_emprestimo(driver)
+                registrar_estado_processo(etapa_atual, "concluido")
 
             if args.exportacao in ("todas", "vendas"):
+                etapa_atual = "vendas"
+                registrar_estado_processo(etapa_atual)
                 arquivos_atualizados.append(processar_exportacao_vendas(driver))
+                registrar_estado_processo(etapa_atual, "concluido")
 
             if args.exportacao == "todas":
+                etapa_atual = "retorno-emprestimos"
+                registrar_estado_processo(etapa_atual)
                 voltar_para_emprestimos(driver)
+                registrar_estado_processo(etapa_atual, "concluido")
 
             if args.exportacao in ("todas", "receita"):
+                etapa_atual = "receita"
+                registrar_estado_processo(etapa_atual)
                 arquivos_atualizados.append(processar_receita_gerada(driver))
+                registrar_estado_processo(etapa_atual, "concluido")
 
             log("Confirmando que os arquivos finais estão liberados para edição...")
             for arquivo in arquivos_atualizados:
@@ -4123,9 +4194,14 @@ def main(argv=None):
                 log(f"- {arquivo}")
 
         if executar_ercard:
+            etapa_atual = "ercard"
+            registrar_estado_processo(etapa_atual)
             inicio_ercard = time.monotonic()
             csv_contratos = executar_fase_ercard(driver, config_ercard, log)
+            registrar_estado_processo(etapa_atual, "concluido", arquivo=str(csv_contratos))
             log(f"====[ERCARD] Etapa concluída em {(time.monotonic() - inicio_ercard) / 60:.1f} minutos.====")
+            etapa_atual = "indicadores"
+            registrar_estado_processo(etapa_atual, arquivo=str(csv_contratos))
             inicio_indicadores = time.monotonic()
             resultado_indicadores = atualizar_indicadores_fpd1(
                 csv_contratos,
@@ -4143,7 +4219,11 @@ def main(argv=None):
             )
             log(f"====[INDICADORES] Etapa concluída em {(time.monotonic() - inicio_indicadores) / 60:.1f} minutos.====")
 
+            registrar_estado_processo(etapa_atual, "concluido")
+
         if executar_gestor:
+            etapa_atual = "gestor"
+            registrar_estado_processo(etapa_atual)
             inicio_gestor = time.monotonic()
             resultado_gestor = executar_fase_gestor(config_gestor, log)
             log(f"Data do relatorio Gestor={resultado_gestor.data_relatorio}")
@@ -4159,6 +4239,7 @@ def main(argv=None):
 
         log("========== PROCESSO FINALIZADO COM SUCESSO ==========")
         status_log = "sucesso"
+        registrar_estado_processo("finalizado", "concluido")
 
     except KeyboardInterrupt:
         status_log = "interrompido"
@@ -4170,6 +4251,10 @@ def main(argv=None):
         logger.debug("Falha capturada em main", exc_info=True)
         log("========== ERRO NO PROCESSO ==========")
         log(str(erro))
+        # Salva o ponto de retomada e limpa a página antes do diagnóstico.
+        registrar_estado_processo(etapa_atual, "erro", erro)
+        limpar_pagina_para_reinicio(driver, etapa_atual)
+        log(f"[RECUPERAÇÃO] Próxima tentativa recomeçará em: {etapa_atual}.")
         if getattr(erro, "preservar_sessao", False) and not headless:
             manter_navegador = True
             log("Exportacao ERCard ainda nao confirmada; navegador e sessao remota mantidos abertos para acompanhamento.")

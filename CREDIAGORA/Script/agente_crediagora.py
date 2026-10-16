@@ -206,6 +206,7 @@ def mostrar_status():
 
 def executar_fluxo(nome, tentativas, config):
     comando = [sys.executable, *FLUXOS[nome]]
+    estado_processo = SCRIPT_DIR / "logs" / "processo_estado.json"
     if nome == "ercard-carteira":
         estado_fluxo = SCRIPT_DIR / "logs" / "ercard_carteira_estado.json"
         if estado_fluxo.exists():
@@ -233,9 +234,21 @@ def executar_fluxo(nome, tentativas, config):
 
     ultimo_codigo = 1
     for tentativa in range(1, tentativas + 1):
+        ponto_retomada = {}
+        if estado_processo.exists():
+            try:
+                ponto_retomada = json.loads(estado_processo.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                ponto_retomada = {}
         base["tentativa"] = tentativa
+        base["etapa_retomada"] = ponto_retomada.get("etapa")
         registrar_estado(base)
-        print(f"[AGENTE] Iniciando {nome}; tentativa {tentativa}/{tentativas}", flush=True)
+        etapa = ponto_retomada.get("etapa", "inicializacao")
+        print(
+            f"[AGENTE] Iniciando {nome}; tentativa {tentativa}/{tentativas}; "
+            f"retomada na etapa {etapa}",
+            flush=True,
+        )
         processo = subprocess.run(comando, cwd=SCRIPT_DIR)
         ultimo_codigo = processo.returncode
         if ultimo_codigo == 0:
