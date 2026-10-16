@@ -196,7 +196,7 @@ def reparar_formulas_indicadores_fpd1(xlsx_destino, pasta_backup, log=print):
     substituido = False
     try:
         with _progresso_continuo(log, "Carregamento do XLSX para reparo"):
-            wb = load_workbook(xlsx_destino, data_only=False, keep_links=True)
+            wb = load_workbook(xlsx_destino, data_only=False, keep_links=False)
         if ABA_DADOS not in wb.sheetnames:
             raise AtualizacaoIndicadoresError("Reparo", f"Aba {ABA_DADOS!r} ausente.")
         ws = wb[ABA_DADOS]
@@ -254,6 +254,8 @@ def reparar_formulas_indicadores_fpd1(xlsx_destino, pasta_backup, log=print):
         wb.calculation.forceFullCalc = True
         wb.calculation.calcMode = "auto"
         with _progresso_continuo(log, "Salvamento do XLSX reparado"):
+            if getattr(wb, "_external_links", None):
+                wb._external_links.clear()
             wb.save(temporario)
         wb.close()
         wb = None
@@ -343,7 +345,7 @@ def atualizar_indicadores_fpd1(csv_atual, xlsx_destino, log=print):
     precisa_restaurar = False
     try:
         with _progresso_continuo(log, "Carregamento do XLSX"):
-            wb = load_workbook(xlsx_destino, data_only=False, keep_links=True)
+            wb = load_workbook(xlsx_destino, data_only=False, keep_links=False)
         if ABA_DADOS not in wb.sheetnames:
             raise AtualizacaoIndicadoresError("XLSX", f"Aba {ABA_DADOS!r} ausente.")
         ws = wb[ABA_DADOS]
@@ -425,6 +427,8 @@ def atualizar_indicadores_fpd1(csv_atual, xlsx_destino, log=print):
         wb.calculation.forceFullCalc = True
         wb.calculation.calcMode = "auto"
         with _progresso_continuo(log, "Salvamento do XLSX temporario"):
+            if getattr(wb, "_external_links", None):
+                wb._external_links.clear()
             wb.save(temporario)
         wb.close()
         wb = None

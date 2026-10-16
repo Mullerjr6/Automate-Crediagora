@@ -1821,7 +1821,7 @@ def validar_excel_metas(arquivo, valores_esperados=None):
     arquivo = Path(arquivo)
     if not arquivo.exists() or arquivo.stat().st_size <= 0:
         raise GestorError("Excel", f"Arquivo invalido: {arquivo}")
-    wb = load_workbook(arquivo, data_only=False, keep_links=True)
+    wb = load_workbook(arquivo, data_only=False, keep_links=False)
     try:
         if "base" not in wb.sheetnames:
             raise GestorError("Excel", "Aba 'base' nao encontrada.")
@@ -1860,13 +1860,16 @@ def atualizar_excel_metas(arquivo, valores, pasta_backup, log=None):
     temporario = arquivo.with_name(f".{arquivo.stem}.gestor-{os.getpid()}.tmp{arquivo.suffix}")
     wb = None
     try:
-        wb = load_workbook(arquivo, data_only=False, keep_links=True)
+        wb = load_workbook(arquivo, data_only=False, keep_links=False)
         if "base" not in wb.sheetnames:
             raise GestorError("Excel", "Aba 'base' nao encontrada.")
         ws = wb["base"]
         _validar_estrutura_excel(ws)
         for loja, linha in LINHAS_EXCEL.items():
             ws[f"C{linha}"] = float(Decimal(str(valores[loja])))
+        external_links = getattr(wb, "_external_links", None)
+        if external_links is not None and hasattr(external_links, "clear"):
+            external_links.clear()
         wb.save(temporario)
         wb.close()
         wb = None

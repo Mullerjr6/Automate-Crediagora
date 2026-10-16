@@ -254,7 +254,7 @@ def atualizar_retorno_ligacoes(zip_atual, destino, log=print, aguardar_arquivo=N
         registrar(log, 4, "Abrindo Excel e identificando a aba pelos cabeÃ§alhos...")
         with warnings.catch_warnings():
             warnings.simplefilter("error", UserWarning)
-            wb = load_workbook(destino, data_only=False, keep_links=True)
+            wb = load_workbook(destino, data_only=False, keep_links=False)
         ws = identificar_aba(wb, cabecalho)
         linhas = canonicalizar_status(linhas, wb["validador"], log)
         modelos = modelos_formulas(ws)
@@ -328,11 +328,13 @@ def atualizar_retorno_ligacoes(zip_atual, destino, log=print, aguardar_arquivo=N
         wb.calculation.calcMode = "auto"
         registrar(log, 7, "Salvando arquivo temporÃ¡rio e conferindo todos os registros e fÃ³rmulas...")
         aba = ws.title
+        if getattr(wb, "_external_links", None):
+            wb._external_links.clear()
         wb.save(temporario)
         wb.close()
         wb = None
         validar_zip(temporario, etapa=7)
-        wb = load_workbook(temporario, data_only=False, keep_links=True)
+        wb = load_workbook(temporario, data_only=False, keep_links=False)
         _validar_resultado(wb, aba, linhas, modelos, antiga_ultima, preservados)
         wb.close()
         wb = None

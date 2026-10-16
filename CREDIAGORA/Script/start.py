@@ -286,6 +286,14 @@ def ler_estado_processo():
         return {}
 
 
+def remover_links_externos_excel(wb):
+    """Evita que links SharePoint antigos gerem reparo de conteúdo no Excel."""
+    links = getattr(wb, "_external_links", None)
+    if links:
+        links.clear()
+        log("[EXCEL] Referências externas removidas antes do salvamento.")
+
+
 def limpar_pagina_para_reinicio(driver, etapa):
     """Remove avisos, fecha abas secundárias e deixa o navegador encerrável."""
     if driver is None:
@@ -3646,7 +3654,9 @@ def copiar_dados_excel_origem_para_destino(
         with acompanhar_operacao(
             f"[PANORAMA][{etapa}] Abrindo a planilha de destino", intervalo=10
         ):
-            wb_destino = load_workbook(arquivo_destino, keep_links=True)
+            # Remove links externos antigos ao salvar; eles causam o aviso
+            # de conteudo corrompido em algumas planilhas sincronizadas.
+            wb_destino = load_workbook(arquivo_destino, keep_links=False)
 
         if wb_destino is None:
             raise ValueError(f"Não foi possível abrir a planilha de destino: {arquivo_destino}")
@@ -3790,6 +3800,7 @@ def copiar_dados_excel_origem_para_destino(
         with acompanhar_operacao(
             f"[PANORAMA][{etapa}] Salvando a planilha atualizada", intervalo=10
         ):
+            remover_links_externos_excel(wb_destino)
             wb_destino.save(arquivo_destino)
         log_panorama(etapa, f"Planilha salva com sucesso: {arquivo_destino}")
         atualizado_em = datetime.now().astimezone()
