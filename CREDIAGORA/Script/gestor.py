@@ -367,6 +367,18 @@ def _confirmar_logoff_gestor():
             return True
 
         user32.EnumChildWindows(hwnd_dialogo, callback, 0)
+        # RemoteApp expõe a confirmação como uma janela RAIL sem controles
+        # filhos acessíveis. Nela, Enter aciona o botão padrão "Sim".
+        if not encontrados:
+            user32.SetForegroundWindow(hwnd_dialogo)
+            user32.PostMessageW(hwnd_dialogo, 0x0100, 0x000D, 0)  # WM_KEYDOWN/ENTER
+            user32.PostMessageW(hwnd_dialogo, 0x0101, 0x000D, 0)  # WM_KEYUP/ENTER
+            user32.PostMessageW(hwnd_dialogo, 0x0111, 6, 0)  # WM_COMMAND/IDYES
+            # Em janelas RAIL o PostMessage pode ser ignorado; envia Enter
+            # como entrada real para acionar o botão padrão "Sim".
+            user32.keybd_event(0x0D, 0, 0, 0)
+            user32.keybd_event(0x0D, 0, 2, 0)
+            encontrados.append(int(hwnd_dialogo))
         return True
 
     @callback_tipo
@@ -388,7 +400,13 @@ def _fechar_todas_janelas_gestor(hwnd_referencia, timeout=20):
     pid = wintypes.DWORD()
     user32.GetWindowThreadProcessId(hwnd_referencia, ctypes.byref(pid))
     pid_referencia = int(pid.value)
-    termos_gestor = ("gestor", "absgm", "lctos de metas", "report preview")
+    termos_gestor = (
+        "gestor",
+        "absgm",
+        "lojas hoje",
+        "lctos de metas",
+        "report preview",
+    )
 
     def relacionadas():
         resultado = []
@@ -1993,10 +2011,21 @@ def executar_fase_gestor(config, log):
         hwnd_gestor = gestor.get("hwnd") if gestor else None
         if hwnd_gestor:
             log_gestor(log, f"Fechando janela do Gestor de Vendas (hwnd={hwnd_gestor}).")
-            try:
-                _fechar_todas_janelas_gestor(hwnd_gestor)
-                log_gestor(log, "Todas as janelas do Gestor de Vendas foram fechadas com sucesso.")
-            except Exception as erro_fechar:
+            erro_fechar = None
+            for tentativa_fechamento in range(1, 4):
+                try:
+                    _fechar_todas_janelas_gestor(hwnd_gestor)
+                    erro_fechar = None
+                    log_gestor(log, "Todas as janelas do Gestor de Vendas foram fechadas com sucesso.")
+                    # Aguarda o RemoteApp processar o Logoff antes de o host
+                    # PowerShell/Python terminar.
+                    time.sleep(1.5)
+                    break
+                except Exception as erro:
+                    erro_fechar = erro
+                    log_gestor(log, f"Tentativa {tentativa_fechamento}/3 para fechar o Gestor falhou: {erro}")
+                    time.sleep(1)
+            if erro_fechar is not None:
                 # O encerramento Ã© uma limpeza; nunca substitui o resultado
                 # da fase nem o erro original.
                 log_gestor(log, f"Falha ao fechar a janela do Gestor de Vendas: {erro_fechar}")
