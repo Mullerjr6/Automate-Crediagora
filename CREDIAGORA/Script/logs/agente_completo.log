@@ -1,0 +1,16 @@
+[AGENTE] Iniciando completo; tentativa 1/2; retomada na etapa inicializacao
+Traceback (most recent call last):
+  File "C:\Users\CREDIAGORA\Desktop\workspace\Automacoes\crediagora\CREDIAGORA\Script\start.py", line 18, in <module>
+    from gestor import GestorConfig, executar_fase_gestor, formatar_brasileiro
+  File "C:\Users\CREDIAGORA\Desktop\workspace\Automacoes\crediagora\CREDIAGORA\Script\gestor.py", line 17, in <module>
+    from decimal import Decimal, InvalidOperationcd
+ImportError: cannot import name 'InvalidOperationcd' from 'decimal' (C:\Users\CREDIAGORA\AppData\Local\Python\pythoncore-3.14-64\Lib\decimal.py). Did you mean: 'InvalidOperation'?
+[AGENTE] completo terminou com código 1
+[AGENTE] Iniciando completo; tentativa 2/2; retomada na etapa inicializacao
+Traceback (most recent call last):
+  File "C:\Users\CREDIAGORA\Desktop\workspace\Automacoes\crediagora\CREDIAGORA\Script\start.py", line 18, in <module>
+    from gestor import GestorConfig, executar_fase_gestor, formatar_brasileiro
+  File "C:\Users\CREDIAGORA\Desktop\workspace\Automacoes\crediagora\CREDIAGORA\Script\gestor.py", line 17, in <module>
+    from decimal import Decimal, InvalidOperationcd
+ImportError: cannot import name 'InvalidOperationcd' from 'decimal' (C:\Users\CREDIAGORA\AppData\Local\Python\pythoncore-3.14-64\Lib\decimal.py). Did you mean: 'InvalidOperation'?
+[AGENTE] completo terminou com código 1

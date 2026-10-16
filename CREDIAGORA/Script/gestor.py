@@ -1,3 +1,8 @@
+﻿# O Gestor usa APIs Win32/pywinauto com falhas transitÃ³rias durante a
+# automaÃ§Ã£o. Os blocos de recuperaÃ§Ã£o abaixo registram ou preservam o estado
+# e, por isso, precisam aceitar exceÃ§Ãµes de backend sem interromper o fluxo.
+# ruff: noqa: BLE001, S110
+
 import ctypes
 import json
 import os
@@ -9,7 +14,7 @@ import time
 import unicodedata
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal, InvalidOperation 
 from pathlib import Path
 from typing import Any
 
@@ -369,7 +374,7 @@ def _fechar_todas_janelas_gestor(hwnd_referencia, timeout=20):
             return
         time.sleep(0.5)
 
-    # Algumas telas remotas não processam WM_CLOSE; força o fechamento delas.
+    # Algumas telas remotas nÃ£o processam WM_CLOSE; forÃ§a o fechamento delas.
     for handle in relacionadas():
         if _janela_existe(handle):
             user32.PostMessageW(handle, 0x0010, 0, 0)
@@ -1941,9 +1946,9 @@ def executar_fase_gestor(config, log):
         raise GestorError(etapa, str(erro)) from erro
     finally:
         # O fechamento precisa ficar em ``finally``: o retorno de sucesso
-        # encerra o bloco ``try`` antes de qualquer código colocado depois
-        # do ``except``. Assim a janela do Gestor também é fechada quando a
-        # fase termina normalmente, sem mascarar um erro da automação.
+        # encerra o bloco ``try`` antes de qualquer cÃ³digo colocado depois
+        # do ``except``. Assim a janela do Gestor tambÃ©m Ã© fechada quando a
+        # fase termina normalmente, sem mascarar um erro da automaÃ§Ã£o.
         log_gestor(log, "Fase 3 finalizada.")
         log_gestor(log, f"Fim da Fase 3: {datetime.now(timezone.utc).strftime('%d/%m/%Y %H:%M:%S')}")
         hwnd_gestor = gestor.get("hwnd") if gestor else None
@@ -1953,6 +1958,7 @@ def executar_fase_gestor(config, log):
                 _fechar_todas_janelas_gestor(hwnd_gestor)
                 log_gestor(log, "Todas as janelas do Gestor de Vendas foram fechadas com sucesso.")
             except Exception as erro_fechar:
-                # O encerramento é uma limpeza; nunca substitui o resultado
+                # O encerramento Ã© uma limpeza; nunca substitui o resultado
                 # da fase nem o erro original.
                 log_gestor(log, f"Falha ao fechar a janela do Gestor de Vendas: {erro_fechar}")
+
