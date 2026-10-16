@@ -343,6 +343,43 @@ def _fechar_janela_gestor(hwnd, timeout=20):
         ) from erro
 
 
+def _confirmar_logoff_gestor():
+    """Confirma automaticamente a caixa ``Logoff`` exibida pelo Gestor."""
+    user32 = ctypes.windll.user32
+    encontrados = []
+    callback_tipo = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+
+    def procurar_botao(hwnd_dialogo):
+        titulo = ctypes.create_unicode_buffer(user32.GetWindowTextLengthW(hwnd_dialogo) + 1)
+        user32.GetWindowTextW(hwnd_dialogo, titulo, len(titulo))
+        if "logoff" not in normalizar(titulo.value):
+            return
+
+        @callback_tipo
+        def callback(hwnd_filho, _dados):
+            tamanho = user32.GetWindowTextLengthW(hwnd_filho)
+            texto = ctypes.create_unicode_buffer(tamanho + 1)
+            user32.GetWindowTextW(hwnd_filho, texto, len(texto))
+            classe = ctypes.create_unicode_buffer(128)
+            user32.GetClassNameW(hwnd_filho, classe, len(classe))
+            if normalizar(classe.value) == "button" and normalizar(texto.value) in {"sim", "yes"}:
+                encontrados.append(int(hwnd_filho))
+            return True
+
+        user32.EnumChildWindows(hwnd_dialogo, callback, 0)
+        return True
+
+    @callback_tipo
+    def callback_janela(hwnd, _dados):
+        procurar_botao(hwnd)
+        return True
+
+    user32.EnumWindows(callback_janela, 0)
+    for hwnd_botao in encontrados:
+        user32.PostMessageW(hwnd_botao, 0x00F5, 0, 0)  # BM_CLICK
+    return bool(encontrados)
+
+
 def _fechar_todas_janelas_gestor(hwnd_referencia, timeout=20):
     """Fecha a janela principal e todas as telas filhas do mesmo Gestor."""
     if not hwnd_referencia:
@@ -369,12 +406,14 @@ def _fechar_todas_janelas_gestor(hwnd_referencia, timeout=20):
             user32.PostMessageW(handle, 0x0010, 0, 0)  # WM_CLOSE
     fim = time.monotonic() + timeout
     while time.monotonic() < fim:
+        _confirmar_logoff_gestor()
         restantes = [handle for handle in relacionadas() if _janela_existe(handle)]
         if not restantes:
             return
         time.sleep(0.5)
 
     # Algumas telas remotas nÃ£o processam WM_CLOSE; forÃ§a o fechamento delas.
+    _confirmar_logoff_gestor()
     for handle in relacionadas():
         if _janela_existe(handle):
             user32.PostMessageW(handle, 0x0010, 0, 0)

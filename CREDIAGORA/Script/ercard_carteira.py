@@ -3,7 +3,6 @@
 import time
 import argparse
 import json
-import argparse
 from pathlib import Path
 
 import ercard
@@ -67,11 +66,16 @@ def main(argv=None):
             arquivo = executar_fase_ercard(driver, config, log)
             duracao = (time.monotonic() - inicio_relatorio) / 60
             log(f"[ERCard][IMPORTACAO] Arquivo salvo na pasta de destino: {arquivo}")
-            if arquivo.exists() and arquivo.stat().st_size == 0:
+            if not arquivo.exists():
+                raise RuntimeError(f"Arquivo exportado não encontrado: {arquivo}")
+            if arquivo.stat().st_size == 0:
                 raise RuntimeError(f"Arquivo exportado vazio: {arquivo}")
             log(f"[ERCard][FIM] {nome_relatorio} concluido em {duracao:.1f} minutos")
             ESTADO_FLUXO.write_text(json.dumps({"etapa": indice, "nome": nome_relatorio, "status": "concluido", "arquivo": str(arquivo), "duracao_minutos": round(duracao, 2)}, ensure_ascii=False), encoding="utf-8")
-            driver.quit()
+            try:
+                driver.quit()
+            except Exception as erro_fechar:
+                log(f"[ERCard][AVISO] Chrome já encerrou ou não respondeu: {erro_fechar}")
             driver = None
         total = (time.monotonic() - inicio_total) / 60
         log(f"========== FLUXO ERCard CONCLUIDO EM {total:.1f} MINUTOS ==========")

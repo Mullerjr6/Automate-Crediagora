@@ -229,11 +229,15 @@ def executar_fluxo(nome, tentativas, config):
     registrar_estado(base)
     base["backups"] = criar_backups(config)
     limpar_backups_antigos(config)
-    if not verificar_internet():
-        raise RuntimeError("Internet indisponível ou Panorama inacessível.")
+    timeout_minutos = max(1, int(config.get("timeout_minutos", 180)))
 
     ultimo_codigo = 1
     for tentativa in range(1, tentativas + 1):
+        if not verificar_internet():
+            print("[AGENTE] Internet indisponível; aguardando a próxima tentativa.", flush=True)
+            ultimo_codigo = 3
+            time.sleep(min(30, 5 * tentativa))
+            continue
         ponto_retomada = {}
         if estado_processo.exists():
             try:
@@ -249,7 +253,16 @@ def executar_fluxo(nome, tentativas, config):
             f"retomada na etapa {etapa}",
             flush=True,
         )
-        processo = subprocess.run(comando, cwd=SCRIPT_DIR)
+        try:
+            processo = subprocess.run(
+                comando,
+                cwd=SCRIPT_DIR,
+                timeout=timeout_minutos * 60,
+            )
+        except subprocess.TimeoutExpired:
+            ultimo_codigo = 124
+            print(f"[AGENTE] {nome} excedeu o limite de {timeout_minutos} minutos.", flush=True)
+            continue
         ultimo_codigo = processo.returncode
         if ultimo_codigo == 0:
             if not validar_resultado(nome):
