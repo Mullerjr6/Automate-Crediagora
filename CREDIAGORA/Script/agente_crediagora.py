@@ -3,6 +3,7 @@
 Executa os scripts existentes sem duplicar a lógica de Panorama/ERCard,
 registrando estado, duração, tentativas e histórico em JSON.
 """
+# ruff: noqa: BLE001, S110, PLW1510
 
 import argparse
 import json
@@ -12,10 +13,9 @@ import subprocess
 import sys
 import time
 import urllib.request
-from html import escape
 from datetime import datetime
+from html import escape
 from pathlib import Path
-
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 ESTADO = SCRIPT_DIR / "logs" / "agente_estado.json"
@@ -44,7 +44,7 @@ def carregar_configuracao(caminho):
     except (OSError, json.JSONDecodeError) as erro:
         raise RuntimeError(f"Configuração inválida: {caminho}: {erro}") from erro
     if not isinstance(dados, dict):
-        raise RuntimeError("A configuração do agente deve ser um objeto JSON.")
+        raise TypeError("A configuração do agente deve ser um objeto JSON.")
     return dados
 
 
@@ -52,7 +52,7 @@ def adquirir_trava():
     TRAVA.parent.mkdir(parents=True, exist_ok=True)
     try:
         fd = os.open(TRAVA, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-        os.write(fd, f"pid={os.getpid()} inicio={agora()}".encode("utf-8"))
+        os.write(fd, f"pid={os.getpid()} inicio={agora()}".encode())
         os.close(fd)
     except FileExistsError as erro:
         raise RuntimeError(f"Já existe uma execução do agente: {TRAVA}") from erro

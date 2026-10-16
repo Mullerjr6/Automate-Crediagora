@@ -1,7 +1,7 @@
 ﻿# O Gestor usa APIs Win32/pywinauto com falhas transitÃ³rias durante a
 # automaÃ§Ã£o. Os blocos de recuperaÃ§Ã£o abaixo registram ou preservam o estado
 # e, por isso, precisam aceitar exceÃ§Ãµes de backend sem interromper o fluxo.
-# ruff: noqa: BLE001, S110
+# ruff: noqa: BLE001, S110, S112
 
 import ctypes
 import json
@@ -12,13 +12,13 @@ import subprocess
 import tempfile
 import time
 import unicodedata
+from ctypes import wintypes
 from dataclasses import dataclass
-from datetime import datetime, timezone
-from decimal import Decimal, InvalidOperation 
+from datetime import UTC, datetime
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any
 
-from ctypes import wintypes
 from openpyxl import load_workbook
 
 
@@ -37,7 +37,6 @@ def _configurar_dpi_windows():
 _configurar_dpi_windows()
 
 from PIL import Image, ImageChops, ImageGrab, ImageOps, ImageStat
-
 
 LOJAS = ("TUC", "GMI", "DMC", "RGO", "CMI", "CAT", "SPM", "SCR")
 LINHAS_EXCEL = dict(zip(LOJAS, range(19, 27)))
@@ -73,7 +72,7 @@ class GestorConfig:
         if not str(self.senha).strip():
             ausentes.append("GESTOR_SENHA")
         if ausentes:
-            raise EnvironmentError(
+            raise OSError(
                 "Credenciais Gestor nao configuradas: " + ", ".join(ausentes)
             )
         if not self.atalho.exists():
@@ -134,7 +133,7 @@ def validar_total_relatorio(valores, total_relatorio):
             "Validacao do relatorio",
             f"Lojas invalidas. Faltantes={faltantes}; extras={extras}.",
         )
-    soma = sum((Decimal(str(valores[loja])) for loja in LOJAS), Decimal("0"))
+    soma = sum((Decimal(str(valores[loja])) for loja in LOJAS), Decimal(0))
     total = Decimal(str(total_relatorio))
     if soma.quantize(Decimal("0.01")) != total.quantize(Decimal("0.01")):
         raise GestorError(
@@ -279,11 +278,7 @@ def aguardar_janela(
                 continue
             candidatos.append(janela)
         if novos_desde is not None:
-            handles_anteriores = (
-                set(novos_desde)
-                if isinstance(novos_desde, dict)
-                else set(novos_desde)
-            )
+            handles_anteriores = set(novos_desde)
             novos = [j for j in candidatos if j["hwnd"] not in handles_anteriores]
             if novos:
                 return novos[0]
@@ -1271,7 +1266,7 @@ def gerar_relatorio_metas(metas, config, log, agora=None):
     alvo_iniciar = _localizar_texto_ocr_janela(
         metas["hwnd"], "Iniciar", faixa_y=(0.75, 0.99)
     )
-    left, top, right, bottom = _retangulo_visivel(metas["hwnd"])
+    _, top, _, bottom = _retangulo_visivel(metas["hwnd"])
     deslocamento_periodo = max(55, alvo_iniciar["altura"] * 5)
     y_periodo = (alvo_iniciar["y"] - deslocamento_periodo - top) / (bottom - top)
     if not 0.75 <= y_periodo <= 0.92:
@@ -1708,11 +1703,10 @@ def extrair_valores_realizados(caminho_imagem):
         texto_normalizado = normalizar(texto)
         monetarios = _valores_monetarios_linha(texto)
         for loja in LOJAS:
-            if re.search(rf"(?:^|[^a-z]){loja.casefold()}(?:$|[^a-z])", texto_normalizado):
-                if len(monetarios) >= 2:
-                    if loja in valores:
-                        raise GestorError("OCR", f"Loja {loja} apareceu mais de uma vez.")
-                    valores[loja] = monetarios[1]
+            if re.search(rf"(?:^|[^a-z]){loja.casefold()}(?:$|[^a-z])", texto_normalizado) and len(monetarios) >= 2:
+                if loja in valores:
+                    raise GestorError("OCR", f"Loja {loja} apareceu mais de uma vez.")
+                valores[loja] = monetarios[1]
         if "total geral" in texto_normalizado and len(monetarios) >= 2:
             total = monetarios[1]
     if set(valores) != set(LOJAS) or total is None:
@@ -1793,7 +1787,7 @@ def _resolver_referencia_simples(ws, coordenada):
         valor = ws[atual].value
         if not isinstance(valor, str) or not valor.startswith("="):
             return valor
-        referencia = re.fullmatch(r"=\$?([A-Z]{1,3})\$?(\d+)", valor.strip(), re.I)
+        referencia = re.fullmatch(r"=\$?([A-Z]{1,3})\$?(\d+)", valor.strip(), re.IGNORECASE)
         if not referencia:
             return valor
         atual = f"{referencia.group(1).upper()}{referencia.group(2)}"
@@ -1849,7 +1843,7 @@ def atualizar_excel_metas(arquivo, valores, pasta_backup, log=None):
     pasta_backup = Path(pasta_backup)
     soma = sum(
         (Decimal(str(valores[loja])) for loja in LOJAS),
-        Decimal("0"),
+        Decimal(0),
     )
     validar_total_relatorio(valores, soma)
     aguardar_excel_liberado(arquivo)
@@ -1904,7 +1898,7 @@ def fechar_report_preview(preview, log):
 def salvar_diagnostico_gestor(config, etapa, log, hwnd=None):
     config.pasta_erros.mkdir(parents=True, exist_ok=True)
     nome = re.sub(r"[^a-zA-Z0-9_-]+", "_", etapa).strip("_") or "gestor"
-    caminho = config.pasta_erros / f"gestor_{nome}_{datetime.now(timezone.utc).strftime('%Y-%m-%d_%H-%M-%S')}.png"
+    caminho = config.pasta_erros / f"gestor_{nome}_{datetime.now(UTC).strftime('%Y-%m-%d_%H-%M-%S')}.png"
     try:
         if hwnd and _janela_existe(hwnd):
             janela = next(
@@ -1945,7 +1939,7 @@ def executar_fase_gestor(config, log):
     config.pasta_logs.mkdir(parents=True, exist_ok=True)
     config.pasta_erros.mkdir(parents=True, exist_ok=True)
     config.pasta_backup.mkdir(parents=True, exist_ok=True)
-    log_gestor(log, f"Inicio da Fase 3: {datetime.now(timezone.utc).strftime('%d/%m/%Y %H:%M:%S')}")
+    log_gestor(log, f"Inicio da Fase 3: {datetime.now(UTC).strftime('%d/%m/%Y %H:%M:%S')}")
     try:
         menu = conectar_remoteapp(config, log)
         ultima_janela = menu
@@ -2010,7 +2004,7 @@ def executar_fase_gestor(config, log):
         # do ``except``. Assim a janela do Gestor tambÃ©m Ã© fechada quando a
         # fase termina normalmente, sem mascarar um erro da automaÃ§Ã£o.
         log_gestor(log, "Fase 3 finalizada.")
-        log_gestor(log, f"Fim da Fase 3: {datetime.now(timezone.utc).strftime('%d/%m/%Y %H:%M:%S')}")
+        log_gestor(log, f"Fim da Fase 3: {datetime.now(UTC).strftime('%d/%m/%Y %H:%M:%S')}")
         hwnd_gestor = gestor.get("hwnd") if gestor else None
         if hwnd_gestor:
             log_gestor(log, f"Fechando janela do Gestor de Vendas (hwnd={hwnd_gestor}).")

@@ -1,13 +1,19 @@
 """Fluxo separado de relatorios gerenciais do ERCard."""
+# ruff: noqa: BLE001, S110
 
-import time
 import argparse
 import json
+import time
 from pathlib import Path
 
 import ercard
 from ercard import executar_fase_ercard
-from start import criar_configuracao_ercard, iniciar_chrome, limpar_pagina_para_reinicio, log
+from start import (
+    criar_configuracao_ercard,
+    iniciar_chrome,
+    limpar_pagina_para_reinicio,
+    log,
+)
 
 PASTA_EXPORTACAO = Path.home() / "Desktop" / "ATT manh\u00e3"
 ESTADO_FLUXO = Path(__file__).resolve().parent / "logs" / "ercard_carteira_estado.json"

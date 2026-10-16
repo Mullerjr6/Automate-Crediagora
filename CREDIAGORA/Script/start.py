@@ -1,3 +1,5 @@
+# ruff: noqa: BLE001, S110
+
 import argparse
 import hashlib
 import json
@@ -14,20 +16,9 @@ from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
-from ercard import ErCardConfig, executar_fase_ercard
-from gestor import GestorConfig, executar_fase_gestor, formatar_brasileiro
-from indicadores_fpd1 import atualizar_indicadores_fpd1, reparar_formulas_indicadores_fpd1
 from openpyxl import load_workbook
 from openpyxl.formula.translate import Translator
 from openpyxl.utils import get_column_letter, range_boundaries
-from receita_cpc import coluna_data_cpc, normalizar_datas_cpc, preparar_linhas_receita
-from retorno_ligacoes import (
-    RetornoLigacoesError,
-    atualizar_retorno_ligacoes,
-    esperar_zip_novo,
-    inventariar_downloads,
-)
-from resumo_vendas import calcular_resumo, salvar_resumo
 from selenium import webdriver
 from selenium.common.exceptions import (
     ElementClickInterceptedException,
@@ -43,6 +34,21 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
+
+from ercard import ErCardConfig, executar_fase_ercard
+from gestor import GestorConfig, executar_fase_gestor, formatar_brasileiro
+from indicadores_fpd1 import (
+    atualizar_indicadores_fpd1,
+    reparar_formulas_indicadores_fpd1,
+)
+from receita_cpc import coluna_data_cpc, normalizar_datas_cpc, preparar_linhas_receita
+from resumo_vendas import calcular_resumo, salvar_resumo
+from retorno_ligacoes import (
+    RetornoLigacoesError,
+    atualizar_retorno_ligacoes,
+    esperar_zip_novo,
+    inventariar_downloads,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -258,6 +264,10 @@ def log(msg):
     agora = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
     texto = f"[{agora}] {msg}"
     print(texto)
+    try:
+        LOGS_ATIVACAO.append(texto)
+    except Exception:
+        logger.debug("Falha capturada em log", exc_info=True)
 
 
 def registrar_estado_processo(etapa, status="executando", erro=None, **dados):
@@ -319,12 +329,6 @@ def limpar_pagina_para_reinicio(driver, etapa):
         log(f"[RECUPERAÇÃO][{etapa}] Avisos e páginas secundárias fechados.")
     except Exception:
         logger.debug("Falha ao limpar páginas da etapa %s", etapa, exc_info=True)
-
-    try:
-        LOGS_ATIVACAO.append(texto)
-    except Exception:
-        logger.debug("Falha capturada em log", exc_info=True)
-
 
 def log_panorama(etapa, mensagem):
     log(f"[PANORAMA][{etapa}] {mensagem}")

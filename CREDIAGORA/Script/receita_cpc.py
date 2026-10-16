@@ -1,14 +1,14 @@
 """Normalizacao restrita a DATA CPC, sem deduplicar ou completar o historico."""
 
 import argparse
-from collections import Counter
-from datetime import date, datetime, timezone
 import hashlib
 import json
 import os
-from pathlib import Path
 import shutil
 import tempfile
+from collections import Counter
+from datetime import UTC, date, datetime
+from pathlib import Path
 
 from openpyxl import load_workbook
 from openpyxl.utils import get_column_letter
@@ -121,7 +121,7 @@ def corrigir_arquivo(arquivo, pasta_backup):
         relatorio = normalizar_datas_cpc(ws)
         pasta_backup = Path(pasta_backup)
         pasta_backup.mkdir(parents=True, exist_ok=True)
-        backup = pasta_backup / f"{arquivo.stem}_antes_datas_cpc_{datetime.now(timezone.utc):%Y%m%d_%H%M%S_%f}.xlsx"
+        backup = pasta_backup / f"{arquivo.stem}_antes_datas_cpc_{datetime.now(UTC):%Y%m%d_%H%M%S_%f}.xlsx"
         shutil.copy2(arquivo, backup)
         if _hash_arquivo(backup) != assinatura_original:
             raise RuntimeError("A planilha mudou durante a leitura; original preservado.")

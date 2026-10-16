@@ -1,10 +1,9 @@
 # O ERCard depende de janelas remotas e APIs Selenium que podem falhar de
 # forma transitória. Os blocos de recuperação registram o erro e preservam
 # a sessão quando necessário para uma nova tentativa.
-# ruff: noqa: BLE001, S110
+# ruff: noqa: BLE001, S110, S112
 
 import csv
-import os
 import re
 import shutil
 import time
@@ -16,9 +15,7 @@ from pathlib import Path
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
-
 
 URL_ERCARD = "https://app.ercard.com.br/"
 DATA_INICIAL = "010124"
@@ -59,7 +56,7 @@ class ErCardConfig:
                 ausentes.append(nome)
 
         if ausentes:
-            raise EnvironmentError(
+            raise OSError(
                 "Credenciais ERCard não configuradas: " + ", ".join(ausentes)
             )
 
@@ -214,7 +211,6 @@ def normalizar_janela_ercard_windows(titulo_esperado, log):
     hwnd, titulo, classe = localizar_janela_ercard_windows(titulo_esperado)
     antes = _estado_janela_windows(hwnd)
 
-    todos_monitores = []
     # The window state helper exposes only touched monitors. Restore first, then
     # ask MonitorFromPoint for the primary monitor's work area.
     SW_RESTORE = 9
@@ -574,8 +570,9 @@ def _acao_canvas(
 
 
 def _geometria_canvas(driver):
-    from PIL import Image
     import io
+
+    from PIL import Image
 
     if not _ativar_janela_com_canvas(driver):
         raise ErCardError("Canvas", "A aba da sessão remota foi fechada.")
@@ -1519,7 +1516,7 @@ def configurar_exportacao_csv(ui, config, arquivo_webfile, log):
             continue
     if not botoes:
         raise ErCardError("Arquivo para Exportação", "Botão seletor não encontrado.")
-    ui.clicar(sorted(botoes, key=lambda item: item[0])[0][1])
+    ui.clicar(min(botoes, key=lambda item: item[0])[1])
 
     for numero in (1, 2):
         log_ercard(log, f"Confirmando Restrictions {numero}/2...")
