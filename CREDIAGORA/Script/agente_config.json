@@ -1,0 +1,6 @@
+{
+  "tentativas": 2,
+  "backup_retencao_dias": 30,
+  "webhook_url": "",
+  "backup_paths": []
+}
