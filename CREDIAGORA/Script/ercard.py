@@ -1,3 +1,8 @@
+# O ERCard depende de janelas remotas e APIs Selenium que podem falhar de
+# forma transitória. Os blocos de recuperação registram o erro e preservam
+# a sessão quando necessário para uma nova tentativa.
+# ruff: noqa: BLE001, S110
+
 import csv
 import os
 import re
@@ -8,8 +13,8 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
-from selenium.webdriver.common.by import By
 from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
