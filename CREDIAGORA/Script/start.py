@@ -148,13 +148,15 @@ PASTA_DOWNLOAD = caminho_env(
     Path.home() / "Downloads" / "crediagora"
 )
 
-# Caminho base da tabela fat no SharePoint/OneDrive
+# Enquanto a migração não for autorizada, toda atualização deve ocorrer nas
+# cópias isoladas, nunca nos arquivos oficiais da pasta compartilhada.
+PASTA_TESTE_MIGRACAO = Path(__file__).resolve().parent.parent / "teste_migracao_oficiais"
+
+# Caminho base das planilhas de teste. CREDIAGORA_TABELA_FAT_DIR continua
+# disponível para uma configuração futura explicitamente autorizada.
 PASTA_TABELA_FAT = caminho_env(
     "CREDIAGORA_TABELA_FAT_DIR",
-    Path.home()
-    / "TJI PROMOTORA DE VENDAS EIRELI"
-    / "Crediagora-doc - dados"
-    / "tabela fat"
+    PASTA_TESTE_MIGRACAO,
 )
 
 ARQUIVO_METAS_GESTOR = caminho_env(
@@ -236,6 +238,13 @@ ARQUIVO_INDICADORES_FPD1 = caminho_env(
     "CREDIAGORA_INDICADORES_FPD1_XLSX",
     PASTA_TABELA_FAT / "Indicadores de FPD1_teste_de_automacao.xlsx",
 )
+
+# Os nomes das cópias isoladas acompanham as planilhas oficiais. Mantemos as
+# variáveis de ambiente como exceção explícita para uma futura migração.
+if not os.getenv("GESTOR_XLSX_METAS"):
+    ARQUIVO_METAS_GESTOR = PASTA_TABELA_FAT / "fat_metas_venda_moda_lojas_hoje.xlsx"
+if not os.getenv("CREDIAGORA_INDICADORES_FPD1_XLSX"):
+    ARQUIVO_INDICADORES_FPD1 = PASTA_TABELA_FAT / "Indicadores de FPD1.xlsx"
 
 PADROES_DOWNLOAD = [
     "*.xlsx",

@@ -4,6 +4,7 @@
 import argparse
 import json
 import time
+from datetime import datetime
 from pathlib import Path
 
 import ercard
@@ -17,11 +18,58 @@ from start import (
 
 PASTA_EXPORTACAO = Path.home() / "Desktop" / "ATT manh\u00e3"
 ESTADO_FLUXO = Path(__file__).resolve().parent / "logs" / "ercard_carteira_estado.json"
+VERSAO_FLUXO = 2
 CONSULTAS = [
-    ("Relat\u00f3rio Gerencial - Carteira", "RELATORIO GERENCIAL - CARTEIRA", "Relatorio gerencial - carteira"),
-    ("06 - Tabela Propostas - Cr\u00e9dito", "06 - TABELA PROPOSTAS - CREDITO", "Tabela propostas - credito"),
-    ("14 - Tabela Contratos", "14 - TABELA CONTRATOS", "Tabela contratos"),
+    ("14 - Tabela Contratos", "14 - TABELA CONTRATOS", "14 - tabela contratos"),
+    ("06 - Propostas", "06 - TABELA PROPOSTAS - CREDITO", "06 - propostas"),
+    ("Carteira Mifa", "RELATORIO GERENCIAL - CARTEIRA", "Carteira mifa"),
 ]
+
+
+def carregar_estado():
+    """Retorna o estado anterior sem deixar um JSON incompleto bloquear a retomada."""
+    try:
+        dados = json.loads(ESTADO_FLUXO.read_text(encoding="utf-8"))
+        return dados if isinstance(dados, dict) else {}
+    except (FileNotFoundError, OSError, json.JSONDecodeError):
+        return {}
+
+
+def salvar_estado(dados):
+    """Grava o estado de forma atômica para preservar a etapa em caso de interrupção."""
+    ESTADO_FLUXO.parent.mkdir(parents=True, exist_ok=True)
+    temporario = ESTADO_FLUXO.with_suffix(".tmp")
+    temporario.write_text(json.dumps(dados, ensure_ascii=False, indent=2), encoding="utf-8")
+    temporario.replace(ESTADO_FLUXO)
+
+
+def atualizar_estado(estado, **campos):
+    estado.update(campos)
+    estado["atualizado_em"] = datetime.now().astimezone().isoformat(timespec="seconds")
+    salvar_estado(estado)
+
+
+def recuperar_relatorios_ja_exportados(estado):
+    """Migra um estado antigo encontrando somente arquivos gerados na data atual."""
+    if estado.get("relatorios"):
+        return
+    data_hoje = datetime.now().strftime("%d-%m-%Y")
+    relatorios = {}
+    for indice, (nome_relatorio, _, prefixo) in enumerate(CONSULTAS, start=1):
+        inicio_nome = f"{prefixo} {data_hoje}".casefold()
+        candidatos = [
+            arquivo
+            for arquivo in PASTA_EXPORTACAO.glob("*.csv")
+            if arquivo.name.casefold().startswith(inicio_nome) and arquivo.stat().st_size > 0
+        ]
+        if candidatos:
+            arquivo = max(candidatos, key=lambda item: item.stat().st_mtime)
+            relatorios[str(indice)] = {
+                "nome": nome_relatorio,
+                "arquivo": str(arquivo),
+                "recuperado_de_estado_anterior": True,
+            }
+    estado["relatorios"] = relatorios
 
 
 def limpar_pasta_exportacao():
@@ -54,6 +102,16 @@ def main(argv=None):
     config = criar_configuracao_ercard(PASTA_EXPORTACAO)
     driver = None
     etapa_atual = args.a_partir
+    estado = carregar_estado() if args.a_partir > 1 else {}
+    if not estado or args.a_partir == 1 or estado.get("versao_fluxo") != VERSAO_FLUXO:
+        estado = {
+            "versao_fluxo": VERSAO_FLUXO,
+            "inicio": datetime.now().astimezone().isoformat(timespec="seconds"),
+            "relatorios": {},
+        }
+    estado.setdefault("relatorios", {})
+    if args.a_partir > 1:
+        recuperar_relatorios_ja_exportados(estado)
     try:
         log("========== INICIO FLUXO ERCard - RELATORIOS ==========")
         log(f"Pasta de destino: {PASTA_EXPORTACAO}")
@@ -61,13 +119,19 @@ def main(argv=None):
             if indice < args.a_partir:
                 continue
             etapa_atual = indice
-            ESTADO_FLUXO.parent.mkdir(parents=True, exist_ok=True)
-            ESTADO_FLUXO.write_text(json.dumps({"etapa": indice, "nome": nome_relatorio, "status": "executando"}, ensure_ascii=False), encoding="utf-8")
+            atualizar_estado(
+                estado,
+                etapa=indice,
+                nome=nome_relatorio,
+                status="executando",
+            )
             inicio_relatorio = time.monotonic()
             log(f"[ERCard][INICIO] {nome_relatorio}")
             log(f"[ERCard][DOWNLOAD] Solicitação iniciada: {nome_relatorio}")
             ercard.CONSULTA_CONTRATOS = consulta
-            ercard.gerar_nome_tabela_contratos = (lambda agora=None, prefixo=prefixo: f"Tabela contratos - {prefixo} {(agora or __import__('datetime').datetime.now()):%d-%m-%Y %H-%M}.csv")
+            ercard.gerar_nome_tabela_contratos = (
+                lambda agora=None, prefixo=prefixo: f"{prefixo} {(agora or datetime.now()):%d-%m-%Y %H-%M}.csv"
+            )
             driver = iniciar_chrome(headless=False, manter_navegador=False)
             arquivo = executar_fase_ercard(driver, config, log)
             duracao = (time.monotonic() - inicio_relatorio) / 60
@@ -77,7 +141,17 @@ def main(argv=None):
             if arquivo.stat().st_size == 0:
                 raise RuntimeError(f"Arquivo exportado vazio: {arquivo}")
             log(f"[ERCard][FIM] {nome_relatorio} concluido em {duracao:.1f} minutos")
-            ESTADO_FLUXO.write_text(json.dumps({"etapa": indice, "nome": nome_relatorio, "status": "concluido", "arquivo": str(arquivo), "duracao_minutos": round(duracao, 2)}, ensure_ascii=False), encoding="utf-8")
+            estado["relatorios"][str(indice)] = {
+                "nome": nome_relatorio,
+                "arquivo": str(arquivo),
+                "duracao_minutos": round(duracao, 2),
+            }
+            atualizar_estado(
+                estado,
+                etapa=indice,
+                nome=nome_relatorio,
+                status="executando",
+            )
             try:
                 driver.quit()
             except Exception as erro_fechar:
@@ -85,13 +159,25 @@ def main(argv=None):
             driver = None
         total = (time.monotonic() - inicio_total) / 60
         log(f"========== FLUXO ERCard CONCLUIDO EM {total:.1f} MINUTOS ==========")
-        ESTADO_FLUXO.write_text(json.dumps({"etapa": 3, "status": "concluido", "duracao_minutos": round(total, 2)}, ensure_ascii=False), encoding="utf-8")
+        atualizar_estado(
+            estado,
+            etapa=3,
+            nome=CONSULTAS[2][0],
+            status="concluido",
+            duracao_minutos=round(total, 2),
+        )
         return 0
     except Exception as erro:
         total = (time.monotonic() - inicio_total) / 60
         limpar_pagina_para_reinicio(driver, f"ercard-carteira etapa {etapa_atual}")
         log(f"[ERCard][ERRO] Processo interrompido apos {total:.1f} minutos: {erro}")
-        ESTADO_FLUXO.write_text(json.dumps({"etapa": etapa_atual, "status": "erro", "erro": str(erro)}, ensure_ascii=False), encoding="utf-8")
+        atualizar_estado(
+            estado,
+            etapa=etapa_atual,
+            status="erro",
+            erro=str(erro),
+            duracao_minutos=round(total, 2),
+        )
         return 1
     finally:
         if driver is not None:

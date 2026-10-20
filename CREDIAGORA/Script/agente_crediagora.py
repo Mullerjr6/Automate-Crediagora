@@ -24,6 +24,7 @@ TRAVA = SCRIPT_DIR / "logs" / "agente_crediagora.lock"
 CONFIG_PADRAO = SCRIPT_DIR / "agente_config.json"
 DASHBOARD = SCRIPT_DIR / "logs" / "agente_dashboard.html"
 RELATORIO = SCRIPT_DIR / "logs" / "agente_relatorio_final.json"
+PASTA_TESTE_MIGRACAO = SCRIPT_DIR.parent / "teste_migracao_oficiais"
 
 FLUXOS = {
     "completo": ["start.py", "--headless"],
@@ -33,6 +34,7 @@ FLUXOS = {
         "--sem-ercard", "--sem-gestor", "--headless",
     ],
 }
+VERSAO_ERCARD_CARTEIRA = 2
 
 
 def carregar_configuracao(caminho):
@@ -94,22 +96,34 @@ def notificar(config, mensagem):
 
 def validar_resultado(fluxo):
     if fluxo == "ercard-carteira":
-        pasta = Path.home() / "Desktop" / "ATT manh\u00e3"
-        arquivos = list(pasta.glob("*.csv"))
-        if len(arquivos) < 3:
+        estado_fluxo = SCRIPT_DIR / "logs" / "ercard_carteira_estado.json"
+        try:
+            estado = json.loads(estado_fluxo.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
             return False
-        for arquivo in arquivos:
+        if estado.get("status") != "concluido":
+            return False
+        relatorios = estado.get("relatorios")
+        if not isinstance(relatorios, dict) or set(relatorios) != {"1", "2", "3"}:
+            return False
+        for indice in ("1", "2", "3"):
+            dados = relatorios[indice]
+            if not isinstance(dados, dict) or not dados.get("arquivo"):
+                return False
+            arquivo = Path(dados["arquivo"])
+            if not arquivo.is_file():
+                return False
             if arquivo.stat().st_size <= 0 or "\n" not in arquivo.read_text(encoding="utf-8-sig", errors="replace")[:4096]:
                 return False
         return True
     if fluxo == "retorno-ligacoes":
-        return (Path.home() / "TJI PROMOTORA DE VENDAS EIRELI" / "Crediagora-doc - dados" / "tabela fat" / "fat_retorno_ligacoes - teste automacao.xlsx").exists()
+        return (PASTA_TESTE_MIGRACAO / "fat_retorno_ligacoes - teste automacao.xlsx").exists()
     return True
 
 
 def criar_backups(config):
     destinos = config.get("backup_paths") or [
-        str(Path.home() / "TJI PROMOTORA DE VENDAS EIRELI" / "Crediagora-doc - dados" / "tabela fat" / nome)
+        str(PASTA_TESTE_MIGRACAO / nome)
         for nome in (
             "fat_retorno_ligacoes - teste automacao.xlsx",
             "fat_vendas_Teste.xlsx",
@@ -205,26 +219,35 @@ def mostrar_status():
 
 
 def executar_fluxo(nome, tentativas, config):
-    comando = [sys.executable, *FLUXOS[nome]]
+    comando_base = [sys.executable, *FLUXOS[nome]]
     estado_processo = SCRIPT_DIR / "logs" / "processo_estado.json"
-    if nome == "ercard-carteira":
+    
+    def comando_do_fluxo():
+        comando = list(comando_base)
+        if nome != "ercard-carteira":
+            return comando
         estado_fluxo = SCRIPT_DIR / "logs" / "ercard_carteira_estado.json"
         if estado_fluxo.exists():
             try:
                 estado_fluxo_dados = json.loads(estado_fluxo.read_text(encoding="utf-8"))
-                if estado_fluxo_dados.get("status") == "erro":
+                if (
+                    estado_fluxo_dados.get("versao_fluxo") == VERSAO_ERCARD_CARTEIRA
+                    and estado_fluxo_dados.get("status") in {"erro", "executando"}
+                ):
                     etapa = int(estado_fluxo_dados.get("etapa", 1))
                     if etapa in (1, 2, 3):
                         comando.extend(["--a-partir", str(etapa)])
             except (OSError, ValueError, json.JSONDecodeError):
                 pass
+        return comando
+
     inicio = time.monotonic()
     base = {
         "fluxo": nome,
         "inicio": agora(),
         "status": "executando",
         "tentativa": 0,
-        "comando": comando,
+        "comando": comando_do_fluxo(),
     }
     registrar_estado(base)
     base["backups"] = criar_backups(config)
@@ -233,6 +256,7 @@ def executar_fluxo(nome, tentativas, config):
 
     ultimo_codigo = 1
     for tentativa in range(1, tentativas + 1):
+        comando = comando_do_fluxo()
         if not verificar_internet():
             print("[AGENTE] Internet indisponível; aguardando a próxima tentativa.", flush=True)
             ultimo_codigo = 3
@@ -245,6 +269,7 @@ def executar_fluxo(nome, tentativas, config):
             except (OSError, json.JSONDecodeError):
                 ponto_retomada = {}
         base["tentativa"] = tentativa
+        base["comando"] = comando
         base["etapa_retomada"] = ponto_retomada.get("etapa")
         registrar_estado(base)
         etapa = ponto_retomada.get("etapa", "inicializacao")

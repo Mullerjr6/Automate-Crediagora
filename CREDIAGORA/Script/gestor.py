@@ -39,7 +39,7 @@ _configurar_dpi_windows()
 from PIL import Image, ImageChops, ImageGrab, ImageOps, ImageStat
 
 LOJAS = ("TUC", "GMI", "DMC", "RGO", "CMI", "CAT", "SPM", "SCR")
-LINHAS_EXCEL = dict(zip(LOJAS, range(19, 27)))
+LINHAS_EXCEL = dict(zip(LOJAS, range(18, 26)))
 
 
 class GestorError(RuntimeError):
@@ -1795,10 +1795,10 @@ def _resolver_referencia_simples(ws, coordenada):
 
 
 def _validar_estrutura_excel(ws):
-    cabecalho = normalizar(ws["C18"].value)
+    cabecalho = normalizar(ws["C17"].value)
     if "venda dia" not in cabecalho:
         raise GestorError(
-            "Excel", f"C18 nao corresponde a Venda dia: {ws['C18'].value!r}"
+            "Excel", f"C17 nao corresponde a Venda dia: {ws['C17'].value!r}"
         )
     for loja, linha in LINHAS_EXCEL.items():
         rotulos = " ".join(
@@ -1838,6 +1838,54 @@ def validar_excel_metas(arquivo, valores_esperados=None):
         wb.close()
 
 
+def _salvar_metas_com_excel(arquivo, valores):
+    """Atualiza a cópia temporária com o Excel nativo, preservando seus recursos."""
+    try:
+        import pythoncom
+        from win32com.client import DispatchEx
+    except ImportError as erro:
+        raise GestorError(
+            "Excel",
+            "A automação do Microsoft Excel não está disponível neste computador.",
+        ) from erro
+
+    excel = None
+    workbook = None
+    pythoncom.CoInitialize()
+    try:
+        excel = DispatchEx("Excel.Application")
+        excel.Visible = False
+        excel.DisplayAlerts = False
+        try:
+            excel.AutomationSecurity = 3  # Desativa macros durante a abertura.
+        except Exception:
+            pass
+        workbook = excel.Workbooks.Open(
+            str(arquivo.resolve()),
+            UpdateLinks=0,
+            ReadOnly=False,
+            IgnoreReadOnlyRecommended=True,
+        )
+        worksheet = workbook.Worksheets("base")
+        for loja, linha in LINHAS_EXCEL.items():
+            worksheet.Cells(linha, 3).Value = float(Decimal(str(valores[loja])))
+        workbook.Save()
+    except Exception as erro:
+        raise GestorError("Excel", f"Não foi possível salvar a cópia temporária no Excel: {erro}") from erro
+    finally:
+        if workbook is not None:
+            try:
+                workbook.Close(SaveChanges=False)
+            except Exception:
+                pass
+        if excel is not None:
+            try:
+                excel.Quit()
+            except Exception:
+                pass
+        pythoncom.CoUninitialize()
+
+
 def atualizar_excel_metas(arquivo, valores, pasta_backup, log=None):
     arquivo = Path(arquivo)
     pasta_backup = Path(pasta_backup)
@@ -1852,33 +1900,19 @@ def atualizar_excel_metas(arquivo, valores, pasta_backup, log=None):
     backup = pasta_backup / f"{arquivo.stem}_antes_gestor_{datetime.now():%Y-%m-%d_%H-%M-%S}{arquivo.suffix}"
     shutil.copy2(arquivo, backup)
     temporario = arquivo.with_name(f".{arquivo.stem}.gestor-{os.getpid()}.tmp{arquivo.suffix}")
-    wb = None
     try:
-        wb = load_workbook(arquivo, data_only=False, keep_links=False)
-        if "base" not in wb.sheetnames:
-            raise GestorError("Excel", "Aba 'base' nao encontrada.")
-        ws = wb["base"]
-        _validar_estrutura_excel(ws)
-        for loja, linha in LINHAS_EXCEL.items():
-            ws[f"C{linha}"] = float(Decimal(str(valores[loja])))
-        external_links = getattr(wb, "_external_links", None)
-        if external_links is not None and hasattr(external_links, "clear"):
-            external_links.clear()
-        wb.save(temporario)
-        wb.close()
-        wb = None
+        shutil.copy2(arquivo, temporario)
+        _salvar_metas_com_excel(temporario, valores)
         validar_excel_metas(temporario, valores)
         os.replace(temporario, arquivo)
         aguardar_excel_liberado(arquivo)
         gravados = validar_excel_metas(arquivo, valores)
     except Exception:
-        if wb is not None:
-            wb.close()
         temporario.unlink(missing_ok=True)
         raise
     if log:
         log_gestor(log, f"Backup do Excel: {backup}")
-        log_gestor(log, "Excel salvo e validado: C19:C26.")
+        log_gestor(log, "Excel salvo pelo Microsoft Excel e validado: C18:C25.")
     return gravados, backup
 
 

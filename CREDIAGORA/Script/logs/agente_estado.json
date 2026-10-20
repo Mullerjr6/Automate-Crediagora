@@ -1,19 +1,15 @@
 {
   "fluxo": "ercard-carteira",
-  "inicio": "2026-10-19T12:40:02-03:00",
-  "status": "concluido",
+  "inicio": "2026-10-20T06:50:11-03:00",
+  "status": "interrompido",
   "tentativa": 1,
   "comando": [
     "C:\\Users\\CREDIAGORA\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe",
     "ercard_carteira.py"
   ],
-  "backups": [
-    "C:\\Users\\CREDIAGORA\\Desktop\\workspace\\Automacoes\\crediagora\\CREDIAGORA\\Script\\backups\\2026-10-19_12-40-02\\fat_retorno_ligacoes - teste automacao.xlsx",
-    "C:\\Users\\CREDIAGORA\\Desktop\\workspace\\Automacoes\\crediagora\\CREDIAGORA\\Script\\backups\\2026-10-19_12-40-02\\fat_vendas_Teste.xlsx",
-    "C:\\Users\\CREDIAGORA\\Desktop\\workspace\\Automacoes\\crediagora\\CREDIAGORA\\Script\\backups\\2026-10-19_12-40-02\\fat_receita_gerada_CPC_Teste.xlsx"
-  ],
+  "backups": [],
   "etapa_retomada": null,
-  "fim": "2026-10-19T13:20:01-03:00",
-  "codigo_saida": 0,
-  "duracao_minutos": 39.98
+  "fim": "2026-10-20T06:50:00-03:00",
+  "codigo_saida": -1073741510,
+  "observacao": "Execução agendada interrompida antes de concluir a etapa 3 do ERCard."
 }

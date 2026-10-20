@@ -113,11 +113,20 @@ def ler_csv_zip(caminho, log=print):
         if len(cabecalho) < 9 or any(not c.strip() for c in cabecalho[:9]):
             raise RetornoLigacoesError(3, "CabeÃ§alho deve conter pelo menos nove colunas identificadas.")
         linhas = []
+        linhas_com_colunas_extras = []
         for linha in leitor:
             if not linha or not any(c.strip() for c in linha):
                 continue
-            if len(linha) != len(cabecalho):
-                raise RetornoLigacoesError(3, f"Registro na linha {leitor.line_num} com quantidade de colunas invÃ¡lida.")
+            if len(linha) < len(cabecalho):
+                raise RetornoLigacoesError(
+                    3,
+                    f"Registro na linha {leitor.line_num} possui somente {len(linha)} "
+                    f"colunas; eram esperadas {len(cabecalho)}.",
+                )
+            if len(linha) > len(cabecalho):
+                # O Panorama pode acrescentar telefones após a coluna I. A planilha
+                # possui contrato fixo A:I; os excedentes não podem deslocar dados.
+                linhas_com_colunas_extras.append((leitor.line_num, len(linha)))
             valores = tuple(linha[:9])
             if not any(c.strip() for c in valores):
                 raise RetornoLigacoesError(3, f"Registro sem dados em A:I na linha {leitor.line_num}.")
@@ -130,6 +139,14 @@ def ler_csv_zip(caminho, log=print):
         raise RetornoLigacoesError(3, "CSV sem registros ou acima do limite de linhas do Excel.")
     if codificacao is None or dialeto is None:
         raise RetornoLigacoesError(3, "NÃ£o foi possÃ­vel identificar a codificaÃ§Ã£o ou o delimitador do CSV.")
+    if linhas_com_colunas_extras:
+        exemplo_linha, exemplo_colunas = linhas_com_colunas_extras[0]
+        registrar(
+            log,
+            3,
+            f"Registros com telefones excedentes apÃ³s I: {len(linhas_com_colunas_extras)}; "
+            f"primeiro na linha {exemplo_linha} ({exemplo_colunas} colunas).",
+        )
     registrar(log, 3, f"CodificaÃ§Ã£o={codificacao}; delimitador={dialeto.delimiter!r}; colunas={len(cabecalho)}; registros={len(linhas)}.")
     return tuple(cabecalho[:9]), linhas
 
