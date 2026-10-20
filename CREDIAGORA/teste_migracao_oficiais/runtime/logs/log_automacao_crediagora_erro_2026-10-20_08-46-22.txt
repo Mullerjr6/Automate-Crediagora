@@ -1,0 +1,58 @@
+[20/10/2026 08:45:57] ======= Iniciando processo de exportação: 2026-10-20 08:45:57 =======
+[20/10/2026 08:45:57] Validando caminhos...
+[20/10/2026 08:45:57] Retorno de ligações encontrado: C:\Users\CREDIAGORA\Desktop\workspace\Automacoes\crediagora\CREDIAGORA\teste_migracao_oficiais\fat_retorno_ligacoes - teste automacao.xlsx
+[20/10/2026 08:45:57] Resumo da configuração:
+[20/10/2026 08:45:57] - Exportação: retorno-ligacoes
+[20/10/2026 08:45:57] - URL: https://crediagora.panoramaemprestimos.com.br/login.do?action=sistema
+[20/10/2026 08:45:57] - Usuário: junior.muller
+[20/10/2026 08:45:57] - Origem das credenciais: usuário=perfil do Windows; senha=perfil do Windows
+[20/10/2026 08:45:57] - Senha carregada: sim (comprimento: 9)
+[20/10/2026 08:45:57] - Downloads: C:\Users\CREDIAGORA\Desktop\workspace\Automacoes\crediagora\CREDIAGORA\teste_migracao_oficiais\downloads
+[20/10/2026 08:45:57] - Tabela fat: C:\Users\CREDIAGORA\Desktop\workspace\Automacoes\crediagora\CREDIAGORA\teste_migracao_oficiais
+[20/10/2026 08:45:57] - Backups/logs/erros: C:\Users\CREDIAGORA\Desktop\workspace\Automacoes\crediagora\CREDIAGORA\teste_migracao_oficiais\runtime
+[20/10/2026 08:45:57] - Perfil persistente do Chrome: C:\Users\CREDIAGORA\Desktop\workspace\Automacoes\crediagora\CREDIAGORA\teste_migracao_oficiais\runtime\chrome-profile
+[20/10/2026 08:45:57] - Timeout download: 300s
+[20/10/2026 08:45:57] - Timeout Excel: 120s
+[20/10/2026 08:45:57] - Chrome headless: não
+[20/10/2026 08:45:57] - Manter navegador ao final: não
+[20/10/2026 08:45:57] - Manter downloads ao final: não
+[20/10/2026 08:45:57] - Criar backup antes de atualizar: sim
+[20/10/2026 08:46:01] [PANORAMA][JANELA] Preparando o Chrome antes de iniciar o login...
+[20/10/2026 08:46:02] [PANORAMA][JANELA] Chrome maximizado no monitor principal antes do login: posicao=(-7, -7), tamanho=1552x928.
+[20/10/2026 08:46:02] Abrindo site...
+[20/10/2026 08:46:04] Preenchendo usuário...
+[20/10/2026 08:46:04] Preenchendo senha...
+[20/10/2026 08:46:05] Campos de login conferidos antes do envio: usuário com 13 caracteres; senha com 9 caracteres.
+[20/10/2026 08:46:05] Tentando entrar no sistema...
+[20/10/2026 08:46:06] Clique realizado em: botão Entrar do formulário de login
+[20/10/2026 08:46:06] Formulário de login enviado uma única vez.
+[20/10/2026 08:46:06] Aguardando tela principal...
+[20/10/2026 08:46:10] Login realizado com sucesso.
+[20/10/2026 08:46:10] Criando backups dos arquivos atuais antes da atualização...
+[20/10/2026 08:46:10] Arquivo liberado para edição: C:\Users\CREDIAGORA\Desktop\workspace\Automacoes\crediagora\CREDIAGORA\teste_migracao_oficiais\fat_retorno_ligacoes - teste automacao.xlsx
+[20/10/2026 08:46:10] Backup criado: C:\Users\CREDIAGORA\Desktop\workspace\Automacoes\crediagora\CREDIAGORA\teste_migracao_oficiais\runtime\backups\fat_retorno_ligacoes - teste automacao_backup_retorno_ligacoes_2026-10-20_08-46-10.xlsx
+[20/10/2026 08:46:10] Backups dos arquivos selecionados criados com sucesso.
+[20/10/2026 08:46:10] [PANORAMA][RETORNO LIGACOES] [ETAPA 1] Abrindo início > Exportações > contato campanha Normal.
+[20/10/2026 08:46:14] [PANORAMA][RETORNO LIGACOES] [ETAPA 1] Exportação Normal localizada.
+[20/10/2026 08:46:16] [PANORAMA][RETORNO LIGACOES] [ETAPA 1] Download solicitado uma única vez.
+[20/10/2026 08:46:16] [PANORAMA][RETORNO LIGACOES][ETAPA 2] Aguardando ZIP...
+[20/10/2026 08:46:17] [PANORAMA][RETORNO LIGACOES][ETAPA 2] Aguardando ZIP concluído em 1.6s.
+[20/10/2026 08:46:17] [PANORAMA][RETORNO LIGACOES] [ETAPA 2] Download concluído: contato-normal-f9f4733c-3faf-4cac-ab3f-feb1744ef334.zip
+[20/10/2026 08:46:17] [PANORAMA][RETORNO LIGACOES] Atualizando Excel...
+[20/10/2026 08:46:17] [PANORAMA][RETORNO LIGACOES][ETAPA 3] Lendo dados do CSV...
+[20/10/2026 08:46:17] [PANORAMA][RETORNO LIGACOES][ETAPA 2] CSV identificado: 105146-1792496772713.csv.
+[20/10/2026 08:46:17] [PANORAMA][RETORNO LIGACOES][ETAPA 3] Aviso: o CSV original contÃ©m 3 caracteres de substituiÃ§Ã£o; conteÃºdo preservado sem tentar corrigir nomes.
+[20/10/2026 08:46:17] [PANORAMA][RETORNO LIGACOES] Atualizando Excel concluído em 0.2s.
+[20/10/2026 08:46:18] Print do erro salvo em: C:\Users\CREDIAGORA\Desktop\workspace\Automacoes\crediagora\CREDIAGORA\teste_migracao_oficiais\runtime\erros\erro_retorno_ligacoes_2026-10-20_08-46-17.png
+[20/10/2026 08:46:18] HTML do erro salvo em: C:\Users\CREDIAGORA\Desktop\workspace\Automacoes\crediagora\CREDIAGORA\teste_migracao_oficiais\runtime\erros\erro_retorno_ligacoes_2026-10-20_08-46-17.html
+[20/10/2026 08:46:18] ========== ERRO NO PROCESSO ==========
+[20/10/2026 08:46:18] [PANORAMA][RETORNO LIGACOES][ETAPA 3] Registro na linha 13880 com quantidade de colunas invÃ¡lida.
+[20/10/2026 08:46:18] [RECUPERAÇÃO][retorno-ligacoes] Avisos e páginas secundárias fechados.
+[20/10/2026 08:46:18] [RECUPERAÇÃO] Próxima tentativa recomeçará em: retorno-ligacoes.
+[20/10/2026 08:46:18] Print do erro salvo em: C:\Users\CREDIAGORA\Desktop\workspace\Automacoes\crediagora\CREDIAGORA\teste_migracao_oficiais\runtime\erros\erro_processo_2026-10-20_08-46-18.png
+[20/10/2026 08:46:18] HTML do erro salvo em: C:\Users\CREDIAGORA\Desktop\workspace\Automacoes\crediagora\CREDIAGORA\teste_migracao_oficiais\runtime\erros\erro_processo_2026-10-20_08-46-18.html
+[20/10/2026 08:46:18] Fechando navegador...
+[20/10/2026 08:46:20] Arquivos baixados mantidos para diagnóstico porque o processo terminou com erro.
+[20/10/2026 08:46:20] Limpando recursos finais da automação...
+[20/10/2026 08:46:22] ======= Processo de exportação finalizado: 2026-10-20 08:46:22 =======
+[20/10/2026 08:46:22] ====== O processo de exportação foi concluído em 0.4 minutos.======
