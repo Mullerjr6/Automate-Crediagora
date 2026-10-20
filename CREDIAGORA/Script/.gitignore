@@ -1,0 +1,5 @@
+__pycache__/
+.ruff_cache/
+*.py[cod]
+logs/*.lock
+logs/feriados/

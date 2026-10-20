@@ -11,6 +11,7 @@ import subprocess
 import threading
 import time
 import unicodedata
+import zipfile
 from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
@@ -311,6 +312,22 @@ def remover_links_externos_excel(wb):
     if links:
         links.clear()
         log("[EXCEL] Referências externas removidas antes do salvamento.")
+
+
+def bloquear_gravacao_openpyxl_com_links_externos(arquivo):
+    """Impede que OpenPyXL regrave planilhas com recursos que ele não preserva."""
+    try:
+        with zipfile.ZipFile(arquivo) as pacote:
+            possui_links = any(
+                item.startswith("xl/externalLinks/") for item in pacote.namelist()
+            )
+    except (OSError, zipfile.BadZipFile) as erro:
+        raise ValueError(f"Não foi possível inspecionar o XLSX antes de salvar: {arquivo}") from erro
+    if possui_links:
+        raise ValueError(
+            "Atualização bloqueada para preservar a planilha: o arquivo contém "
+            "vínculos externos que o OpenPyXL pode danificar."
+        )
 
 
 def limpar_pagina_para_reinicio(driver, etapa):
@@ -3660,6 +3677,7 @@ def copiar_dados_excel_origem_para_destino(
             "A atualização foi interrompida para evitar apagar o mês vigente sem repor os dados."
         )
 
+    bloquear_gravacao_openpyxl_com_links_externos(arquivo_destino)
     wb_destino = None
 
     try:

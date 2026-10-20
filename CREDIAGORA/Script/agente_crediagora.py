@@ -33,6 +33,7 @@ FLUXOS = {
         "start.py", "--exportacao", "retorno-ligacoes",
         "--sem-ercard", "--sem-gestor", "--headless",
     ],
+    "retorno-ligacoes-oficial": ["retorno_ligacoes_oficial.py"],
 }
 VERSAO_ERCARD_CARTEIRA = 2
 
@@ -52,6 +53,13 @@ def carregar_configuracao(caminho):
 
 def adquirir_trava():
     TRAVA.parent.mkdir(parents=True, exist_ok=True)
+    if TRAVA.exists():
+        try:
+            texto = TRAVA.read_text(encoding="utf-8")
+            pid = int(texto.split("pid=", 1)[1].split()[0])
+            os.kill(pid, 0)
+        except (FileNotFoundError, IndexError, OSError, ValueError):
+            TRAVA.unlink(missing_ok=True)
     try:
         fd = os.open(TRAVA, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
         os.write(fd, f"pid={os.getpid()} inicio={agora()}".encode())
@@ -118,18 +126,37 @@ def validar_resultado(fluxo):
         return True
     if fluxo == "retorno-ligacoes":
         return (PASTA_TESTE_MIGRACAO / "fat_retorno_ligacoes - teste automacao.xlsx").exists()
+    if fluxo == "retorno-ligacoes-oficial":
+        return (
+            Path.home()
+            / "TJI PROMOTORA DE VENDAS EIRELI"
+            / "Crediagora-doc - dados"
+            / "tabela fat"
+            / "fat_retorno_ligacoes.xlsx"
+        ).is_file()
     return True
 
 
-def criar_backups(config):
-    destinos = config.get("backup_paths") or [
+def criar_backups(config, fluxo=None):
+    if fluxo == "retorno-ligacoes-oficial":
+        destinos = [
+            str(
+                Path.home()
+                / "TJI PROMOTORA DE VENDAS EIRELI"
+                / "Crediagora-doc - dados"
+                / "tabela fat"
+                / "fat_retorno_ligacoes.xlsx"
+            )
+        ]
+    else:
+        destinos = config.get("backup_paths") or [
         str(PASTA_TESTE_MIGRACAO / nome)
         for nome in (
             "fat_retorno_ligacoes - teste automacao.xlsx",
             "fat_vendas_Teste.xlsx",
             "fat_receita_gerada_CPC_Teste.xlsx",
         )
-    ]
+        ]
     if not isinstance(destinos, list):
         return []
     pasta = SCRIPT_DIR / "backups" / datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -250,7 +277,7 @@ def executar_fluxo(nome, tentativas, config):
         "comando": comando_do_fluxo(),
     }
     registrar_estado(base)
-    base["backups"] = criar_backups(config)
+    base["backups"] = criar_backups(config, nome)
     limpar_backups_antigos(config)
     timeout_minutos = max(1, int(config.get("timeout_minutos", 180)))
 

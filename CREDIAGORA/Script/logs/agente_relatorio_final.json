@@ -1,19 +1,17 @@
 {
-  "fluxo": "ercard-carteira",
-  "inicio": "2026-10-19T12:40:02-03:00",
+  "fluxo": "retorno-ligacoes-oficial",
+  "inicio": "2026-10-20T10:52:02-03:00",
   "status": "concluido",
   "tentativa": 1,
   "comando": [
     "C:\\Users\\CREDIAGORA\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe",
-    "ercard_carteira.py"
+    "retorno_ligacoes_oficial.py"
   ],
   "backups": [
-    "C:\\Users\\CREDIAGORA\\Desktop\\workspace\\Automacoes\\crediagora\\CREDIAGORA\\Script\\backups\\2026-10-19_12-40-02\\fat_retorno_ligacoes - teste automacao.xlsx",
-    "C:\\Users\\CREDIAGORA\\Desktop\\workspace\\Automacoes\\crediagora\\CREDIAGORA\\Script\\backups\\2026-10-19_12-40-02\\fat_vendas_Teste.xlsx",
-    "C:\\Users\\CREDIAGORA\\Desktop\\workspace\\Automacoes\\crediagora\\CREDIAGORA\\Script\\backups\\2026-10-19_12-40-02\\fat_receita_gerada_CPC_Teste.xlsx"
+    "C:\\Users\\CREDIAGORA\\Desktop\\workspace\\Automacoes\\crediagora\\CREDIAGORA\\Script\\backups\\2026-10-20_10-52-02\\fat_retorno_ligacoes.xlsx"
   ],
   "etapa_retomada": null,
-  "fim": "2026-10-19T13:20:01-03:00",
+  "fim": "2026-10-20T10:52:57-03:00",
   "codigo_saida": 0,
-  "duracao_minutos": 39.98
+  "duracao_minutos": 0.92
 }
