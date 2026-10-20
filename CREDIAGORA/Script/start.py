@@ -336,7 +336,13 @@ def possui_links_externos_excel(arquivo):
 
 
 def salvar_planilha_preservando_links_externos(workbook, arquivo):
-    """Salva sem perder as partes OOXML dos vínculos externos existentes."""
+    """Salva sem perder as partes OOXML dos v?nculos externos existentes.
+
+    O openpyxl pode converter textos compartilhados em textos em linha ao
+    salvar. Como os relacionamentos originais do livro s?o preservados para
+    manter os v?nculos externos, ``sharedStrings.xml`` tamb?m deve acompanhar
+    esses relacionamentos quando existir no arquivo original.
+    """
     arquivo = Path(arquivo)
     if not possui_links_externos_excel(arquivo):
         workbook.save(arquivo)
@@ -349,22 +355,40 @@ def salvar_planilha_preservando_links_externos(workbook, arquivo):
         "[Content_Types].xml",
         "xl/workbook.xml",
         "xl/_rels/workbook.xml.rels",
+        "xl/sharedStrings.xml",
+        "xl/calcChain.xml",
     }
-    with zipfile.ZipFile(arquivo) as original, zipfile.ZipFile(temporario) as atualizado, zipfile.ZipFile(combinado, "w", zipfile.ZIP_DEFLATED) as saida:
-        nomes_originais = set(original.namelist())
-        for nome in atualizado.namelist():
-            if nome in preservar and nome in nomes_originais:
-                saida.writestr(nome, original.read(nome))
-            else:
-                saida.writestr(nome, atualizado.read(nome))
-        for nome in original.namelist():
-            if nome.startswith("xl/externalLinks/") and nome not in atualizado.namelist():
-                saida.writestr(nome, original.read(nome))
-    temporario.unlink(missing_ok=True)
-    if not possui_links_externos_excel(combinado):
+    try:
+        with (
+            zipfile.ZipFile(arquivo) as original,
+            zipfile.ZipFile(temporario) as atualizado,
+            zipfile.ZipFile(combinado, "w", zipfile.ZIP_DEFLATED) as saida,
+        ):
+            nomes_originais = set(original.namelist())
+            nomes_atualizados = set(atualizado.namelist())
+            for nome in atualizado.namelist():
+                if nome in preservar and nome in nomes_originais:
+                    saida.writestr(nome, original.read(nome))
+                else:
+                    saida.writestr(nome, atualizado.read(nome))
+            for nome in original.namelist():
+                if (
+                    nome in preservar or nome.startswith("xl/externalLinks/")
+                ) and nome not in nomes_atualizados:
+                    saida.writestr(nome, original.read(nome))
+
+        if not possui_links_externos_excel(combinado):
+            raise ValueError("Os v?nculos externos n?o foram preservados.")
+
+        # Confere os relacionamentos internos antes de tocar no arquivo ativo.
+        validacao = load_workbook(combinado, read_only=True, keep_links=False)
+        validacao.close()
+        os.replace(combinado, arquivo)
+    except Exception:
         combinado.unlink(missing_ok=True)
-        raise ValueError("Os vínculos externos não foram preservados; planilha original mantida.")
-    os.replace(combinado, arquivo)
+        raise
+    finally:
+        temporario.unlink(missing_ok=True)
 
 
 def limpar_pagina_para_reinicio(driver, etapa):
@@ -576,16 +600,16 @@ def criar_configuracao_ercard(pasta_exportacao=None):
 
 def criar_configuracao_gestor():
     return GestorConfig(
-        remoto_usuario=GESTOR_REMOTO_USUARIO,
-        usuario=GESTOR_USUARIO,
-        senha=GESTOR_SENHA,
-        arquivo_excel=ARQUIVO_METAS_GESTOR,
-        pasta_logs=PASTA_LOGS,
-        pasta_erros=PASTA_ERROS,
-        pasta_backup=PASTA_BACKUP,
-        atalho=ATALHO_GESTOR,
-        timeout_janela=GESTOR_TIMEOUT_JANELA,
-        timeout_relatorio=GESTOR_TIMEOUT_RELATORIO,
+        GESTOR_REMOTO_USUARIO,
+        GESTOR_USUARIO,
+        GESTOR_SENHA,
+        ARQUIVO_METAS_GESTOR,
+        PASTA_LOGS,
+        PASTA_ERROS,
+        PASTA_BACKUP,
+        ATALHO_GESTOR,
+        GESTOR_TIMEOUT_JANELA,
+        GESTOR_TIMEOUT_RELATORIO,
     )
 
 

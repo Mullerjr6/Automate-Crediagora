@@ -29,6 +29,7 @@ PASTA_TESTE_MIGRACAO = SCRIPT_DIR.parent / "teste_migracao_oficiais"
 FLUXOS = {
     "completo": ["start.py", "--headless"],
     "ercard-carteira": ["ercard_carteira.py"],
+    "ercard-tabela-contratos": ["ercard_tabela_contratos.py"],
     "retorno-ligacoes": [
         "start.py", "--exportacao", "retorno-ligacoes",
         "--sem-ercard", "--sem-gestor", "--headless",
@@ -124,6 +125,19 @@ def validar_resultado(fluxo):
             if arquivo.stat().st_size <= 0 or "\n" not in arquivo.read_text(encoding="utf-8-sig", errors="replace")[:4096]:
                 return False
         return True
+    if fluxo == "ercard-tabela-contratos":
+        estado_fluxo = SCRIPT_DIR / "logs" / "ercard_tabela_contratos_estado.json"
+        try:
+            estado = json.loads(estado_fluxo.read_text(encoding="utf-8"))
+            arquivo = Path(estado["arquivo"])
+        except (KeyError, OSError, json.JSONDecodeError):
+            return False
+        return (
+            estado.get("status") == "concluido"
+            and arquivo.is_file()
+            and arquivo.stat().st_size > 0
+            and arquivo.name.casefold().startswith("14 - tabela contratos")
+        )
     if fluxo == "retorno-ligacoes":
         return (PASTA_TESTE_MIGRACAO / "fat_retorno_ligacoes - teste automacao.xlsx").exists()
     if fluxo == "retorno-ligacoes-oficial":
