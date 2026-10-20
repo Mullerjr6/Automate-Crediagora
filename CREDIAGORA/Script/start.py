@@ -160,9 +160,15 @@ PASTA_TABELA_FAT = caminho_env(
     PASTA_TESTE_MIGRACAO,
 )
 
-ARQUIVO_METAS_GESTOR = caminho_env(
-    "GESTOR_XLSX_METAS",
-    PASTA_TABELA_FAT / "fat_metas_venda_moda_lojas_hoje_Teste_Automaçao.xlsx",
+PASTA_TABELA_FAT_OFICIAL = (
+    Path.home()
+    / "TJI PROMOTORA DE VENDAS EIRELI"
+    / "Crediagora-doc - dados"
+    / "tabela fat"
+)
+# Destino oficial autorizado exclusivamente para o Gestor.
+ARQUIVO_METAS_GESTOR = (
+    PASTA_TABELA_FAT_OFICIAL / "fat_metas_venda_moda_lojas_hoje.xlsx"
 )
 ATALHO_GESTOR = caminho_env(
     "GESTOR_ATALHO",
@@ -252,8 +258,7 @@ ARQUIVO_INDICADORES_FPD1 = caminho_env(
 
 # Os nomes das cópias isoladas acompanham as planilhas oficiais. Mantemos as
 # variáveis de ambiente como exceção explícita para uma futura migração.
-if not os.getenv("GESTOR_XLSX_METAS"):
-    ARQUIVO_METAS_GESTOR = PASTA_TABELA_FAT / "fat_metas_venda_moda_lojas_hoje.xlsx"
+# Indicadores permanece na c?pia isolada at? uma autoriza??o espec?fica.
 if not os.getenv("CREDIAGORA_INDICADORES_FPD1_XLSX"):
     ARQUIVO_INDICADORES_FPD1 = PASTA_TABELA_FAT / "Indicadores de FPD1.xlsx"
 

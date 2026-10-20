@@ -1,6 +1,6 @@
 {
   "fluxo": "retorno-ligacoes-oficial",
-  "inicio": "2026-10-20T13:30:03-03:00",
+  "inicio": "2026-10-20T17:05:01-03:00",
   "status": "concluido",
   "tentativa": 1,
   "comando": [
@@ -8,10 +8,10 @@
     "retorno_ligacoes_oficial.py"
   ],
   "backups": [
-    "C:\\Users\\CREDIAGORA\\Desktop\\workspace\\Automacoes\\crediagora\\CREDIAGORA\\Script\\backups\\2026-10-20_13-30-04\\fat_retorno_ligacoes.xlsx"
+    "C:\\Users\\CREDIAGORA\\Desktop\\workspace\\Automacoes\\crediagora\\CREDIAGORA\\Script\\backups\\2026-10-20_17-05-01\\fat_retorno_ligacoes.xlsx"
   ],
   "etapa_retomada": null,
-  "fim": "2026-10-20T13:31:34-03:00",
+  "fim": "2026-10-20T17:06:09-03:00",
   "codigo_saida": 0,
-  "duracao_minutos": 1.51
+  "duracao_minutos": 1.13
 }
