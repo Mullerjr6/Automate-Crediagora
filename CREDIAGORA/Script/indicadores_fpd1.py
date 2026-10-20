@@ -254,8 +254,9 @@ def reparar_formulas_indicadores_fpd1(xlsx_destino, pasta_backup, log=print):
         wb.calculation.forceFullCalc = True
         wb.calculation.calcMode = "auto"
         with _progresso_continuo(log, "Salvamento do XLSX reparado"):
-            if getattr(wb, "_external_links", None):
-                wb._external_links.clear()
+            links_externos = getattr(wb, "_external_links", None)
+            if isinstance(links_externos, list):
+                links_externos.clear()
             wb.save(temporario)
         wb.close()
         wb = None
@@ -427,8 +428,9 @@ def atualizar_indicadores_fpd1(csv_atual, xlsx_destino, log=print):
         wb.calculation.forceFullCalc = True
         wb.calculation.calcMode = "auto"
         with _progresso_continuo(log, "Salvamento do XLSX temporario"):
-            if getattr(wb, "_external_links", None):
-                wb._external_links.clear()
+            links_externos = getattr(wb, "_external_links", None)
+            if isinstance(links_externos, list):
+                links_externos.clear()
             wb.save(temporario)
         wb.close()
         wb = None

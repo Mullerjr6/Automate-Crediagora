@@ -9,7 +9,6 @@ import urllib.request
 from datetime import date
 from pathlib import Path
 
-
 SCRIPT_DIR = Path(__file__).resolve().parent.parent
 LOG = SCRIPT_DIR / "logs" / "agendado_retorno_ligacoes_oficial.log"
 CACHE_DIR = SCRIPT_DIR / "logs" / "feriados"
@@ -100,6 +99,7 @@ def main() -> int:
         resultado = subprocess.run(
             [sys.executable, "-u", "agente_crediagora.py", "--fluxo", "retorno-ligacoes-oficial"],
             cwd=SCRIPT_DIR,
+            check=False,
             stdout=arquivo_log,
             stderr=subprocess.STDOUT,
             text=True,

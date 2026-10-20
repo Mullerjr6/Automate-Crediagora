@@ -5,10 +5,8 @@ from __future__ import annotations
 import subprocess
 import sys
 from datetime import date
-from pathlib import Path
 
 from executar_retorno_ligacoes_oficial_agendado import SCRIPT_DIR, feriados_nacionais
-
 
 LOG = SCRIPT_DIR / "logs" / "agendado_ercard_carteira.log"
 
@@ -37,6 +35,7 @@ def main() -> int:
         resultado = subprocess.run(
             [sys.executable, "-u", "ercard_carteira.py"],
             cwd=SCRIPT_DIR,
+            check=False,
             stdout=arquivo_log,
             stderr=subprocess.STDOUT,
             text=True,
