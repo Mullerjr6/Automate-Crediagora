@@ -171,7 +171,17 @@ ATALHO_GESTOR = caminho_env(
 
 # Arquivos finais
 ARQUIVO_FAT_VENDAS = PASTA_TABELA_FAT / "fat_vendas_Teste.xlsx"
-ARQUIVO_RETORNO_LIGACOES = PASTA_TABELA_FAT / "fat_retorno_ligacoes - teste automacao.xlsx"
+ARQUIVO_RETORNO_LIGACOES_TESTE = PASTA_TABELA_FAT / "fat_retorno_ligacoes - teste automacao.xlsx"
+ARQUIVO_RETORNO_LIGACOES_OFICIAL = (
+    Path.home()
+    / "TJI PROMOTORA DE VENDAS EIRELI"
+    / "Crediagora-doc - dados"
+    / "tabela fat"
+    / "fat_retorno_ligacoes.xlsx"
+)
+# Retorno de Ligações foi autorizado para atualização oficial. As demais bases
+# continuam apontando para a pasta de testes de migração.
+ARQUIVO_RETORNO_LIGACOES = ARQUIVO_RETORNO_LIGACOES_OFICIAL
 DOWNLOADS_PREEXISTENTES = set()
 
 # O script tenta encontrar a receita em alguns caminhos possíveis:
@@ -314,20 +324,47 @@ def remover_links_externos_excel(wb):
         log("[EXCEL] Referências externas removidas antes do salvamento.")
 
 
-def bloquear_gravacao_openpyxl_com_links_externos(arquivo):
-    """Impede que OpenPyXL regrave planilhas com recursos que ele não preserva."""
+def possui_links_externos_excel(arquivo):
+    """Informa se o XLSX possui vínculos que exigem salvamento pelo Excel."""
     try:
         with zipfile.ZipFile(arquivo) as pacote:
-            possui_links = any(
+            return any(
                 item.startswith("xl/externalLinks/") for item in pacote.namelist()
             )
     except (OSError, zipfile.BadZipFile) as erro:
         raise ValueError(f"Não foi possível inspecionar o XLSX antes de salvar: {arquivo}") from erro
-    if possui_links:
-        raise ValueError(
-            "Atualização bloqueada para preservar a planilha: o arquivo contém "
-            "vínculos externos que o OpenPyXL pode danificar."
-        )
+
+
+def salvar_planilha_preservando_links_externos(workbook, arquivo):
+    """Salva sem perder as partes OOXML dos vínculos externos existentes."""
+    arquivo = Path(arquivo)
+    if not possui_links_externos_excel(arquivo):
+        workbook.save(arquivo)
+        return
+
+    temporario = arquivo.with_name(f".{arquivo.stem}.atualizando{arquivo.suffix}")
+    combinado = arquivo.with_name(f".{arquivo.stem}.combinado{arquivo.suffix}")
+    workbook.save(temporario)
+    preservar = {
+        "[Content_Types].xml",
+        "xl/workbook.xml",
+        "xl/_rels/workbook.xml.rels",
+    }
+    with zipfile.ZipFile(arquivo) as original, zipfile.ZipFile(temporario) as atualizado, zipfile.ZipFile(combinado, "w", zipfile.ZIP_DEFLATED) as saida:
+        nomes_originais = set(original.namelist())
+        for nome in atualizado.namelist():
+            if nome in preservar and nome in nomes_originais:
+                saida.writestr(nome, original.read(nome))
+            else:
+                saida.writestr(nome, atualizado.read(nome))
+        for nome in original.namelist():
+            if nome.startswith("xl/externalLinks/") and nome not in atualizado.namelist():
+                saida.writestr(nome, original.read(nome))
+    temporario.unlink(missing_ok=True)
+    if not possui_links_externos_excel(combinado):
+        combinado.unlink(missing_ok=True)
+        raise ValueError("Os vínculos externos não foram preservados; planilha original mantida.")
+    os.replace(combinado, arquivo)
 
 
 def limpar_pagina_para_reinicio(driver, etapa):
@@ -3617,6 +3654,137 @@ def esperar_arquivo_excel_liberar(arquivo, timeout=None):
     )
 
 
+def atualizar_base_com_excel_nativo(
+    arquivo_destino,
+    linhas_origem,
+    coluna_data,
+    colunas_formula,
+    ultima_coluna_dados,
+    ultima_coluna_total,
+    etapa,
+):
+    """Atualiza uma planilha com vínculos externos sem regravá-los pelo OpenPyXL."""
+    try:
+        import pythoncom
+        from win32com.client import DispatchEx
+    except ImportError as erro:
+        raise RuntimeError(
+            "O Microsoft Excel não está disponível para preservar os vínculos externos da planilha."
+        ) from erro
+
+    arquivo_destino = Path(arquivo_destino)
+    limite_dados = coluna_para_numero(ultima_coluna_dados)
+    limite_total = coluna_para_numero(ultima_coluna_total)
+    coluna_data_num = coluna_para_numero(coluna_data)
+    linhas_origem = [list(linha[:limite_dados]) for linha in linhas_origem]
+    invalidas = [
+        indice
+        for indice, linha in enumerate(linhas_origem, start=2)
+        if len(linha) < coluna_data_num or valor_para_data(linha[coluna_data_num - 1]) is None
+    ]
+    if invalidas:
+        raise ValueError(f"Exportação com data inválida na coluna {coluna_data}: linhas {invalidas[:10]}.")
+
+    temporario = arquivo_destino.with_name(
+        f".{arquivo_destino.stem}.excel-nativo-{int(time.time())}{arquivo_destino.suffix}"
+    )
+    shutil.copy2(arquivo_destino, temporario)
+    excel = workbook = None
+    pythoncom.CoInitialize()
+    try:
+        excel = DispatchEx("Excel.Application")
+        excel.Visible = False
+        excel.DisplayAlerts = False
+        excel.AskToUpdateLinks = False
+        excel.EnableEvents = False
+        excel.AlertBeforeOverwriting = False
+        try:
+            excel.AutomationSecurity = 3
+        except Exception:
+            pass
+        workbook = excel.Workbooks.Open(
+            str(temporario.resolve()),
+            UpdateLinks=0,
+            ReadOnly=False,
+            IgnoreReadOnlyRecommended=True,
+            Notify=False,
+            AddToMru=False,
+        )
+        planilha = workbook.Worksheets(1)
+        ultimo = int(planilha.Cells(planilha.Rows.Count, 1).End(-4162).Row)
+        ultimo = max(ultimo, 1)
+        dados_atuais = []
+        if ultimo >= 2:
+            valores = planilha.Range(
+                planilha.Cells(2, 1), planilha.Cells(ultimo, limite_total)
+            ).Value2
+            dados_atuais = [list(linha) for linha in valores] if isinstance(valores, tuple) else [list(valores)]
+
+        modelos = {}
+        for coluna in colunas_formula:
+            numero = coluna_para_numero(coluna)
+            formulas = planilha.Range(planilha.Cells(2, numero), planilha.Cells(ultimo, numero)).FormulaR1C1
+            sequencia = formulas if isinstance(formulas, tuple) else (formulas,)
+            modelo = next(
+                (item[0] if isinstance(item, tuple) else item for item in sequencia if isinstance(item[0] if isinstance(item, tuple) else item, str) and str(item[0] if isinstance(item, tuple) else item).startswith("=")),
+                None,
+            )
+            if not modelo:
+                raise ValueError(f"Nenhuma fórmula modelo foi encontrada na coluna {coluna}.")
+            modelos[coluna] = modelo
+
+        mantidas = [
+            linha for linha in dados_atuais
+            if any(valor is not None and str(valor).strip() for valor in linha)
+            and not linha_eh_mes_vigente(valor_para_data(linha[coluna_data_num - 1]))
+        ]
+        registros_anteriores = len(dados_atuais) - len(mantidas)
+        registros_exportados = sum(
+            linha_eh_mes_vigente(valor_para_data(linha[coluna_data_num - 1])) for linha in linhas_origem
+        )
+        if registros_exportados < registros_anteriores:
+            raise ValueError(
+                f"Exportação possui {registros_exportados} registros do mês vigente, menos que os "
+                f"{registros_anteriores} existentes. Planilha preservada."
+            )
+
+        novas_linhas = mantidas + [linha + [None] * (limite_total - len(linha)) for linha in linhas_origem]
+        ultima_nova = len(novas_linhas) + 1
+        limite_limpeza = max(ultimo, ultima_nova, 2)
+        planilha.Range(planilha.Cells(2, 1), planilha.Cells(limite_limpeza, limite_total)).ClearContents()
+        planilha.Range(planilha.Cells(2, 1), planilha.Cells(ultima_nova, limite_total)).Value2 = tuple(
+            tuple(linha[:limite_total]) for linha in novas_linhas
+        )
+        for coluna, modelo in modelos.items():
+            numero = coluna_para_numero(coluna)
+            planilha.Cells(2, numero).FormulaR1C1 = modelo
+            if ultima_nova > 2:
+                planilha.Range(planilha.Cells(2, numero), planilha.Cells(ultima_nova, numero)).FillDown()
+
+        for indice in range(1, planilha.ListObjects.Count + 1):
+            tabela = planilha.ListObjects.Item(indice)
+            inicio_coluna = int(tabela.Range.Column)
+            fim_coluna = inicio_coluna + int(tabela.Range.Columns.Count) - 1
+            tabela.Resize(planilha.Range(planilha.Cells(1, inicio_coluna), planilha.Cells(ultima_nova, fim_coluna)))
+
+        workbook.Save()
+        workbook.Close(SaveChanges=True)
+        workbook = None
+        excel.Quit()
+        excel = None
+        if not possui_links_externos_excel(temporario):
+            raise ValueError("O Excel nativo não preservou os vínculos externos; planilha original mantida.")
+        os.replace(temporario, arquivo_destino)
+        log_panorama(etapa, f"Planilha salva pelo Excel nativo; registros gravados: {len(linhas_origem)}.")
+    finally:
+        if workbook is not None:
+            workbook.Close(SaveChanges=False)
+        if excel is not None:
+            excel.Quit()
+        pythoncom.CoUninitialize()
+        temporario.unlink(missing_ok=True)
+
+
 def copiar_dados_excel_origem_para_destino(
     arquivo_origem,
     arquivo_destino,
@@ -3677,7 +3845,9 @@ def copiar_dados_excel_origem_para_destino(
             "A atualização foi interrompida para evitar apagar o mês vigente sem repor os dados."
         )
 
-    bloquear_gravacao_openpyxl_com_links_externos(arquivo_destino)
+    preservar_links_externos = possui_links_externos_excel(arquivo_destino)
+    if preservar_links_externos:
+        log_panorama(etapa, "Vínculos externos detectados: preservação OOXML ativada.")
     wb_destino = None
 
     try:
@@ -3831,8 +4001,9 @@ def copiar_dados_excel_origem_para_destino(
         with acompanhar_operacao(
             f"[PANORAMA][{etapa}] Salvando a planilha atualizada", intervalo=10
         ):
-            remover_links_externos_excel(wb_destino)
-            wb_destino.save(arquivo_destino)
+            if not preservar_links_externos:
+                remover_links_externos_excel(wb_destino)
+            salvar_planilha_preservando_links_externos(wb_destino, arquivo_destino)
         log_panorama(etapa, f"Planilha salva com sucesso: {arquivo_destino}")
         atualizado_em = datetime.now().astimezone()
         if resumo is not None:
