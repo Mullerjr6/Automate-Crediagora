@@ -306,6 +306,43 @@ def aguardar_janela(
     )
 
 
+def aguardar_menu_ou_gestor(timeout, anteriores, log=None):
+    """Aguarda o menu RemoteApp ou a abertura direta do Gestor ABsgm.
+
+    Algumas conexões exibem o menu ``Remote App`` antes do atalho "Lojas
+    Hoje". Em outras, o servidor abre diretamente a aplicação ABsgm; nesse
+    caso não existe menu intermediário para clicar.
+    """
+    fim = time.monotonic() + timeout
+    handles_anteriores = set(anteriores)
+    ultimo_aviso = -15
+    while time.monotonic() < fim:
+        decorrido = int(timeout - max(0, fim - time.monotonic()))
+        if log is not None and decorrido - ultimo_aviso >= 15:
+            ultimo_aviso = decorrido
+            log_gestor(
+                log,
+                f"Aguardando o servidor abrir o Gestor ({decorrido}s de {timeout}s).",
+            )
+        for janela in _enumerar_janelas():
+            if janela["hwnd"] in handles_anteriores:
+                continue
+            titulo = normalizar(janela["titulo"])
+            classe = normalizar(janela["classe"])
+            if "remote" in titulo and "app" in titulo and "rail_window" in classe:
+                janela["abertura_direta"] = False
+                return janela
+            if "absgm" in titulo:
+                janela["abertura_direta"] = True
+                return janela
+        time.sleep(0.5)
+    raise GestorError(
+        "Menu Remote App",
+        "Nem o menu RemoteApp nem a janela direta ABsgm foram abertos no tempo esperado.",
+        hwnd=_janela_ativa() or None,
+    )
+
+
 def _janela_existe(hwnd):
     return bool(ctypes.windll.user32.IsWindow(hwnd)) and bool(
         ctypes.windll.user32.IsWindowVisible(hwnd)
@@ -732,13 +769,10 @@ def conectar_remoteapp(config, log):
     inicio_conexao = time.monotonic()
     _invocar_controle(_controle_texto(janela_seg, "Conectar", tipos=("Button",)))
     log_gestor(log, f"RemoteApp conectado; {len(marcadas)} recursos permitidos.")
-    menu = aguardar_janela(
-        ("remote", "app"),
-        config.timeout_janela,
-        novos_desde=janelas_antes_menu,
-        classe="RAIL_WINDOW",
-        etapa="Menu Remote App",
-    )
+    # A autenticação local costuma ser rápida, mas o servidor do Gestor pode
+    # levar mais de um minuto para iniciar a sessão RemoteApp.
+    timeout_servidor = max(config.timeout_janela, 180)
+    menu = aguardar_menu_ou_gestor(timeout_servidor, janelas_antes_menu, log)
     restante = 10 - (time.monotonic() - inicio_conexao)
     if restante > 0:
         time.sleep(restante)
@@ -747,12 +781,11 @@ def conectar_remoteapp(config, log):
 
 def abrir_lojas_hoje(config, log, menu=None):
     if menu is None:
-        menu = aguardar_janela(
-            ("remote", "app"),
-            config.timeout_janela,
-            classe="RAIL_WINDOW",
-            etapa="Menu Remote App",
-        )
+        menu = aguardar_menu_ou_gestor(config.timeout_janela, _estado_janelas(), log)
+    if menu.get("abertura_direta") or "absgm" in normalizar(menu["titulo"]):
+        preparar_janela_gestor(menu["hwnd"], log)
+        log_gestor(log, "Gestor ERP aberto diretamente pelo RemoteApp.")
+        return menu
     preparar_janela_gestor(menu["hwnd"], log)
     anteriores = _estado_janelas()
     _clicar_texto_ocr_janela(menu["hwnd"], "Lojas Hoje", log)
