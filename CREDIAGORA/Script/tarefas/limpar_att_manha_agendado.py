@@ -6,7 +6,6 @@ import shutil
 from datetime import datetime
 from pathlib import Path
 
-
 PASTA_ATT_MANHA = Path.home() / "Desktop" / "ATT manhã"
 LOG = Path(__file__).resolve().parent.parent / "logs" / "limpeza_att_manha.log"
 
