@@ -584,11 +584,17 @@ def _ponto_relativo(hwnd, x, y):
     return left + int((right - left) * x), top + int((bottom - top) * y)
 
 
+def _posicionar_cursor_seguro(x, y):
+    """Reposiciona o cursor via Win32 antes do PyAutoGUI verificar o fail-safe."""
+    ctypes.windll.user32.SetCursorPos(max(2, int(x)), max(2, int(y)))
+
+
 def _clicar(hwnd, x, y, cliques=1, intervalo=0.15):
     import pyautogui
 
     _ativar(hwnd)
     px, py = _ponto_relativo(hwnd, x, y)
+    _posicionar_cursor_seguro(px, py)
     pyautogui.click(px, py, clicks=cliques, interval=intervalo)
 
 
@@ -597,6 +603,7 @@ def _mover(hwnd, x, y):
 
     _ativar(hwnd)
     px, py = _ponto_relativo(hwnd, x, y)
+    _posicionar_cursor_seguro(px, py)
     pyautogui.moveTo(px, py, duration=0.25)
 
 
@@ -928,7 +935,9 @@ def _clicar_retangulo_real(hwnd, x, y, cliques=1):
     import pyautogui
 
     _ativar(hwnd)
-    pyautogui.click(*_ponto_canvas_acesso(hwnd, x, y), clicks=cliques, interval=0.15)
+    px, py = _ponto_canvas_acesso(hwnd, x, y)
+    _posicionar_cursor_seguro(px, py)
+    pyautogui.click(px, py, clicks=cliques, interval=0.15)
 
 
 def _preencher_campo_canvas_acesso(hwnd, x, y, texto, intervalo):
@@ -1169,10 +1178,34 @@ def autenticar_comercial(gestor, config, log):
     _clicar_canvas_acesso(hwnd_acesso, 0.86, 0.94)
     log_gestor(log, "Credenciais enviadas; aguardando carregar a lista de empresas.")
     if _aguardar_empresas_acesso(hwnd_acesso, config.timeout_janela):
-        _clicar_canvas_acesso(hwnd_acesso, 0.45, 0.50)
-        time.sleep(0.7)
-        _clicar_canvas_acesso(hwnd_acesso, 0.86, 0.94)
-        log_gestor(log, "Empresa Lojas Hoje selecionada e segundo Acessar enviado.")
+        fechou_apos_acessar = False
+        for tentativa_acesso in range(1, 4):
+            # A lista pode aparecer selecionada, mas o RemoteApp nem sempre
+            # processa o primeiro clique do botao Acessar. Reforce a selecao e
+            # use duplo clique, confirmando visualmente que a janela mudou.
+            _clicar_canvas_acesso(hwnd_acesso, 0.45, 0.50)
+            time.sleep(0.5)
+            _clicar_retangulo_real(hwnd_acesso, 0.86, 0.94, cliques=2)
+            log_gestor(
+                log,
+                "Empresa Lojas Hoje selecionada; Acessar enviado "
+                f"({tentativa_acesso}/3).",
+            )
+            prazo = time.monotonic() + min(8, config.timeout_janela)
+            while time.monotonic() < prazo:
+                if not _janela_existe(hwnd_acesso):
+                    fechou_apos_acessar = True
+                    break
+                time.sleep(0.5)
+            if fechou_apos_acessar:
+                break
+        if not fechou_apos_acessar:
+            raise GestorError(
+                "Controle de acesso",
+                "A empresa foi listada, mas o botao Acessar nao concluiu a entrada "
+                "apos tres tentativas.",
+                hwnd=hwnd_acesso,
+            )
     _aguardar_fechar(hwnd_acesso, config.timeout_janela)
     time.sleep(2)
     log_gestor(log, "Controle de acesso autenticado.")
@@ -1352,38 +1385,37 @@ def gerar_relatorio_metas(metas, config, log, agora=None):
     )
     time.sleep(0.8)
     anteriores = _estado_janelas()
-    _clicar_texto_ocr_janela(
-        metas["hwnd"], "Iniciar", log, faixa_y=(0.75, 0.99)
-    )
-    log_gestor(log, "Botao Iniciar inferior acionado.")
-    try:
-        impressao = aguardar_janela(
-            ("impressao", "relatorio"),
-            min(12, config.timeout_janela),
-            novos_desde=anteriores,
-            etapa="Impressao de relatorio",
-        )
-    except GestorError:
-        if not _janela_existe(metas["hwnd"]):
-            raise GestorError(
-                "Impressao de relatorio",
-                "A tela de metas desapareceu e a janela de impressao nao abriu.",
-                hwnd=metas["hwnd"],
-            )
-        log_gestor(
-            log,
-            "A janela de impressao nao abriu; datas ainda validas e tela anterior "
-            "presente. Repetindo Iniciar uma unica vez.",
-        )
+    impressao = None
+    for tentativa in range(1, 4):
         _clicar_texto_ocr_janela(
-            metas["hwnd"], "Iniciar", log, faixa_y=(0.75, 0.99)
+            metas["hwnd"], "Iniciar", log, cliques=2, faixa_y=(0.75, 0.99)
         )
-        impressao = aguardar_janela(
-            ("impressao", "relatorio"),
-            config.timeout_janela,
-            novos_desde=anteriores,
-            etapa="Impressao de relatorio",
-        )
+        log_gestor(log, f"Botao Iniciar acionado com duplo clique ({tentativa}/3).")
+        try:
+            impressao = aguardar_janela(
+                ("impressao", "relatorio"),
+                config.timeout_janela,
+                novos_desde=anteriores,
+                etapa="Impressao de relatorio",
+            )
+            break
+        except GestorError:
+            if not _janela_existe(metas["hwnd"]):
+                raise GestorError(
+                    "Impressao de relatorio",
+                    "A tela de metas desapareceu e a janela de impressao nao abriu.",
+                    hwnd=metas["hwnd"],
+                )
+            if tentativa == 3:
+                raise
+            log_gestor(
+                log,
+                "A janela de impressao ainda nao abriu; tela de metas presente. "
+                f"Aguardando e repetindo ({tentativa + 1}/3).",
+            )
+            time.sleep(2)
+    if impressao is None:
+        raise GestorError("Impressao de relatorio", "Janela nao foi criada.")
     preparar_janela_gestor(impressao["hwnd"], log)
     anteriores = _estado_janelas()
     _clicar_retangulo_real(impressao["hwnd"], 0.07, 0.31)
@@ -1391,11 +1423,13 @@ def gerar_relatorio_metas(metas, config, log, agora=None):
     time.sleep(0.7)
     _clicar_retangulo_real(impressao["hwnd"], 0.405, 0.915)
     log_gestor(log, "Botao OK da janela Impressao de Relatorio acionado.")
-    time.sleep(4)
+    # O RemoteApp pode fechar a janela de impressão antes de terminar de
+    # montar o Report Preview; aguarde o timeout completo do relatório.
+    time.sleep(6)
     try:
         preview = aguardar_janela(
             ("report", "preview"),
-            min(12, config.timeout_relatorio),
+            config.timeout_relatorio,
             novos_desde=anteriores,
             etapa="Report Preview",
         )
@@ -1471,6 +1505,10 @@ def capturar_report_preview(preview, config, log):
     nome = f"metas_realizado_{datetime.now():%d-%m-%Y_%H-%M-%S}.png"
     caminho = pasta / nome
     _selecionar_zoom_preview(preview["hwnd"], "100%")
+    # O RemoteApp cria a janela antes de terminar de pintar as linhas do
+    # relatório. Capturar imediatamente pode produzir uma imagem só com
+    # ``Report Preview`` e fazer o OCR cair em uma tentativa de zoom ruim.
+    time.sleep(4)
     _capturar_janela(preview["hwnd"], caminho)
     log_gestor(log, f"Evidencia do relatorio salva: {caminho}")
     return caminho
@@ -1710,8 +1748,16 @@ def _corrigir_token_monetario(token):
 
 
 def _valores_monetarios_linha(texto):
+    # O Windows OCR pode separar a parte inteira e os centavos em palavras
+    # distintas (por exemplo, ``441`` e ``,60``). Reunimos esses fragmentos
+    # antes de extrair os valores para não perder os centavos do relatório.
+    texto = re.sub(
+        r"(?<![\d.,])(-?[\d.]+)\s+([,;]\s*[\dOQoDCIl|SsB]{2})(?!\d)",
+        r"\1\2",
+        texto,
+    )
     candidatos = re.findall(
-        r"\d[\d\.\sOQoDCIl|SsB]*[,;]\s*[\dOQoDCIl|SsB]{2}(?![\dOQoDCIl|SsB])",
+        r"-?\d[\d\.\sOQoDCIl|SsB]*[,;]\s*[\dOQoDCIl|SsB]{2}(?![\dOQoDCIl|SsB])",
         texto,
     )
     valores = []
@@ -1736,12 +1782,48 @@ def extrair_valores_realizados(caminho_imagem):
         texto_normalizado = normalizar(texto)
         monetarios = _valores_monetarios_linha(texto)
         for loja in LOJAS:
-            if re.search(rf"(?:^|[^a-z]){loja.casefold()}(?:$|[^a-z])", texto_normalizado) and len(monetarios) >= 2:
+            loja_encontrada = re.search(
+                rf"(?:^|[^a-z]){loja.casefold()}(?:$|[^a-z])", texto_normalizado
+            )
+            if loja_encontrada and len(monetarios) < 2:
+                # O OCR às vezes devolve um valor inteiro (ex.: 441) sem
+                # separador decimal. Como a linha termina em meta, realizado,
+                # percentual, os dois últimos números permitem recuperar o
+                # realizado sem confundir o código da loja.
+                tokens = re.findall(r"-?\d+(?:[.,]\d+)?", texto)
+                if len(tokens) >= 3:
+                    try:
+                        def converter_token(token):
+                            corrigido = _corrigir_token_monetario(token).replace(";", ",")
+                            if re.fullmatch(r"-?\d+", corrigido):
+                                return Decimal(corrigido)
+                            return numero_brasileiro(corrigido)
+
+                        monetarios = [
+                            converter_token(token)
+                            for token in tokens[-3:-1]
+                        ]
+                    except ValueError:
+                        monetarios = []
+            if loja_encontrada and len(monetarios) >= 2:
                 if loja in valores:
                     raise GestorError("OCR", f"Loja {loja} apareceu mais de uma vez.")
                 valores[loja] = monetarios[1]
         if "total geral" in texto_normalizado and len(monetarios) >= 2:
             total = monetarios[1]
+            # Em alguns relatórios do Gestor, o campo "Valor Realizado" do
+            # TOTAL GERAL perde o sinal negativo na renderização. O percentual
+            # geral ao lado mantém o sinal e permite recuperar esse dado sem
+            # aceitar uma soma inconsistente.
+            percentual_geral = monetarios[2] if len(monetarios) >= 3 else None
+            percentual_geral_negativo = bool(
+                re.search(r"-\s*[0Oo]\s*[,;]\s*\d{3}(?!\d)", texto)
+            )
+            if total > 0 and (
+                (percentual_geral is not None and percentual_geral < 0)
+                or percentual_geral_negativo
+            ):
+                total = -total
     if set(valores) != set(LOJAS) or total is None:
         encontrados = {loja: formatar_brasileiro(v) for loja, v in valores.items()}
         raise GestorError(
@@ -1773,7 +1855,12 @@ def extrair_relatorio_com_tentativas(preview, evidencia, config, log):
             _capturar_janela(preview["hwnd"], caminho)
         ampliada = Path(tempfile.gettempdir()) / f"gestor_ocr_ampliada_{os.getpid()}_{indice}.png"
         try:
-            _imagem_ampliada(caminho, ampliada, escala=2)
+            # A captura original preserva a separação ``441`` + ``,60`` que
+            # o OCR do Windows consegue recompor; ampliar antes da primeira
+            # tentativa pode apagar o fragmento dos centavos. As tentativas
+            # seguintes continuam ampliadas para recuperar imagens menores.
+            escala_ocr = 1 if zoom == "100%" else 2
+            _imagem_ampliada(caminho, ampliada, escala=escala_ocr)
             valores, total, linhas = extrair_valores_realizados(ampliada)
             log_gestor(log, f"OCR validado com zoom {zoom}.")
             return valores, total, linhas
@@ -1882,6 +1969,30 @@ def _obter_pid_instancia_excel(excel):
         return None
 
 
+def _listar_pids_excel():
+    """Lista os PIDs do Excel sem depender de uma janela visível."""
+    try:
+        processo = subprocess.run(
+            [
+                "powershell.exe",
+                "-NoProfile",
+                "-Command",
+                "(Get-Process -Name EXCEL -ErrorAction SilentlyContinue).Id -join ','",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=False,
+        )
+        return {
+            int(valor)
+            for valor in processo.stdout.strip().split(",")
+            if valor.strip().isdigit()
+        }
+    except (OSError, subprocess.SubprocessError, ValueError):
+        return set()
+
+
 def _processo_esta_ativo(pid):
     if not pid:
         return False
@@ -1903,12 +2014,29 @@ def _encerrar_instancia_excel_criada(pid, timeout=12):
         time.sleep(0.25)
     # DispatchEx cria uma inst?ncia pr?pria; este PID nunca representa o Excel do usu?rio.
     PROCESS_TERMINATE = 0x0001
-    handle = ctypes.windll.kernel32.OpenProcess(PROCESS_TERMINATE, False, pid)
+    kernel32 = ctypes.windll.kernel32
+    kernel32.OpenProcess.restype = wintypes.HANDLE
+    kernel32.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
+    kernel32.TerminateProcess.argtypes = [wintypes.HANDLE, wintypes.UINT]
+    kernel32.WaitForSingleObject.argtypes = [wintypes.HANDLE, wintypes.DWORD]
+    kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
+    handle = kernel32.OpenProcess(PROCESS_TERMINATE, False, pid)
+    terminou = False
     if handle:
         try:
-            ctypes.windll.kernel32.TerminateProcess(handle, 1)
+            terminou = bool(kernel32.TerminateProcess(handle, 1))
+            kernel32.WaitForSingleObject(handle, 5000)
         finally:
-            ctypes.windll.kernel32.CloseHandle(handle)
+            kernel32.CloseHandle(handle)
+    # Mesmo que a API informe sucesso, o Excel pode demorar a liberar o
+    # arquivo. O taskkill atua somente no PID exclusivo capturado acima.
+    if not terminou or _processo_esta_ativo(pid):
+        subprocess.run(
+            ["taskkill.exe", "/PID", str(pid), "/T", "/F"],
+            capture_output=True,
+            check=False,
+            timeout=10,
+        )
 
 
 def _salvar_metas_com_excel(arquivo, valores):
@@ -1925,23 +2053,65 @@ def _salvar_metas_com_excel(arquivo, valores):
     excel = None
     excel_pid = None
     workbook = None
+    worksheet = None
+    excel_pids_antes = _listar_pids_excel()
     pythoncom.CoInitialize()
     try:
         excel = DispatchEx("Excel.Application")
+        assert excel is not None
+        excel_app: Any = excel
         excel_pid = _obter_pid_instancia_excel(excel)
+        if excel_pid is None:
+            # O processo /automation pode aparecer alguns instantes depois
+            # da criação do proxy COM; aguarde antes de desistir do PID.
+            for _ in range(20):
+                novos_pids = _listar_pids_excel() - excel_pids_antes
+                if len(novos_pids) == 1:
+                    excel_pid = novos_pids.pop()
+                    break
+                time.sleep(0.25)
         excel.Visible = False
         excel.DisplayAlerts = False
         try:
             excel.AutomationSecurity = 3  # Desativa macros durante a abertura.
         except Exception:
             pass
-        workbook = excel.Workbooks.Open(
-            str(arquivo.resolve()),
-            UpdateLinks=0,
-            ReadOnly=False,
-            IgnoreReadOnlyRecommended=True,
+        def com_comando_resiliente(comando, descricao):
+            prazo = time.monotonic() + 25
+            ultimo = None
+            while time.monotonic() < prazo:
+                try:
+                    return comando()
+                except Exception as erro_com:
+                    ultimo = erro_com
+                    # O Excel retorna RPC_E_CALL_REJECTED enquanto termina de
+                    # abrir a cópia. Isso é transitório e não indica corrupção.
+                    hresult = getattr(erro_com, "hresult", None)
+                    rejeitada = hresult == -2147418111 or (
+                        "-2147418111" in str(erro_com)
+                    )
+                    if not rejeitada:
+                        raise
+                    time.sleep(1)
+            raise GestorError(
+                "Excel",
+                f"Excel continuou ocupado ao executar {descricao}: {ultimo}",
+            ) from ultimo
+
+        workbook = com_comando_resiliente(
+            lambda: excel_app.Workbooks.Open(
+                str(arquivo.resolve()),
+                UpdateLinks=0,
+                ReadOnly=False,
+                IgnoreReadOnlyRecommended=True,
+            ),
+            "abertura da cópia temporária",
         )
-        worksheet = workbook.Worksheets("base")
+        assert workbook is not None
+        workbook_app: Any = workbook
+        worksheet = com_comando_resiliente(
+            lambda: workbook_app.Worksheets("base"), "acesso à aba base"
+        )
         for loja, linha in LINHAS_EXCEL.items():
             worksheet.Cells(linha, 3).Value = float(Decimal(str(valores[loja])))
         workbook.Save()
@@ -1953,13 +2123,43 @@ def _salvar_metas_com_excel(arquivo, valores):
                 workbook.Close(SaveChanges=False)
             except Exception:
                 pass
+        # Liberar explicitamente os proxies COM antes de verificar o lock.
+        # Sem isso, o Excel /automation pode permanecer vivo mesmo após Quit.
+        worksheet = None
+        workbook = None
         if excel is not None:
             try:
                 excel.Quit()
             except Exception:
                 pass
-        _encerrar_instancia_excel_criada(excel_pid)
-        pythoncom.CoUninitialize()
+        excel = None
+        import gc
+
+        gc.collect()
+        try:
+            pythoncom.CoUninitialize()
+        finally:
+            # Em algumas versões do Office ``Application.Hwnd`` fica zerado e
+            # o PID só pode ser obtido depois de ``Quit``. Nesse caso, use
+            # exclusivamente o novo PID que surgiu durante esta operação;
+            # nunca encerre instâncias que já existiam antes dela.
+            # O Office pode criar o processo real ou um auxiliar alguns
+            # instantes depois de ``Quit``. Faça algumas varreduras curtas e
+            # encerre imediatamente apenas os PIDs que não existiam antes da
+            # automação; assim o arquivo temporário não fica bloqueado.
+            for _ in range(12):
+                novos_pids = _listar_pids_excel() - excel_pids_antes
+                pids_para_encerrar = set(novos_pids)
+                if excel_pid:
+                    pids_para_encerrar.add(excel_pid)
+                for pid in pids_para_encerrar:
+                    _encerrar_instancia_excel_criada(pid, timeout=0)
+                restantes = {
+                    pid for pid in pids_para_encerrar if _processo_esta_ativo(pid)
+                }
+                if not restantes:
+                    break
+                time.sleep(0.5)
 
 
 def atualizar_excel_metas(arquivo, valores, pasta_backup, log=None):
@@ -1975,12 +2175,31 @@ def atualizar_excel_metas(arquivo, valores, pasta_backup, log=None):
     pasta_backup.mkdir(parents=True, exist_ok=True)
     backup = pasta_backup / f"{arquivo.stem}_antes_gestor_{datetime.now():%Y-%m-%d_%H-%M-%S}{arquivo.suffix}"
     shutil.copy2(arquivo, backup)
-    temporario = arquivo.with_name(f".{arquivo.stem}.gestor-{os.getpid()}.tmp{arquivo.suffix}")
+    # O Excel pode recusar Save em nomes ocultos iniciados por ponto.
+    # Use um temporário normal no mesmo diretório para manter a troca atômica.
+    # O diretório oficial é sincronizado e pode manter arquivos recém-criados
+    # abertos. Faça toda a edição em uma pasta temporária local; só depois da
+    # validação o arquivo completo é transferido para o destino oficial.
+    temporario = Path(tempfile.gettempdir()) / (
+        f"{arquivo.stem}.gestor-{os.getpid()}.tmp{arquivo.suffix}"
+    )
     try:
         shutil.copy2(arquivo, temporario)
         _salvar_metas_com_excel(temporario, valores)
         validar_excel_metas(temporario, valores)
-        os.replace(temporario, arquivo)
+        ultimo_bloqueio = None
+        for tentativa_troca in range(1, 31):
+            try:
+                os.replace(temporario, arquivo)
+                break
+            except PermissionError as erro_bloqueio:
+                ultimo_bloqueio = erro_bloqueio
+                # O antivírus/OneDrive pode manter o arquivo temporário aberto
+                # por alguns segundos depois da validação. Não abandone uma
+                # gravação válida por esse bloqueio transitório.
+                if tentativa_troca == 30:
+                    raise
+                time.sleep(1)
         aguardar_excel_liberado(arquivo)
         gravados = validar_excel_metas(arquivo, valores)
     except Exception:
