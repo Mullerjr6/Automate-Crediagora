@@ -1871,6 +1871,46 @@ def validar_excel_metas(arquivo, valores_esperados=None):
         wb.close()
 
 
+def _obter_pid_instancia_excel(excel):
+    """Obt?m o PID da inst?ncia exclusiva criada por ``DispatchEx``."""
+    try:
+        hwnd = int(excel.Hwnd)
+        pid = wintypes.DWORD()
+        ctypes.windll.user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+        return int(pid.value) or None
+    except Exception:
+        return None
+
+
+def _processo_esta_ativo(pid):
+    if not pid:
+        return False
+    try:
+        os.kill(pid, 0)
+    except OSError:
+        return False
+    return True
+
+
+def _encerrar_instancia_excel_criada(pid, timeout=12):
+    """Fecha somente o Excel dedicado ? automa??o se ``Quit`` n?o bastar."""
+    if not pid:
+        return
+    limite = time.monotonic() + timeout
+    while time.monotonic() < limite:
+        if not _processo_esta_ativo(pid):
+            return
+        time.sleep(0.25)
+    # DispatchEx cria uma inst?ncia pr?pria; este PID nunca representa o Excel do usu?rio.
+    PROCESS_TERMINATE = 0x0001
+    handle = ctypes.windll.kernel32.OpenProcess(PROCESS_TERMINATE, False, pid)
+    if handle:
+        try:
+            ctypes.windll.kernel32.TerminateProcess(handle, 1)
+        finally:
+            ctypes.windll.kernel32.CloseHandle(handle)
+
+
 def _salvar_metas_com_excel(arquivo, valores):
     """Atualiza a cópia temporária com o Excel nativo, preservando seus recursos."""
     try:
@@ -1883,10 +1923,12 @@ def _salvar_metas_com_excel(arquivo, valores):
         ) from erro
 
     excel = None
+    excel_pid = None
     workbook = None
     pythoncom.CoInitialize()
     try:
         excel = DispatchEx("Excel.Application")
+        excel_pid = _obter_pid_instancia_excel(excel)
         excel.Visible = False
         excel.DisplayAlerts = False
         try:
@@ -1916,6 +1958,7 @@ def _salvar_metas_com_excel(arquivo, valores):
                 excel.Quit()
             except Exception:
                 pass
+        _encerrar_instancia_excel_criada(excel_pid)
         pythoncom.CoUninitialize()
 
 

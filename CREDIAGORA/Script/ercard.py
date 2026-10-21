@@ -1616,7 +1616,13 @@ def validar_csv_exportado(arquivo, pasta_esperada, timeout, log):
 
     if arquivo.parent.resolve() != pasta_esperada:
         raise ErCardError("Validação", "Arquivo salvo fora da pasta configurada.")
-    if not arquivo.name.casefold().startswith(("tabela contratos", "14 - tabela contratos")):
+    prefixos_aceitos = (
+        "tabela contratos",
+        "14 - tabela contratos",
+        "06 - propostas",
+        "carteira mifa",
+    )
+    if not arquivo.name.casefold().startswith(prefixos_aceitos):
         raise ErCardError("Validação", "Nome final inesperado.")
 
     try:
