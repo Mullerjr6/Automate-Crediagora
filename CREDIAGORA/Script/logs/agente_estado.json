@@ -1,17 +1,16 @@
 {
-  "fluxo": "retorno-ligacoes-oficial",
-  "inicio": "2026-10-21T07:40:02-03:00",
-  "status": "concluido",
+  "fluxo": "ercard-tabela-contratos",
+  "inicio": "2026-10-21T13:29:22-03:00",
+  "status": "executando",
   "tentativa": 1,
   "comando": [
-    "C:\\Users\\CREDIAGORA\\AppData\\Local\\Python\\pythoncore-3.14-64\\pythonw.exe",
-    "retorno_ligacoes_oficial.py"
+    "C:\\Users\\CREDIAGORA\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe",
+    "ercard_tabela_contratos.py"
   ],
   "backups": [
-    "C:\\Users\\CREDIAGORA\\Desktop\\workspace\\Automacoes\\crediagora\\CREDIAGORA\\Script\\backups\\2026-10-21_07-40-02\\fat_retorno_ligacoes.xlsx"
+    "C:\\Users\\CREDIAGORA\\Desktop\\workspace\\Automacoes\\crediagora\\CREDIAGORA\\Script\\backups\\2026-10-21_13-29-22\\fat_retorno_ligacoes - teste automacao.xlsx",
+    "C:\\Users\\CREDIAGORA\\Desktop\\workspace\\Automacoes\\crediagora\\CREDIAGORA\\Script\\backups\\2026-10-21_13-29-22\\fat_vendas_Teste.xlsx",
+    "C:\\Users\\CREDIAGORA\\Desktop\\workspace\\Automacoes\\crediagora\\CREDIAGORA\\Script\\backups\\2026-10-21_13-29-22\\fat_receita_gerada_CPC_Teste.xlsx"
   ],
-  "etapa_retomada": null,
-  "fim": "2026-10-21T07:41:23-03:00",
-  "codigo_saida": 0,
-  "duracao_minutos": 1.35
+  "etapa_retomada": null
 }

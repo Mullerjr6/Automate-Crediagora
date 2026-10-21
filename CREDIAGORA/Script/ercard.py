@@ -40,7 +40,9 @@ class ErCardConfig:
     pasta_erros: Path
     pasta_download: Path | None = None
     timeout_normal: int = 30
-    timeout_remoto: int = 20
+    # A sessão RemoteApp/Canvas pode levar mais de 20 s para abrir, sobretudo
+    # quando a tarefa inicia o Chrome sem uma sessão interativa recente.
+    timeout_remoto: int = 90
     timeout_exportacao: int = 1800
 
     def validar(self):
@@ -941,10 +943,15 @@ def _nova_janela_remota(ids_anteriores):
         from pywinauto import Desktop
 
         for janela in Desktop(backend="uia").windows():
+            titulo = normalizar(janela.window_text() or "")
+            relevante = any(
+                termo in titulo
+                for termo in ("crediagora", "er card", "er systems", "gestor de cartoes")
+            )
             if (
                 janela.class_name() == "RAIL_WINDOW"
                 and janela.is_visible()
-                and janela.handle not in ids_anteriores
+                and (janela.handle not in ids_anteriores or relevante)
             ):
                 return janela
     except Exception:
@@ -971,7 +978,18 @@ def aguardar_conexao_ercard(
     janelas_navegador_anteriores = set(janelas_navegador_anteriores or ())
 
     while time.monotonic() < fim:
-        janelas_atuais = list(driver.window_handles)
+        try:
+            janelas_atuais = list(driver.window_handles)
+        except Exception as erro:
+            mensagem = normalizar(str(erro))
+            if "invalid session id" in mensagem or "not connected to devtools" in mensagem:
+                raise ErCardError(
+                    "Conexão",
+                    "A sessão do Chrome foi encerrada durante a conexão; "
+                    "a próxima tentativa iniciará um navegador limpo.",
+                ) from erro
+            time.sleep(0.8)
+            continue
         novas_janelas = [
             janela
             for janela in janelas_atuais
