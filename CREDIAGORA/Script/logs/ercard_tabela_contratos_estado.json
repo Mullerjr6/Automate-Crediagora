@@ -1,6 +1,7 @@
 {
   "relatorio": "14 - Tabela Contratos",
-  "atualizado_em": "2026-10-20T17:06:09-03:00",
-  "status": "executando",
-  "inicio": "2026-10-20T17:06:09-03:00"
+  "atualizado_em": "2026-10-20T17:32:40-03:00",
+  "status": "erro",
+  "erro": "[ERCARD][ERRO][fase_ercard] Message: invalid session id: session deleted as the browser has closed the connection\nfrom disconnected: not connected to DevTools\n  (Session info: chrome=155.0.8059.85); For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#invalidsessionidexception\nStacktrace:\nSymbols not available. Dumping unresolved backtrace:\n\t(No symbol) [0x7ff71bc8e745]\n\t(No symbol) [0x7ff71b843d00]\n\t(No symbol) [0x7ff71b673f3d]\n\t(No symbol) [0x7ff71b65fc72]\n\t(No symbol) [0x7ff71b685486]\n\t(No symbol) [0x7ff71b700400]\n\t(No symbol) [0x7ff71b72442d]\n\t(No symbol) [0x7ff71b6c1462]\n\t(No symbol) [0x7ff71b6c2273]\n\t(No symbol) [0x7ff71bd317b1]\n\t(No symbol) [0x7ff71bd687c7]\n\t(No symbol) [0x7ff71bd5c85e]\n\t(No symbol) [0x7ff71ba0884e]\n\t(No symbol) [0x7ff71b850415]\n\t(No symbol) [0x7ff71b84bdf4]\n\t(No symbol) [0x7ff71b84bf84]\n\t(No symbol) [0x7ff71b837f7c]\n\t(No symbol) [0x7ffeca0edda7]\n\t(No symbol) [0x7ffecc39ee4c]\n",
+  "duracao_minutos": 0.67
 }

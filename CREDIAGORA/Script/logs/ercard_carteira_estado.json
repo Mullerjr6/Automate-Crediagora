@@ -1,1 +1,17 @@
-{"etapa": 3, "nome": "14 - Tabela Contratos", "status": "executando"}
+{
+  "versao_fluxo": 2,
+  "inicio": "2026-10-21T06:40:07-03:00",
+  "relatorios": {
+    "1": {
+      "nome": "14 - Tabela Contratos",
+      "arquivo": "C:\\Users\\CREDIAGORA\\Desktop\\ATT manhã\\14 - tabela contratos 21-10-2026 06-40.csv",
+      "duracao_minutos": 18.75
+    }
+  },
+  "etapa": 2,
+  "nome": "06 - Propostas",
+  "status": "erro",
+  "atualizado_em": "2026-10-21T07:11:52-03:00",
+  "erro": "[ERCARD][ERRO][Validação] Nome final inesperado.",
+  "duracao_minutos": 31.74
+}

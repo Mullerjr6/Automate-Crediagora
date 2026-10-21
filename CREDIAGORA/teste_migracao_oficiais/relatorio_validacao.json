@@ -1,17 +1,19 @@
 {
-  "gerado_em": "2026-10-20T08:43:31-03:00",
+  "gerado_em": "2026-10-20T16:37:42-03:00",
   "pasta_teste": "C:\\Users\\CREDIAGORA\\Desktop\\workspace\\Automacoes\\crediagora\\CREDIAGORA\\teste_migracao_oficiais",
   "itens": {
     "vendas": {
       "arquivo": "C:\\Users\\CREDIAGORA\\Desktop\\workspace\\Automacoes\\crediagora\\CREDIAGORA\\teste_migracao_oficiais\\fat_vendas_Teste.xlsx",
-      "status": "aprovado",
-      "erros": [],
+      "status": "reprovado",
+      "erros": [
+        "contém vínculos externos do Excel"
+      ],
       "abas": [
         "fat_vendas",
         "de_para"
       ],
       "formulas": {
-        "fat_vendas": 312018,
+        "fat_vendas": 312102,
         "de_para": 0
       }
     },
@@ -24,7 +26,7 @@
         "de_para"
       ],
       "formulas": {
-        "exportacao-161-20240130135023": 414700,
+        "exportacao-161-20240130135023": 414915,
         "de_para": 0
       }
     },
@@ -37,14 +39,16 @@
         "validador"
       ],
       "formulas": {
-        "Base": 43290,
+        "Base": 45048,
         "validador": 0
       }
     },
     "metas_gestor": {
       "arquivo": "C:\\Users\\CREDIAGORA\\Desktop\\workspace\\Automacoes\\crediagora\\CREDIAGORA\\teste_migracao_oficiais\\fat_metas_venda_moda_lojas_hoje.xlsx",
-      "status": "aprovado",
-      "erros": [],
+      "status": "reprovado",
+      "erros": [
+        "contém vínculos externos do Excel"
+      ],
       "abas": [
         "base",
         "Venda_Lojas_Hoje",
@@ -68,7 +72,7 @@
         "Valor sacado FPD6"
       ],
       "formulas": {
-        "Tabela Conta": 783902,
+        "Tabela Conta": 785764,
         "Conversões": 0,
         "FPD": 6,
         "Graficos PERFIL": 13,
@@ -76,5 +80,5 @@
       }
     }
   },
-  "aprovado": true
+  "aprovado": false
 }
