@@ -1,7 +1,7 @@
 {
   "relatorio": "14 - Tabela Contratos",
-  "atualizado_em": "2026-10-21T13:31:49-03:00",
-  "status": "cancelado",
-  "inicio": "2026-10-21T13:29:24-03:00",
-  "erro": "Execução manual cancelada pelo usuário após o início da exportação."
+  "atualizado_em": "2026-10-22T13:11:01-03:00",
+  "status": "concluido",
+  "arquivo": "C:\\Users\\CREDIAGORA\\Desktop\\ATT manhã\\14 - tabela contratos 22-10-2026 12-52.csv",
+  "duracao_minutos": 19.13
 }

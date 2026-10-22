@@ -10,3 +10,33 @@
 [AGENTE] Iniciando ercard-tabela-contratos; tentativa 2/2; retomada na etapa inicializacao
 [AGENTE] ercard-tabela-contratos terminou com código 1
 [21/10/2026] Agente finalizado com cÃ³digo 1.
+[21/10/2026] Iniciando agente do ERCard â€“ 14 Tabela Contratos.
+Traceback (most recent call last):
+  File "C:\Users\CREDIAGORA\Desktop\workspace\Automacoes\crediagora\CREDIAGORA\Script\agente_crediagora.py", line 60, in adquirir_trava
+    pid = int(texto.split("pid=", 1)[1].split()[0])
+              ~~~~~~~~~~~~~~~~~~~~~~^^^
+IndexError: list index out of range
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\CREDIAGORA\Desktop\workspace\Automacoes\crediagora\CREDIAGORA\Script\agente_crediagora.py", line 391, in <module>
+    raise SystemExit(main())
+                     ~~~~^^
+  File "C:\Users\CREDIAGORA\Desktop\workspace\Automacoes\crediagora\CREDIAGORA\Script\agente_crediagora.py", line 383, in main
+    adquirir_trava()
+    ~~~~~~~~~~~~~~^^
+  File "C:\Users\CREDIAGORA\Desktop\workspace\Automacoes\crediagora\CREDIAGORA\Script\agente_crediagora.py", line 63, in adquirir_trava
+    TRAVA.unlink(missing_ok=True)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\CREDIAGORA\AppData\Local\Python\pythoncore-3.14-64\Lib\pathlib\__init__.py", line 1042, in unlink
+    os.unlink(self)
+    ~~~~~~~~~^^^^^^
+PermissionError: [WinError 32] O arquivo já está sendo usado por outro processo: 'C:\\Users\\CREDIAGORA\\Desktop\\workspace\\Automacoes\\crediagora\\CREDIAGORA\\Script\\logs\\agente_crediagora.lock'
+[21/10/2026] Agente finalizado com cÃ³digo 1.
+[22/10/2026] Iniciando agente do ERCard â€“ 14 Tabela Contratos.
+[AGENTE] Iniciando ercard-tabela-contratos; tentativa 1/2; retomada na etapa inicializacao
+[AGENTE] ercard-tabela-contratos terminou com código 1
+[AGENTE] Iniciando ercard-tabela-contratos; tentativa 2/2; retomada na etapa inicializacao
+[AGENTE] ercard-tabela-contratos concluído em 20.92 minutos
+[22/10/2026] Agente finalizado com cÃ³digo 0.

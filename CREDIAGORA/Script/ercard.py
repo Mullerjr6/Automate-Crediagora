@@ -1427,35 +1427,81 @@ def exportar_tabela_contratos_canvas(driver, config, arquivo_final, log):
 def mover_download_webfile(arquivo_final, config, log):
     arquivo_final = Path(arquivo_final)
     pasta_download = Path(config.pasta_download or arquivo_final.parent)
-    origem = pasta_download / arquivo_final.name
     inicio = time.monotonic()
+    inicio_arquivo = time.time() - 5
     fim = inicio + config.timeout_exportacao
     proximo_log = inicio + 30
+    ultimo_candidato = None
     ultimo_tamanho = -1
     estavel = 0
     ultimo_erro = None
 
+    # O ERCard pode devolver o CSV com o minuto do servidor remoto, diferente
+    # do minuto usado no nome informado no seletor. Aceitamos somente arquivos
+    # novos do mesmo relatorio, evitando reutilizar exportacoes antigas.
+    prefixo = re.sub(
+        r"\s+\d{2}-\d{2}-\d{4}\s+\d{2}-\d{2}(?:\s+\(\d+\))?$",
+        "",
+        arquivo_final.stem,
+        flags=re.IGNORECASE,
+    ).casefold()
+
+    def candidatos_recentes():
+        pastas = (pasta_download, arquivo_final.parent)
+        vistos = set()
+        for pasta in pastas:
+            try:
+                arquivos = pasta.glob("*.csv")
+            except OSError:
+                continue
+            for candidato in arquivos:
+                try:
+                    resolvido = candidato.resolve()
+                    if resolvido in vistos or not candidato.is_file():
+                        continue
+                    vistos.add(resolvido)
+                    stat = candidato.stat()
+                except OSError:
+                    continue
+                if stat.st_size <= 0 or stat.st_mtime < inicio_arquivo:
+                    continue
+                if candidato.stem.casefold() == arquivo_final.stem.casefold():
+                    yield candidato
+                elif candidato.stem.casefold().startswith(prefixo):
+                    yield candidato
+
     while time.monotonic() < fim:
-        if arquivo_final.exists():
-            return arquivo_final
-        if origem.exists():
-            tamanho = origem.stat().st_size
-            if tamanho > 0 and tamanho == ultimo_tamanho:
+        candidatos = list(candidatos_recentes())
+        candidato = max(candidatos, key=lambda item: item.stat().st_mtime, default=None)
+        if candidato is not None:
+            try:
+                tamanho = candidato.stat().st_size
+            except OSError:
+                tamanho = 0
+            if candidato == ultimo_candidato and tamanho > 0 and tamanho == ultimo_tamanho:
                 estavel += 1
-                if estavel >= 2:
-                    arquivo_final.parent.mkdir(parents=True, exist_ok=True)
-                    try:
-                        shutil.move(str(origem), str(arquivo_final))
-                    except PermissionError as erro:
-                        ultimo_erro = erro
-                        estavel = 0
-                        log_ercard(log, "CSV ainda bloqueado; aguardando liberacao sem repetir a exportacao.")
-                    else:
-                        log_ercard(log, f"CSV movido do WebFile para: {arquivo_final}")
-                        return arquivo_final
             else:
+                ultimo_candidato = candidato
+                ultimo_tamanho = tamanho
                 estavel = 0
-            ultimo_tamanho = tamanho
+            if estavel >= 2:
+                if candidato.resolve() == arquivo_final.resolve():
+                    log_ercard(log, f"CSV confirmado na pasta de destino: {candidato}")
+                    return candidato
+                arquivo_final.parent.mkdir(parents=True, exist_ok=True)
+                try:
+                    shutil.move(str(candidato), str(arquivo_final))
+                except PermissionError as erro:
+                    ultimo_erro = erro
+                    estavel = 0
+                    log_ercard(log, "CSV ainda bloqueado; aguardando liberacao sem repetir a exportacao.")
+                else:
+                    log_ercard(log, f"CSV movido do WebFile para: {arquivo_final}")
+                    return arquivo_final
+        else:
+            ultimo_candidato = None
+            ultimo_tamanho = -1
+            estavel = 0
         agora = time.monotonic()
         if agora >= proximo_log:
             log_ercard(
@@ -1711,7 +1757,7 @@ def executar_fase_ercard(driver, config, log):
             configurar_exportacao_csv_canvas(driver, config, arquivo_final, log)
             preencher_periodo_canvas(driver, config, log)
             exportar_tabela_contratos_canvas(driver, config, arquivo_final, log)
-            mover_download_webfile(arquivo_final, config, log)
+            arquivo_final = mover_download_webfile(arquivo_final, config, log)
         else:
             realizar_login_sistema(ui, config, log)
             abrir_consulta_gerencial(ui, config, log)
