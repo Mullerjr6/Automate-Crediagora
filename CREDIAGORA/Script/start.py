@@ -14,6 +14,7 @@ import unicodedata
 import zipfile
 from contextlib import contextmanager
 from datetime import datetime
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
 import pandas as pd
@@ -190,6 +191,11 @@ ARQUIVO_RETORNO_LIGACOES_OFICIAL = (
 ARQUIVO_RETORNO_LIGACOES = ARQUIVO_RETORNO_LIGACOES_OFICIAL
 DOWNLOADS_PREEXISTENTES = set()
 
+ARQUIVO_CONFERENCIA_ATT = caminho_env(
+    "CREDIAGORA_CONFERENCIA_ATT_XLSX",
+    Path.home() / "Desktop" / "conferencia att" / "valores atualizados.xlsx",
+)
+
 # O script tenta encontrar a receita em alguns caminhos possíveis:
 ARQUIVOS_FAT_RECEITA_POSSIVEIS = [
     PASTA_TABELA_FAT / "fat_receita_gerada_CPC_Teste.xlsx",
@@ -293,6 +299,152 @@ def log(msg):
         LOGS_ATIVACAO.append(texto)
     except Exception:
         logger.debug("Falha capturada em log", exc_info=True)
+
+
+def _numero_conferencia(valor):
+    """Converte valores monetários das planilhas para Decimal sem perder centavos."""
+    if valor is None or valor == "":
+        return Decimal("0")
+    if isinstance(valor, Decimal):
+        return valor
+    if isinstance(valor, (int, float)):
+        return Decimal(str(valor))
+    texto = str(valor).replace("R$", "").replace(" ", "").strip()
+    if not texto:
+        return Decimal("0")
+    if "," in texto:
+        texto = texto.replace(".", "").replace(",", ".")
+    try:
+        return Decimal(texto)
+    except (InvalidOperation, ValueError):
+        return Decimal("0")
+
+
+def _cabecalhos_planilha(ws):
+    cabecalhos = next(ws.iter_rows(values_only=True), ())
+    return {
+        unicodedata.normalize("NFKD", str(valor or ""))
+        .encode("ascii", "ignore")
+        .decode()
+        .strip()
+        .upper(): indice
+        for indice, valor in enumerate(cabecalhos)
+        if valor is not None and str(valor).strip()
+    }
+
+
+def _resumo_valores_conferencia():
+    """Calcula os indicadores exibidos na planilha de conferência."""
+    valores = {
+        "Volume de Vendas": 0,
+        "Receita Gerada": Decimal("0"),
+        "Receita Fare": Decimal("0"),
+        "Volume Fare": 0,
+    }
+    fontes = []
+
+    if ARQUIVO_FAT_VENDAS.is_file():
+        wb = load_workbook(ARQUIVO_FAT_VENDAS, read_only=True, data_only=True, keep_links=False)
+        try:
+            ws = wb[wb.sheetnames[0]]
+            coluna_contrato = _cabecalhos_planilha(ws).get("CONTRATO")
+            for linha in ws.iter_rows(values_only=True):
+                if coluna_contrato is not None and linha[coluna_contrato] not in (None, ""):
+                    valores["Volume de Vendas"] += 1
+            fontes.append(str(ARQUIVO_FAT_VENDAS))
+        finally:
+            wb.close()
+
+    if ARQUIVO_FAT_RECEITA.is_file():
+        wb = load_workbook(ARQUIVO_FAT_RECEITA, read_only=True, data_only=True, keep_links=False)
+        try:
+            ws = wb[wb.sheetnames[0]]
+            cabecalhos = _cabecalhos_planilha(ws)
+            coluna_produto = cabecalhos.get("PRODUTO")
+            coluna_banco = cabecalhos.get("BANCO")
+            coluna_beneficio = cabecalhos.get("BENEFICIO")
+            coluna_comissao = cabecalhos.get("COMISSAO PREVISTA")
+            if coluna_comissao is None:
+                coluna_comissao = cabecalhos.get("COMISSAO BANCO LIQUIDO")
+            for linha in ws.iter_rows(values_only=True):
+                if not any(valor not in (None, "") for valor in linha):
+                    continue
+                if coluna_comissao is not None:
+                    valores["Receita Gerada"] += _numero_conferencia(linha[coluna_comissao])
+                campos_fare = (
+                    linha[indice]
+                    for indice in (coluna_produto, coluna_banco, coluna_beneficio)
+                    if indice is not None and indice < len(linha)
+                )
+                if any("FARE" in str(campo or "").upper() for campo in campos_fare):
+                    valores["Volume Fare"] += 1
+                    if coluna_comissao is not None:
+                        valores["Receita Fare"] += _numero_conferencia(linha[coluna_comissao])
+            fontes.append(str(ARQUIVO_FAT_RECEITA))
+        finally:
+            wb.close()
+
+    return valores, fontes
+
+
+def atualizar_planilha_conferencia_att(processos, erros=0):
+    """Atualiza a planilha de conferência sem interromper o processo principal."""
+    arquivo = Path(ARQUIVO_CONFERENCIA_ATT)
+    arquivo.parent.mkdir(parents=True, exist_ok=True)
+    if not arquivo.exists():
+        raise FileNotFoundError(f"Planilha de conferência não encontrada: {arquivo}")
+
+    valores, fontes = _resumo_valores_conferencia()
+    wb = load_workbook(arquivo, keep_links=False)
+    temporario = arquivo.with_name(f".{arquivo.stem}.tmp.xlsx")
+    try:
+        ws = wb[wb.sheetnames[0]]
+        linhas = {
+            str(ws.cell(row, 1).value or "").strip(): row
+            for row in range(3, ws.max_row + 1)
+            if ws.cell(row, 1).value
+        }
+        for indicador, valor in valores.items():
+            linha = linhas.get(indicador)
+            if linha is None:
+                continue
+            anterior = ws.cell(linha, 3).value
+            if anterior not in (None, ""):
+                ws.cell(linha, 2).value = anterior
+            ws.cell(linha, 3).value = float(valor) if isinstance(valor, Decimal) else valor
+            ws.cell(linha, 3).number_format = "#,##0.00" if isinstance(valor, Decimal) else "#,##0"
+
+        status = processos or {}
+        for row in range(3, ws.max_row + 1):
+            processo = str(ws.cell(row, 4).value or "").strip()
+            if not processo:
+                continue
+            concluido = bool(status.get(processo, False))
+            ws.cell(row, 5).value = "01 DE 01" if concluido else "00 DE 01"
+            ws.cell(row, 6).value = datetime.now().strftime("%d/%m/%Y %H:%M:%S") if concluido else ""
+            ws.cell(row, 7).value = 0 if concluido else ""
+
+        ws["H2"] = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        ws["H2"].number_format = "dd/mm/yyyy hh:mm:ss"
+        if "Considerações" in wb.sheetnames:
+            consideracoes = wb["Considerações"]
+            consideracoes.delete_rows(1, consideracoes.max_row)
+        else:
+            consideracoes = wb.create_sheet("Considerações")
+        consideracoes.append(["Considerações da atualização"])
+        consideracoes.append(["Os valores ATUAL são calculados após a execução do start.py."])
+        consideracoes.append(["Receita Gerada e Receita Fare usam COMISSAO PREVISTA (ou COMISSAO BANCO LIQUIDO, quando necessário)."])
+        consideracoes.append(["Volume Fare considera registros cujo produto, banco ou benefício contém FARE."])
+        consideracoes.append([f"Erros registrados no processo: {erros}"])
+        for fonte in fontes:
+            consideracoes.append([f"Fonte: {fonte}"])
+        consideracoes.column_dimensions["A"].width = 120
+        consideracoes.freeze_panes = "A2"
+        wb.save(temporario)
+    finally:
+        wb.close()
+    os.replace(temporario, arquivo)
+    return arquivo
 
 
 def registrar_estado_processo(etapa, status="executando", erro=None, **dados):
@@ -4387,6 +4539,14 @@ def main(argv=None):
             return
 
         arquivos_atualizados = []
+        processos_conferencia = {
+            "Receita Gerada CPC": False,
+            "Vendas": False,
+            "Retorno de Ligações": False,
+            "Indicadores": False,
+            "Propostas": False,
+            "Gerencial": False,
+        }
 
         if executar_crediagora:
             if criar_backups:
@@ -4401,6 +4561,7 @@ def main(argv=None):
                 etapa_atual = "retorno-ligacoes"
                 registrar_estado_processo(etapa_atual)
                 arquivos_atualizados.append(processar_retorno_ligacoes(driver))
+                processos_conferencia["Retorno de Ligações"] = True
                 registrar_estado_processo(etapa_atual, "concluido")
 
             if args.exportacao != "retorno-ligacoes":
@@ -4413,6 +4574,7 @@ def main(argv=None):
                 etapa_atual = "vendas"
                 registrar_estado_processo(etapa_atual)
                 arquivos_atualizados.append(processar_exportacao_vendas(driver))
+                processos_conferencia["Vendas"] = True
                 registrar_estado_processo(etapa_atual, "concluido")
 
             if args.exportacao == "todas":
@@ -4425,6 +4587,7 @@ def main(argv=None):
                 etapa_atual = "receita"
                 registrar_estado_processo(etapa_atual)
                 arquivos_atualizados.append(processar_receita_gerada(driver))
+                processos_conferencia["Receita Gerada CPC"] = True
                 registrar_estado_processo(etapa_atual, "concluido")
 
             log("Confirmando que os arquivos finais estão liberados para edição...")
@@ -4461,6 +4624,7 @@ def main(argv=None):
             )
             log(f"====[INDICADORES] Etapa concluída em {(time.monotonic() - inicio_indicadores) / 60:.1f} minutos.====")
 
+            processos_conferencia["Indicadores"] = True
             registrar_estado_processo(etapa_atual, "concluido")
 
         if executar_gestor:
@@ -4479,6 +4643,14 @@ def main(argv=None):
             log(f"Screenshot Gestor={resultado_gestor.screenshot}")
             log(f"====[GESTOR] Etapa concluída em {(time.monotonic() - inicio_gestor) / 60:.1f} minutos.====")
 
+            processos_conferencia["Gerencial"] = True
+
+        try:
+            arquivo_conferencia = atualizar_planilha_conferencia_att(processos_conferencia)
+            log(f"[CONFERENCIA] Planilha de valores atualizada: {arquivo_conferencia}")
+        except Exception as erro_conferencia:
+            logger.debug("Falha capturada na planilha de conferencia", exc_info=True)
+            log(f"[CONFERENCIA][AVISO] Nao foi possivel atualizar a planilha: {erro_conferencia}")
         log("========== PROCESSO FINALIZADO COM SUCESSO ==========")
         status_log = "sucesso"
         registrar_estado_processo("finalizado", "concluido")

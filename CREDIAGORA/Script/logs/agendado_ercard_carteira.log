@@ -293,3 +293,436 @@ Symbols not available. Dumping unresolved backtrace:
 
 [22/10/2026 13:13:57] [ERCard][ERRO] Processo interrompido apos 32.1 minutos: [ERCARD][ERRO][Download WebFile] CSV nao confirmado em 1800s em C:\Users\CREDIAGORA\Downloads\crediagora. A exportacao pode continuar no sistema remoto; nao repetir Exportar. Ultimo erro de arquivo: None.
 [22/10/2026] ERCard Carteira finalizado com cÃ³digo 1.
+[22/10/2026] Iniciando ERCard Carteira.
+[22/10/2026 16:45:03] ========== INICIO FLUXO ERCard - RELATORIOS ==========
+[22/10/2026 16:45:03] Pasta de destino: C:\Users\CREDIAGORA\Desktop\ATT manhã
+[22/10/2026 16:45:03] [ERCard][INICIO] 14 - Tabela Contratos
+[22/10/2026 16:45:03] [ERCard][DOWNLOAD] Solicitação iniciada: 14 - Tabela Contratos
+[22/10/2026 16:45:05] Travas antigas do perfil removidas: 1.
+[22/10/2026 16:45:08] [ERCARD] Iniciando fase ERCard...
+[22/10/2026 16:45:08] [ERCARD] Abrindo portal...
+[22/10/2026 16:45:11] [ERCARD] Janelas remotas já abertas e ignoradas: 0.
+[22/10/2026 16:45:11] [ERCARD] Verificando autenticação...
+[22/10/2026 16:45:11] [ERCARD] Botão Entrar clicado.
+[22/10/2026 16:45:13] [ERCARD] Nova aba da comunicação detectada e selecionada.
+[22/10/2026 16:45:13] [ERCARD] Login 1 realizado.
+[22/10/2026 16:45:13] [ERCARD] Conexão sendo estabelecida...
+[22/10/2026 16:45:13] [ERCARD] Se o navegador solicitar confirmação, clique em Abrir. Aguardando o ambiente ficar pronto...
+[22/10/2026 16:45:17] [ERCARD] Ambiente remoto carregado no navegador.
+[22/10/2026 16:45:19] [ERCARD] Janela ER Card movida e maximizada no monitor principal.
+[22/10/2026 16:45:19] [ERCARD] Selecionando ambiente CrediAgora...
+[22/10/2026 16:45:23] [ERCARD] Aguardando a tela de Ambiente CrediAgora terminar de carregar...
+[22/10/2026 16:45:26] [ERCARD] Clique enviado para CrediAgora no canvas.
+[22/10/2026 16:45:26] [ERCARD] Abertura de CrediAgora confirmada por mudança da tela.
+[22/10/2026 16:45:26] [ERCARD] Abrindo ER Cartão CrediAgora...
+[22/10/2026 16:45:30] [ERCARD] Aguardando a tela de Módulo ER Cartão CrediAgora terminar de carregar...
+[22/10/2026 16:45:32] [ERCARD] Duplo clique enviado para ER Cartão CrediAgora no canvas.
+[22/10/2026 16:45:33] [ERCARD] Abertura de ER Cartão CrediAgora confirmada por mudança da tela.
+[22/10/2026 16:45:33] [ERCARD] Aguardando Login 2 no canvas...
+[22/10/2026 16:45:33] [ERCARD] Preenchendo usuário do Login 2...
+[22/10/2026 16:45:36] [ERCARD] Preenchendo senha do Login 2...
+[22/10/2026 16:45:38] [ERCARD] Login 2 enviado; aguardando a aplicação principal...
+[22/10/2026 16:45:39] [ERCARD] Login 2 concluído no canvas.
+[22/10/2026 16:45:39] [ERCARD] Aguardando a aplicação principal estabilizar...
+[22/10/2026 16:45:41] [ERCARD] Abrindo Consultas > Gerencial no canvas...
+[22/10/2026 16:45:43] [ERCARD] Selecionando 14 - TABELA CONTRATOS no canvas...
+[22/10/2026 16:45:48] [ERCARD] Tabela de Contratos selecionada.
+[22/10/2026 16:45:48] [ERCARD] Selecionando ARQUIVO CSV (EXCEL) no canvas...
+[22/10/2026 16:45:50] [ERCARD] Abrindo seletor do arquivo de exportação...
+[22/10/2026 16:45:52] [ERCARD] Confirmando Restrictions 1/2 no canvas...
+[22/10/2026 16:45:52] [ERCARD] Confirmando Restrictions 2/2 no canvas...
+[22/10/2026 16:45:53] [ERCARD] Abrindo This PC\WebFile via \\tsclient\WebFile...
+[22/10/2026 16:45:54] [ERCARD] Informando nome do arquivo no WebFile: 14 - tabela contratos 22-10-2026 16-45.csv
+[22/10/2026 16:46:01] [ERCARD] TAB enviado apos DATA INICIAL; aguardando foco na DATA FINAL sem novo clique.
+[22/10/2026 16:46:05] [ERCARD] Valor enviado para DATA INICIAL: 010124
+[22/10/2026 16:46:05] [ERCARD] Valor enviado para DATA FINAL: 221026; TAB enviado para aplicar a mascara.
+[22/10/2026 16:46:05] [ERCARD] Screenshot de diagnóstico: C:\Users\CREDIAGORA\Desktop\workspace\Automacoes\crediagora\CREDIAGORA\erros\ercard_periodo_preenchido_antes_exportar_2026-10-22_16-46-05.png
+[22/10/2026 16:46:05] [ERCARD] Iniciando exportação no canvas...
+[22/10/2026 16:46:07] [ERCARD] Yes clicado com o mouse em 22/10/2026 16:46:07.
+[22/10/2026 16:46:07] [ERCARD] Exportando Tabela de Contratos...
+[22/10/2026 16:46:07] [ERCARD] Aguardando processamento e download do CSV por até 1800 segundos; Not Responding isolado nao confirma falha.
+[22/10/2026 16:46:37] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 30s de 1800s; processamento mantido sem novos cliques.
+[22/10/2026 16:47:07] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 60s de 1800s; processamento mantido sem novos cliques.
+[22/10/2026 16:47:38] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 91s de 1800s; processamento mantido sem novos cliques.
+[22/10/2026 16:48:08] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 121s de 1800s; processamento mantido sem novos cliques.
+[22/10/2026 16:48:38] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 151s de 1800s; processamento mantido sem novos cliques.
+[22/10/2026 16:49:08] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 181s de 1800s; processamento mantido sem novos cliques.
+[22/10/2026 16:49:38] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 211s de 1800s; processamento mantido sem novos cliques.
+[22/10/2026 16:50:09] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 242s de 1800s; processamento mantido sem novos cliques.
+[22/10/2026 16:50:39] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 272s de 1800s; processamento mantido sem novos cliques.
+[22/10/2026 16:51:09] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 302s de 1800s; processamento mantido sem novos cliques.
+[22/10/2026 16:51:39] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 332s de 1800s; processamento mantido sem novos cliques.
+[22/10/2026 16:52:09] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 362s de 1800s; processamento mantido sem novos cliques.
+[22/10/2026 16:52:40] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 392s de 1800s; processamento mantido sem novos cliques.
+[22/10/2026 16:53:10] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 423s de 1800s; processamento mantido sem novos cliques.
+[22/10/2026 16:53:40] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 453s de 1800s; processamento mantido sem novos cliques.
+[22/10/2026 16:54:10] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 483s de 1800s; processamento mantido sem novos cliques.
+[22/10/2026 16:54:40] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 513s de 1800s; processamento mantido sem novos cliques.
+[22/10/2026 16:55:10] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 543s de 1800s; processamento mantido sem novos cliques.
+[22/10/2026 16:55:41] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 574s de 1800s; processamento mantido sem novos cliques.
+[22/10/2026 16:56:11] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 604s de 1800s; processamento mantido sem novos cliques.
+[22/10/2026 16:56:41] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 634s de 1800s; processamento mantido sem novos cliques.
+[22/10/2026 16:57:11] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 664s de 1800s; processamento mantido sem novos cliques.
+[22/10/2026 16:57:41] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 694s de 1800s; processamento mantido sem novos cliques.
+[22/10/2026 16:58:12] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 724s de 1800s; processamento mantido sem novos cliques.
+[22/10/2026 16:58:42] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 755s de 1800s; processamento mantido sem novos cliques.
+[22/10/2026 16:59:12] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 785s de 1800s; processamento mantido sem novos cliques.
+[22/10/2026 16:59:42] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 815s de 1800s; processamento mantido sem novos cliques.
+[22/10/2026 17:00:12] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 845s de 1800s; processamento mantido sem novos cliques.
+[22/10/2026 17:00:42] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 875s de 1800s; processamento mantido sem novos cliques.
+[22/10/2026 17:01:13] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 906s de 1800s; processamento mantido sem novos cliques.
+[22/10/2026 17:01:43] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 936s de 1800s; processamento mantido sem novos cliques.
+[22/10/2026 17:02:13] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 966s de 1800s; processamento mantido sem novos cliques.
+[22/10/2026 17:02:43] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 996s de 1800s; processamento mantido sem novos cliques.
+[22/10/2026 17:03:13] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 1026s de 1800s; processamento mantido sem novos cliques.
+[22/10/2026 17:03:44] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 1056s de 1800s; processamento mantido sem novos cliques.
+[22/10/2026 17:04:14] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 1087s de 1800s; processamento mantido sem novos cliques.
+[22/10/2026 17:04:44] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 1117s de 1800s; processamento mantido sem novos cliques.
+[22/10/2026 17:05:14] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 1147s de 1800s; processamento mantido sem novos cliques.
+[22/10/2026 17:05:44] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 1177s de 1800s; processamento mantido sem novos cliques.
+[22/10/2026 17:06:15] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 1207s de 1800s; processamento mantido sem novos cliques.
+[22/10/2026 17:06:45] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 1238s de 1800s; processamento mantido sem novos cliques.
+[22/10/2026 17:07:15] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 1268s de 1800s; processamento mantido sem novos cliques.
+[22/10/2026 17:07:45] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 1298s de 1800s; processamento mantido sem novos cliques.
+[22/10/2026 17:08:15] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 1328s de 1800s; processamento mantido sem novos cliques.
+[22/10/2026 17:08:45] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 1358s de 1800s; processamento mantido sem novos cliques.
+[22/10/2026 17:09:16] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 1389s de 1800s; processamento mantido sem novos cliques.
+[22/10/2026 17:09:46] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 1419s de 1800s; processamento mantido sem novos cliques.
+[22/10/2026 17:10:16] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 1449s de 1800s; processamento mantido sem novos cliques.
+[22/10/2026 17:10:46] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 1479s de 1800s; processamento mantido sem novos cliques.
+[22/10/2026 17:11:16] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 1509s de 1800s; processamento mantido sem novos cliques.
+[22/10/2026 17:11:47] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 1539s de 1800s; processamento mantido sem novos cliques.
+[22/10/2026 17:12:17] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 1570s de 1800s; processamento mantido sem novos cliques.
+[22/10/2026 17:12:47] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 1600s de 1800s; processamento mantido sem novos cliques.
+[22/10/2026 17:13:17] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 1630s de 1800s; processamento mantido sem novos cliques.
+[22/10/2026 17:13:47] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 1660s de 1800s; processamento mantido sem novos cliques.
+[22/10/2026 17:14:17] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 1690s de 1800s; processamento mantido sem novos cliques.
+[22/10/2026 17:14:48] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 1721s de 1800s; processamento mantido sem novos cliques.
+[22/10/2026 17:15:18] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 1751s de 1800s; processamento mantido sem novos cliques.
+[22/10/2026 17:15:48] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 1781s de 1800s; processamento mantido sem novos cliques.
+[22/10/2026 17:16:08] [ERCARD] Não foi possível salvar screenshot: Message: invalid session id: session deleted as the browser has closed the connection
+from disconnected: not connected to DevTools
+  (Session info: chrome=156.0.8078.47); For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#invalidsessionidexception
+Stacktrace:
+Symbols not available. Dumping unresolved backtrace:
+	(No symbol) [0x7ff6b5fd3f45]
+	(No symbol) [0x7ff6b5ed4f90]
+	(No symbol) [0x7ff6b5d52c53]
+	(No symbol) [0x7ff6b5d47b9f]
+	(No symbol) [0x7ff6b5d58f09]
+	(No symbol) [0x7ff6b5d7dec6]
+	(No symbol) [0x7ff6b5d8230f]
+	(No symbol) [0x7ff6b5d67cb9]
+	(No symbol) [0x7ff6b5d68ff3]
+	(No symbol) [0x7ff6b648e1a1]
+	(No symbol) [0x7ff6b64b181b]
+	(No symbol) [0x7ff6b64a7ece]
+	(No symbol) [0x7ff6b60fb10e]
+	(No symbol) [0x7ff6b5ee3db5]
+	(No symbol) [0x7ff6b5ede694]
+	(No symbol) [0x7ff6b5ede824]
+	(No symbol) [0x7ff6b5ec6bdc]
+	(No symbol) [0x7ffeca0edda7]
+	(No symbol) [0x7ffecc39ee4c]
+
+[22/10/2026 17:16:08] [ERCard][ERRO] Processo interrompido apos 31.1 minutos: [ERCARD][ERRO][Download WebFile] CSV nao confirmado em 1800s em C:\Users\CREDIAGORA\Downloads\crediagora. A exportacao pode continuar no sistema remoto; nao repetir Exportar. Ultimo erro de arquivo: None.
+[22/10/2026] ERCard Carteira finalizado com cÃ³digo 1.
+[23/10/2026] Iniciando ERCard Carteira.
+[23/10/2026 06:40:05] ========== INICIO FLUXO ERCard - RELATORIOS ==========
+[23/10/2026 06:40:05] Pasta de destino: C:\Users\CREDIAGORA\Desktop\ATT manhã
+[23/10/2026 06:40:05] [ERCard][INICIO] 14 - Tabela Contratos
+[23/10/2026 06:40:05] [ERCard][DOWNLOAD] Solicitação iniciada: 14 - Tabela Contratos
+[23/10/2026 06:40:10] Travas antigas do perfil removidas: 1.
+[23/10/2026 06:40:15] [ERCARD] Iniciando fase ERCard...
+[23/10/2026 06:40:15] [ERCARD] Abrindo portal...
+[23/10/2026 06:40:16] [ERCARD] Janelas remotas já abertas e ignoradas: 0.
+[23/10/2026 06:40:16] [ERCARD] Verificando autenticação...
+[23/10/2026 06:40:16] [ERCARD] Botão Entrar clicado.
+[23/10/2026 06:40:17] [ERCARD] Nova aba da comunicação detectada e selecionada.
+[23/10/2026 06:40:17] [ERCARD] Login 1 realizado.
+[23/10/2026 06:40:17] [ERCARD] Conexão sendo estabelecida...
+[23/10/2026 06:40:17] [ERCARD] Se o navegador solicitar confirmação, clique em Abrir. Aguardando o ambiente ficar pronto...
+[23/10/2026 06:40:22] [ERCARD] Ambiente remoto carregado no navegador.
+[23/10/2026 06:40:24] [ERCARD] Janela ER Card movida e maximizada no monitor principal.
+[23/10/2026 06:40:24] [ERCARD] Selecionando ambiente CrediAgora...
+[23/10/2026 06:40:28] [ERCARD] Aguardando a tela de Ambiente CrediAgora terminar de carregar...
+[23/10/2026 06:40:30] [ERCARD] Clique enviado para CrediAgora no canvas.
+[23/10/2026 06:40:31] [ERCARD] Abertura de CrediAgora confirmada por mudança da tela.
+[23/10/2026 06:40:31] [ERCARD] Abrindo ER Cartão CrediAgora...
+[23/10/2026 06:40:35] [ERCARD] Aguardando a tela de Módulo ER Cartão CrediAgora terminar de carregar...
+[23/10/2026 06:40:36] [ERCARD] Duplo clique enviado para ER Cartão CrediAgora no canvas.
+[23/10/2026 06:40:37] [ERCARD] Abertura de ER Cartão CrediAgora confirmada por mudança da tela.
+[23/10/2026 06:40:37] [ERCARD] Aguardando Login 2 no canvas...
+[23/10/2026 06:40:37] [ERCARD] Preenchendo usuário do Login 2...
+[23/10/2026 06:40:40] [ERCARD] Preenchendo senha do Login 2...
+[23/10/2026 06:40:42] [ERCARD] Login 2 enviado; aguardando a aplicação principal...
+[23/10/2026 06:40:43] [ERCARD] Login 2 concluído no canvas.
+[23/10/2026 06:40:43] [ERCARD] Aguardando a aplicação principal estabilizar...
+[23/10/2026 06:40:45] [ERCARD] Abrindo Consultas > Gerencial no canvas...
+[23/10/2026 06:40:47] [ERCARD] Selecionando 14 - TABELA CONTRATOS no canvas...
+[23/10/2026 06:40:51] [ERCARD] Tabela de Contratos selecionada.
+[23/10/2026 06:40:51] [ERCARD] Selecionando ARQUIVO CSV (EXCEL) no canvas...
+[23/10/2026 06:40:54] [ERCARD] Abrindo seletor do arquivo de exportação...
+[23/10/2026 06:40:55] [ERCARD] Confirmando Restrictions 1/2 no canvas...
+[23/10/2026 06:40:56] [ERCARD] Confirmando Restrictions 2/2 no canvas...
+[23/10/2026 06:40:56] [ERCARD] Abrindo This PC\WebFile via \\tsclient\WebFile...
+[23/10/2026 06:40:57] [ERCARD] Informando nome do arquivo no WebFile: 14 - tabela contratos 23-10-2026 06-40.csv
+[23/10/2026 06:41:04] [ERCARD] TAB enviado apos DATA INICIAL; aguardando foco na DATA FINAL sem novo clique.
+[23/10/2026 06:41:08] [ERCARD] Valor enviado para DATA INICIAL: 010124
+[23/10/2026 06:41:08] [ERCARD] Valor enviado para DATA FINAL: 231026; TAB enviado para aplicar a mascara.
+[23/10/2026 06:41:09] [ERCARD] Screenshot de diagnóstico: C:\Users\CREDIAGORA\Desktop\workspace\Automacoes\crediagora\CREDIAGORA\erros\ercard_periodo_preenchido_antes_exportar_2026-10-23_06-41-08.png
+[23/10/2026 06:41:09] [ERCARD] Iniciando exportação no canvas...
+[23/10/2026 06:41:10] [ERCARD] Yes clicado com o mouse em 23/10/2026 06:41:10.
+[23/10/2026 06:41:10] [ERCARD] Exportando Tabela de Contratos...
+[23/10/2026 06:41:10] [ERCARD] Aguardando processamento e download do CSV por até 1800 segundos; Not Responding isolado nao confirma falha.
+[23/10/2026 06:41:41] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 30s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 06:42:11] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 60s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 06:42:41] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 91s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 06:43:11] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 121s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 06:43:42] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 151s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 06:44:12] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 181s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 06:44:42] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 211s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 06:45:12] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 242s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 06:45:42] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 272s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 06:46:12] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 302s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 06:46:43] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 332s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 06:47:13] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 362s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 06:47:43] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 393s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 06:48:13] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 423s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 06:48:43] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 453s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 06:49:14] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 483s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 06:49:44] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 513s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 06:50:14] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 543s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 06:50:44] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 574s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 06:51:14] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 604s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 06:51:44] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 634s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 06:52:15] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 664s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 06:52:45] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 694s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 06:53:15] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 724s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 06:53:45] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 755s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 06:54:15] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 785s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 06:54:45] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 815s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 06:55:16] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 845s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 06:55:46] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 875s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 06:56:16] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 906s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 06:56:46] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 936s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 06:57:16] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 966s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 06:57:47] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 996s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 06:58:17] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 1026s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 06:58:47] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 1056s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 06:59:17] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 1087s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 06:59:23] [ERCARD] CSV movido do WebFile para: C:\Users\CREDIAGORA\Desktop\ATT manhã\14 - tabela contratos 23-10-2026 06-40.csv
+[23/10/2026 06:59:26] [ERCARD] Exportação concluída com sucesso.
+[23/10/2026 06:59:26] [ERCARD] Arquivo validado: C:\Users\CREDIAGORA\Desktop\ATT manhã\14 - tabela contratos 23-10-2026 06-40.csv
+[23/10/2026 06:59:26] [ERCard][IMPORTACAO] Arquivo salvo na pasta de destino: C:\Users\CREDIAGORA\Desktop\ATT manhã\14 - tabela contratos 23-10-2026 06-40.csv
+[23/10/2026 06:59:26] [ERCard][FIM] 14 - Tabela Contratos concluido em 19.3 minutos
+[23/10/2026 06:59:29] [ERCard][INICIO] 06 - Propostas
+[23/10/2026 06:59:29] [ERCard][DOWNLOAD] Solicitação iniciada: 06 - Propostas
+[23/10/2026 06:59:32] Travas antigas do perfil removidas: 1.
+[23/10/2026 06:59:36] [ERCARD] Iniciando fase ERCard...
+[23/10/2026 06:59:36] [ERCARD] Abrindo portal...
+[23/10/2026 06:59:37] [ERCARD] Janelas remotas já abertas e ignoradas: 0.
+[23/10/2026 06:59:37] [ERCARD] Verificando autenticação...
+[23/10/2026 06:59:37] [ERCARD] Botão Entrar clicado.
+[23/10/2026 06:59:38] [ERCARD] Nova aba da comunicação detectada e selecionada.
+[23/10/2026 06:59:38] [ERCARD] Login 1 realizado.
+[23/10/2026 06:59:38] [ERCARD] Conexão sendo estabelecida...
+[23/10/2026 06:59:38] [ERCARD] Se o navegador solicitar confirmação, clique em Abrir. Aguardando o ambiente ficar pronto...
+[23/10/2026 06:59:43] [ERCARD] Ambiente remoto carregado no navegador.
+[23/10/2026 06:59:45] [ERCARD] Janela ER Card movida e maximizada no monitor principal.
+[23/10/2026 06:59:45] [ERCARD] Selecionando ambiente CrediAgora...
+[23/10/2026 06:59:49] [ERCARD] Aguardando a tela de Ambiente CrediAgora terminar de carregar...
+[23/10/2026 06:59:51] [ERCARD] Clique enviado para CrediAgora no canvas.
+[23/10/2026 06:59:51] [ERCARD] Abertura de CrediAgora confirmada por mudança da tela.
+[23/10/2026 06:59:51] [ERCARD] Abrindo ER Cartão CrediAgora...
+[23/10/2026 06:59:55] [ERCARD] Aguardando a tela de Módulo ER Cartão CrediAgora terminar de carregar...
+[23/10/2026 06:59:57] [ERCARD] Duplo clique enviado para ER Cartão CrediAgora no canvas.
+[23/10/2026 06:59:58] [ERCARD] Abertura de ER Cartão CrediAgora confirmada por mudança da tela.
+[23/10/2026 06:59:58] [ERCARD] Aguardando Login 2 no canvas...
+[23/10/2026 06:59:58] [ERCARD] Preenchendo usuário do Login 2...
+[23/10/2026 07:00:00] [ERCARD] Preenchendo senha do Login 2...
+[23/10/2026 07:00:03] [ERCARD] Login 2 enviado; aguardando a aplicação principal...
+[23/10/2026 07:00:04] [ERCARD] Login 2 concluído no canvas.
+[23/10/2026 07:00:04] [ERCARD] Aguardando a aplicação principal estabilizar...
+[23/10/2026 07:00:05] [ERCARD] Abrindo Consultas > Gerencial no canvas...
+[23/10/2026 07:00:08] [ERCARD] Selecionando 06 - TABELA PROPOSTAS - CREDITO no canvas...
+[23/10/2026 07:00:12] [ERCARD] Tabela de Contratos selecionada.
+[23/10/2026 07:00:12] [ERCARD] Selecionando ARQUIVO CSV (EXCEL) no canvas...
+[23/10/2026 07:00:15] [ERCARD] Abrindo seletor do arquivo de exportação...
+[23/10/2026 07:00:16] [ERCARD] Confirmando Restrictions 1/2 no canvas...
+[23/10/2026 07:00:17] [ERCARD] Confirmando Restrictions 2/2 no canvas...
+[23/10/2026 07:00:18] [ERCARD] Abrindo This PC\WebFile via \\tsclient\WebFile...
+[23/10/2026 07:00:18] [ERCARD] Informando nome do arquivo no WebFile: 06 - propostas 23-10-2026 06-59.csv
+[23/10/2026 07:00:26] [ERCARD] TAB enviado apos DATA INICIAL; aguardando foco na DATA FINAL sem novo clique.
+[23/10/2026 07:00:30] [ERCARD] Valor enviado para DATA INICIAL: 010124
+[23/10/2026 07:00:30] [ERCARD] Valor enviado para DATA FINAL: 231026; TAB enviado para aplicar a mascara.
+[23/10/2026 07:00:30] [ERCARD] Screenshot de diagnóstico: C:\Users\CREDIAGORA\Desktop\workspace\Automacoes\crediagora\CREDIAGORA\erros\ercard_periodo_preenchido_antes_exportar_2026-10-23_07-00-30.png
+[23/10/2026 07:00:30] [ERCARD] Iniciando exportação no canvas...
+[23/10/2026 07:00:32] [ERCARD] Yes clicado com o mouse em 23/10/2026 07:00:31.
+[23/10/2026 07:00:32] [ERCARD] Exportando Tabela de Contratos...
+[23/10/2026 07:00:32] [ERCARD] Aguardando processamento e download do CSV por até 1800 segundos; Not Responding isolado nao confirma falha.
+[23/10/2026 07:01:02] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 30s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 07:01:32] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 60s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 07:02:02] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 91s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 07:02:33] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 121s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 07:03:03] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 151s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 07:03:33] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 181s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 07:04:03] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 211s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 07:04:33] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 242s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 07:05:04] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 272s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 07:05:34] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 302s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 07:06:04] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 332s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 07:06:34] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 362s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 07:07:04] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 393s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 07:07:34] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 423s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 07:08:05] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 453s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 07:08:35] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 483s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 07:09:05] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 513s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 07:09:35] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 543s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 07:10:05] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 574s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 07:10:36] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 604s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 07:11:06] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 634s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 07:11:36] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 664s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 07:12:06] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 694s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 07:12:36] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 725s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 07:12:51] [ERCARD] CSV movido do WebFile para: C:\Users\CREDIAGORA\Desktop\ATT manhã\06 - propostas 23-10-2026 06-59.csv
+[23/10/2026 07:12:54] [ERCARD] Exportação concluída com sucesso.
+[23/10/2026 07:12:54] [ERCARD] Arquivo validado: C:\Users\CREDIAGORA\Desktop\ATT manhã\06 - propostas 23-10-2026 06-59.csv
+[23/10/2026 07:12:54] [ERCard][IMPORTACAO] Arquivo salvo na pasta de destino: C:\Users\CREDIAGORA\Desktop\ATT manhã\06 - propostas 23-10-2026 06-59.csv
+[23/10/2026 07:12:54] [ERCard][FIM] 06 - Propostas concluido em 13.4 minutos
+[23/10/2026 07:12:57] [ERCard][INICIO] Carteira Mifa
+[23/10/2026 07:12:57] [ERCard][DOWNLOAD] Solicitação iniciada: Carteira Mifa
+[23/10/2026 07:12:58] Travas antigas do perfil removidas: 1.
+[23/10/2026 07:13:01] [ERCARD] Iniciando fase ERCard...
+[23/10/2026 07:13:01] [ERCARD] Abrindo portal...
+[23/10/2026 07:13:01] [ERCARD] Janelas remotas já abertas e ignoradas: 0.
+[23/10/2026 07:13:01] [ERCARD] Verificando autenticação...
+[23/10/2026 07:13:01] [ERCARD] Botão Entrar clicado.
+[23/10/2026 07:13:03] [ERCARD] Nova aba da comunicação detectada e selecionada.
+[23/10/2026 07:13:03] [ERCARD] Login 1 realizado.
+[23/10/2026 07:13:03] [ERCARD] Conexão sendo estabelecida...
+[23/10/2026 07:13:03] [ERCARD] Se o navegador solicitar confirmação, clique em Abrir. Aguardando o ambiente ficar pronto...
+[23/10/2026 07:13:07] [ERCARD] Ambiente remoto carregado no navegador.
+[23/10/2026 07:13:09] [ERCARD] Janela ER Card movida e maximizada no monitor principal.
+[23/10/2026 07:13:09] [ERCARD] Selecionando ambiente CrediAgora...
+[23/10/2026 07:13:13] [ERCARD] Aguardando a tela de Ambiente CrediAgora terminar de carregar...
+[23/10/2026 07:13:15] [ERCARD] Clique enviado para CrediAgora no canvas.
+[23/10/2026 07:13:16] [ERCARD] Abertura de CrediAgora confirmada por mudança da tela.
+[23/10/2026 07:13:16] [ERCARD] Abrindo ER Cartão CrediAgora...
+[23/10/2026 07:13:20] [ERCARD] Aguardando a tela de Módulo ER Cartão CrediAgora terminar de carregar...
+[23/10/2026 07:13:22] [ERCARD] Duplo clique enviado para ER Cartão CrediAgora no canvas.
+[23/10/2026 07:13:22] [ERCARD] Abertura de ER Cartão CrediAgora confirmada por mudança da tela.
+[23/10/2026 07:13:22] [ERCARD] Aguardando Login 2 no canvas...
+[23/10/2026 07:13:23] [ERCARD] Preenchendo usuário do Login 2...
+[23/10/2026 07:13:25] [ERCARD] Preenchendo senha do Login 2...
+[23/10/2026 07:13:28] [ERCARD] Login 2 enviado; aguardando a aplicação principal...
+[23/10/2026 07:13:29] [ERCARD] Login 2 concluído no canvas.
+[23/10/2026 07:13:29] [ERCARD] Aguardando a aplicação principal estabilizar...
+[23/10/2026 07:13:30] [ERCARD] Abrindo Consultas > Gerencial no canvas...
+[23/10/2026 07:13:32] [ERCARD] Selecionando RELATORIO GERENCIAL - CARTEIRA no canvas...
+[23/10/2026 07:13:37] [ERCARD] Tabela de Contratos selecionada.
+[23/10/2026 07:13:37] [ERCARD] Selecionando ARQUIVO CSV (EXCEL) no canvas...
+[23/10/2026 07:13:40] [ERCARD] Abrindo seletor do arquivo de exportação...
+[23/10/2026 07:13:41] [ERCARD] Confirmando Restrictions 1/2 no canvas...
+[23/10/2026 07:13:42] [ERCARD] Confirmando Restrictions 2/2 no canvas...
+[23/10/2026 07:13:42] [ERCARD] Abrindo This PC\WebFile via \\tsclient\WebFile...
+[23/10/2026 07:13:43] [ERCARD] Informando nome do arquivo no WebFile: Carteira mifa 23-10-2026 07-13.csv
+[23/10/2026 07:13:51] [ERCARD] TAB enviado apos DATA INICIAL; aguardando foco na DATA FINAL sem novo clique.
+[23/10/2026 07:13:55] [ERCARD] Valor enviado para DATA INICIAL: 010124
+[23/10/2026 07:13:55] [ERCARD] Valor enviado para DATA FINAL: 231026; TAB enviado para aplicar a mascara.
+[23/10/2026 07:13:55] [ERCARD] Screenshot de diagnóstico: C:\Users\CREDIAGORA\Desktop\workspace\Automacoes\crediagora\CREDIAGORA\erros\ercard_periodo_preenchido_antes_exportar_2026-10-23_07-13-55.png
+[23/10/2026 07:13:55] [ERCARD] Iniciando exportação no canvas...
+[23/10/2026 07:13:56] [ERCARD] Yes clicado com o mouse em 23/10/2026 07:13:56.
+[23/10/2026 07:13:56] [ERCARD] Exportando Tabela de Contratos...
+[23/10/2026 07:13:56] [ERCARD] Aguardando processamento e download do CSV por até 1800 segundos; Not Responding isolado nao confirma falha.
+[23/10/2026 07:14:27] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 30s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 07:14:57] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 60s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 07:15:27] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 91s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 07:15:57] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 121s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 07:16:28] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 151s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 07:16:58] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 181s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 07:17:28] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 211s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 07:17:58] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 242s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 07:18:28] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 272s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 07:18:59] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 302s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 07:19:29] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 332s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 07:19:59] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 363s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 07:20:29] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 393s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 07:20:59] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 423s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 07:21:30] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 453s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 07:22:00] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 483s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 07:22:30] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 514s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 07:23:00] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 544s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 07:23:30] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 574s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 07:24:01] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 604s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 07:24:31] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 634s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 07:25:01] [ERCARD] Aguardando consulta 14 e CSV no WebFile: 665s de 1800s; processamento mantido sem novos cliques.
+[23/10/2026 07:25:06] [ERCARD] CSV movido do WebFile para: C:\Users\CREDIAGORA\Desktop\ATT manhã\Carteira mifa 23-10-2026 07-13.csv
+[23/10/2026 07:25:09] [ERCARD] Exportação concluída com sucesso.
+[23/10/2026 07:25:09] [ERCARD] Arquivo validado: C:\Users\CREDIAGORA\Desktop\ATT manhã\Carteira mifa 23-10-2026 07-13.csv
+[23/10/2026 07:25:09] [ERCard][IMPORTACAO] Arquivo salvo na pasta de destino: C:\Users\CREDIAGORA\Desktop\ATT manhã\Carteira mifa 23-10-2026 07-13.csv
+[23/10/2026 07:25:09] [ERCard][FIM] Carteira Mifa concluido em 12.2 minutos
+[23/10/2026 07:25:12] ========== FLUXO ERCard CONCLUIDO EM 45.1 MINUTOS ==========
+[23/10/2026] ERCard Carteira finalizado com cÃ³digo 0.
+[27/10/2026] Iniciando ERCard Carteira.
+[27/10/2026 07:34:44] ========== INICIO FLUXO ERCard - RELATORIOS ==========
+[27/10/2026 07:34:44] Pasta de destino: C:\Users\CREDIAGORA\Desktop\ATT manhã
+[27/10/2026 07:34:44] [ERCard][INICIO] 14 - Tabela Contratos
+[27/10/2026 07:34:44] [ERCard][DOWNLOAD] Solicitação iniciada: 14 - Tabela Contratos
+[27/10/2026 07:34:47] Travas antigas do perfil removidas: 1.
+[27/10/2026 07:34:53] [ERCARD] Iniciando fase ERCard...
+[27/10/2026 07:34:53] [ERCARD] Abrindo portal...
+[27/10/2026 07:34:54] [ERCARD] Janelas remotas já abertas e ignoradas: 0.
+[27/10/2026 07:34:54] [ERCARD] Verificando autenticação...
+[27/10/2026 07:34:55] [ERCARD] Botão Entrar clicado.
+[27/10/2026 07:34:56] [ERCARD] Não foi possível salvar screenshot: Message: invalid session id; For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#invalidsessionidexception
+Stacktrace:
+Symbols not available. Dumping unresolved backtrace:
+	(No symbol) [0x7ff78aef3f45]
+	(No symbol) [0x7ff78adf4f90]
+	(No symbol) [0x7ff78b1f97ad]
+	(No symbol) [0x7ff78ac87aa3]
+	(No symbol) [0x7ff78ac99902]
+	(No symbol) [0x7ff78ac979d3]
+	(No symbol) [0x7ff78ac9753c]
+	(No symbol) [0x7ff78ac5d6db]
+	(No symbol) [0x7ff78ac5d8b2]
+	(No symbol) [0x7ff78ac5dac5]
+	(No symbol) [0x7ff78b3ae1a1]
+	(No symbol) [0x7ff78b3d181b]
+	(No symbol) [0x7ff78b3c7ece]
+	(No symbol) [0x7ff78b01b10e]
+	(No symbol) [0x7ff78ae03db5]
+	(No symbol) [0x7ff78b470ae3]
+	(No symbol) [0x7ff78ac5c744]
+	(No symbol) [0x7ff78b41db4f]
+	(No symbol) [0x7ffeca0edda7]
+	(No symbol) [0x7ffecc39ee4c]
+
+[27/10/2026 07:34:56] [ERCard][ERRO] Processo interrompido apos 0.2 minutos: [ERCARD][ERRO][fase_ercard] Message: invalid session id: session deleted as the browser has closed the connection
+from disconnected: not connected to DevTools
+  (Session info: chrome=156.0.8078.47); For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#invalidsessionidexception
+Stacktrace:
+Symbols not available. Dumping unresolved backtrace:
+	(No symbol) [0x7ff78aef3f45]
+	(No symbol) [0x7ff78adf4f90]
+	(No symbol) [0x7ff78ac72c53]
+	(No symbol) [0x7ff78ac663e5]
+	(No symbol) [0x7ff78ac672cf]
+	(No symbol) [0x7ff78ac730d3]
+	(No symbol) [0x7ff78ac5fdf5]
+	(No symbol) [0x7ff78b4e520a]
+	(No symbol) [0x7ff78ac87cb9]
+	(No symbol) [0x7ff78ac88ff3]
+	(No symbol) [0x7ff78b3ae1a1]
+	(No symbol) [0x7ff78b3d181b]
+	(No symbol) [0x7ff78b3c7ece]
+	(No symbol) [0x7ff78b01b10e]
+	(No symbol) [0x7ff78ae03db5]
+	(No symbol) [0x7ff78adfe694]
+	(No symbol) [0x7ff78adfe824]
+	(No symbol) [0x7ff78ade6bdc]
+	(No symbol) [0x7ffeca0edda7]
+	(No symbol) [0x7ffecc39ee4c]
+
+[27/10/2026] ERCard Carteira finalizado com cÃ³digo 1.
