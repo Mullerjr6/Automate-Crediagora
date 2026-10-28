@@ -52,7 +52,7 @@ def main():
         log(f"[ERCard][DESTINO] {PASTA_EXPORTACAO}")
         ercard.CONSULTA_CONTRATOS = CONSULTA
         ercard.gerar_nome_tabela_contratos = (
-            lambda agora=None: f"{PREFIXO_ARQUIVO} {(agora or datetime.now()):%d-%m-%Y %H-%M}.csv"
+            lambda agora=None: f"{PREFIXO_ARQUIVO} {(agora or datetime.now()):%d-%m-%Y %H-%M}_importar.csv"
         )
         config = criar_configuracao_ercard(PASTA_EXPORTACAO)
         driver = iniciar_chrome(headless=False, manter_navegador=False)

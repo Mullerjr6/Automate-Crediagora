@@ -18,7 +18,8 @@ from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
 import pandas as pd
-from openpyxl import load_workbook
+from openpyxl import Workbook, load_workbook
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.formula.translate import Translator
 from openpyxl.utils import get_column_letter, range_boundaries
 from selenium import webdriver
@@ -256,6 +257,15 @@ GESTOR_TIMEOUT_RELATORIO = int_env("GESTOR_TIMEOUT_RELATORIO", 120)
 PASTA_EXPORTACOES_ERCARD = caminho_env(
     "ERCARD_EXPORT_DIR",
     Path.home() / "Desktop" / "Exportações"
+)
+PASTA_EXPORTACOES_AUTOMACAO = caminho_env(
+    "CREDIAGORA_EXPORT_DIR",
+    Path.home()
+    / "TJI PROMOTORA DE VENDAS EIRELI"
+    / "Crediagora-doc - dados"
+    / "Automacoes"
+    / "Automatização de processos Crediagora"
+    / "Logs de exportações automatizadas",
 )
 ARQUIVO_INDICADORES_FPD1 = caminho_env(
     "CREDIAGORA_INDICADORES_FPD1_XLSX",
@@ -768,6 +778,53 @@ def criar_configuracao_gestor():
         GESTOR_TIMEOUT_JANELA,
         GESTOR_TIMEOUT_RELATORIO,
     )
+
+
+def exportar_valores_gestor(resultado, log, pasta_destino=None):
+    """Salva uma cópia dos valores extraídos sem substituir o Excel oficial."""
+    pasta_destino = Path(pasta_destino or PASTA_EXPORTACOES_AUTOMACAO)
+    pasta_destino.mkdir(parents=True, exist_ok=True)
+    arquivo = pasta_destino / (
+        f"valores_moda_{datetime.now():%Y-%m-%d_%H-%M-%S}_importar.xlsx"
+    )
+    workbook = Workbook()
+    try:
+        planilha = workbook.active
+        planilha.title = "Valores Moda"
+        planilha.append(["Local", "Venda dia"])
+        for local, valor in resultado.valores.items():
+            planilha.append([local, float(valor)])
+        planilha.append(["Total", float(resultado.total_relatorio)])
+
+        preenchimento = PatternFill("solid", fgColor="A9D18E")
+        fonte_negrito = Font(bold=True)
+        borda = Border(
+            left=Side(style="thin", color="808080"),
+            right=Side(style="thin", color="808080"),
+            top=Side(style="thin", color="808080"),
+            bottom=Side(style="thin", color="808080"),
+        )
+        for celula in planilha[1]:
+            celula.fill = preenchimento
+            celula.font = fonte_negrito
+            celula.alignment = Alignment(horizontal="center")
+            celula.border = borda
+        for linha in range(2, planilha.max_row + 1):
+            planilha.cell(linha, 2).number_format = "#,##0.00"
+            for coluna in range(1, 3):
+                celula = planilha.cell(linha, coluna)
+                celula.border = borda
+                celula.alignment = Alignment(horizontal="center")
+        for celula in planilha[planilha.max_row]:
+            celula.fill = preenchimento
+            celula.font = fonte_negrito
+        planilha.column_dimensions["A"].width = 14
+        planilha.column_dimensions["B"].width = 16
+        workbook.save(arquivo)
+    finally:
+        workbook.close()
+    log(f"[GESTOR] Cópia dos valores salva em: {arquivo}")
+    return arquivo
 
 
 def ativar_ercard_se_configurado(config, somente_ercard=False):
@@ -4632,6 +4689,7 @@ def main(argv=None):
             registrar_estado_processo(etapa_atual)
             inicio_gestor = time.monotonic()
             resultado_gestor = executar_fase_gestor(config_gestor, log)
+            arquivo_valores_moda = exportar_valores_gestor(resultado_gestor, log)
             log(f"Data do relatorio Gestor={resultado_gestor.data_relatorio}")
             for loja, valor in resultado_gestor.valores.items():
                 log(f"Gestor {loja}={formatar_brasileiro(valor)}")
@@ -4640,6 +4698,7 @@ def main(argv=None):
                 f"{formatar_brasileiro(resultado_gestor.total_relatorio)}"
             )
             log(f"Excel Gestor={resultado_gestor.arquivo_excel}")
+            log(f"Cópia dos valores Gestor={arquivo_valores_moda}")
             log(f"Screenshot Gestor={resultado_gestor.screenshot}")
             log(f"====[GESTOR] Etapa concluída em {(time.monotonic() - inicio_gestor) / 60:.1f} minutos.====")
 
