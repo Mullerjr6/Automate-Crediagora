@@ -12,7 +12,6 @@ import completo
 import ercard
 import gestor
 
-
 PASTA_DESTINO = Path(
     r"C:\Users\CREDIAGORA\TJI PROMOTORA DE VENDAS EIRELI\Crediagora-doc - dados\Automacoes\Automatização de processos Crediagora\Logs de exportações automatizadas"
 )
