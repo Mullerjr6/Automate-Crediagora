@@ -1002,6 +1002,34 @@ def _data_campo_corresponde(texto, data_esperada):
     return any(re.sub(r"\D", "", item) in aceitos for item in candidatos)
 
 
+def _ler_data_clipboard_campo(hwnd, x, y):
+    """Lê o texto do campo remoto diretamente, evitando falso negativo do OCR."""
+    import pyautogui
+
+    try:
+        _ativar(hwnd)
+        px, py = _ponto_canvas_acesso(hwnd, x, y)
+        pyautogui.click(px, py, clicks=2, interval=0.12)
+        time.sleep(0.2)
+        _limpar_clipboard_windows()
+        pyautogui.hotkey("ctrl", "a")
+        pyautogui.hotkey("ctrl", "c")
+        fim = time.monotonic() + 2
+        while time.monotonic() < fim:
+            texto = _ler_clipboard_windows().strip()
+            if texto:
+                pyautogui.press("tab")
+                return texto
+            time.sleep(0.1)
+        pyautogui.press("tab")
+    except Exception:
+        try:
+            pyautogui.press("tab")
+        except Exception:
+            pass
+    return ""
+
+
 def _ler_data_visual_campo(hwnd, x, y):
     _ativar(hwnd)
     time.sleep(0.3)
@@ -1084,6 +1112,9 @@ def _preencher_validar_data_canvas(hwnd, x, y, data, intervalo, nome):
         _preencher_campo_canvas_acesso(hwnd, x, y, texto, intervalo)
         pyautogui.press("tab")
         time.sleep(0.8)
+        clipboard = _ler_data_clipboard_campo(hwnd, x, y)
+        if _data_campo_corresponde(clipboard, data):
+            return clipboard
         ultimo = _ler_data_visual_campo(hwnd, x, y)
         if _data_campo_corresponde(ultimo, data):
             return ultimo
