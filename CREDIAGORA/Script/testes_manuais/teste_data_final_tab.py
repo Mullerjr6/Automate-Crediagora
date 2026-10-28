@@ -7,7 +7,7 @@ from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
 
 import ercard
-import start
+import completo
 
 
 def log(mensagem):
@@ -27,8 +27,8 @@ def capturar(driver, config, nome):
 
 
 def executar():
-    driver = start.iniciar_chrome()
-    config = start.criar_configuracao_ercard()
+    driver = completo.iniciar_chrome()
+    config = completo.criar_configuracao_ercard()
     config.validar()
     try:
         ercard.abrir_ercard(driver, config, log)

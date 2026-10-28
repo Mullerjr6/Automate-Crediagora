@@ -598,7 +598,7 @@ def _clicar_relativo_canvas(driver, x, y, texto=None, cliques=1):
 
 
 def _clicar_janela_gerencial(
-    driver, x_relativo, y_relativo, texto=None, timeout=20
+    driver, x_relativo, y_relativo, texto=None, timeout=60
 ):
     fim = time.monotonic() + timeout
     painel = None
@@ -611,7 +611,7 @@ def _clicar_janela_gerencial(
     if painel is None:
         raise ErCardError(
             "Consulta",
-            "Janela Geração de Dados Gerenciais não apareceu em 20 segundos.",
+            f"Janela Geração de Dados Gerenciais não apareceu em {timeout} segundos.",
         )
     x, y, largura, altura, largura_imagem, altura_imagem = painel
     _acao_canvas(
@@ -1293,7 +1293,9 @@ def abrir_consulta_gerencial_canvas(driver, config, log):
 
 def selecionar_tabela_contratos_canvas(driver, config, log):
     log_ercard(log, f"Selecionando {CONSULTA_CONTRATOS} no canvas...")
-    _clicar_janela_gerencial(driver, 0.770, 0.270)
+    _clicar_janela_gerencial(
+        driver, 0.770, 0.270, timeout=max(config.timeout_normal, 60)
+    )
     time.sleep(0.8)
 
     # Pesquisa pelo nome completo para não depender da posição da linha na lista.
@@ -1318,13 +1320,14 @@ def selecionar_tabela_contratos_canvas(driver, config, log):
 
 def configurar_exportacao_csv_canvas(driver, config, arquivo_webfile, log):
     log_ercard(log, f"Selecionando {FORMATO_CSV} no canvas...")
-    _clicar_janela_gerencial(driver, 0.950, 0.307)
+    timeout_janela = max(config.timeout_normal, 60)
+    _clicar_janela_gerencial(driver, 0.950, 0.307, timeout=timeout_janela)
     time.sleep(0.8)
-    _clicar_janela_gerencial(driver, 0.450, 0.365)
+    _clicar_janela_gerencial(driver, 0.450, 0.365, timeout=timeout_janela)
     time.sleep(0.8)
 
     log_ercard(log, "Abrindo seletor do arquivo de exportação...")
-    _clicar_janela_gerencial(driver, 0.955, 0.535)
+    _clicar_janela_gerencial(driver, 0.955, 0.535, timeout=timeout_janela)
     time.sleep(0.8)
 
     for numero in (1, 2):
@@ -1401,7 +1404,12 @@ def preencher_periodo_canvas(driver, config, log):
 def exportar_tabela_contratos_canvas(driver, config, arquivo_final, log):
     log_ercard(log, "Iniciando exportação no canvas...")
     tela_antes = driver.get_screenshot_as_png()
-    _clicar_janela_gerencial(driver, 0.433, 0.925)
+    _clicar_janela_gerencial(
+        driver,
+        0.433,
+        0.925,
+        timeout=max(config.timeout_normal, 60),
+    )
     fim = time.monotonic() + config.timeout_normal
     while time.monotonic() < fim:
         if _mudanca_visual_significativa(

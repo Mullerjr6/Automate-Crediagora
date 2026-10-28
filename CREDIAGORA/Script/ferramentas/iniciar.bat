@@ -9,13 +9,13 @@ set "PROJECT_DIR=%SCRIPT_DIR%..\.."
 set "VENV_PYTHON=%PROJECT_DIR%\.venv\Scripts\python.exe"
 
 if exist "%VENV_PYTHON%" (
-    "%VENV_PYTHON%" start.py %*
+    "%VENV_PYTHON%" completo.py %*
 ) else (
     where py >nul 2>nul
     if errorlevel 1 (
-        python start.py %*
+        python completo.py %*
     ) else (
-        py -3 start.py %*
+        py -3 completo.py %*
     )
 )
 

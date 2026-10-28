@@ -9,14 +9,21 @@ from pathlib import Path
 
 import ercard
 from ercard import executar_fase_ercard
-from start import (
+from completo import (
     criar_configuracao_ercard,
     iniciar_chrome,
     limpar_pagina_para_reinicio,
     log,
 )
 
-PASTA_EXPORTACAO = Path.home() / "Desktop" / "ATT manh\u00e3"
+PASTA_EXPORTACAO = (
+    Path.home()
+    / "TJI PROMOTORA DE VENDAS EIRELI"
+    / "Crediagora-doc - dados"
+    / "Automacoes"
+    / "Automatização de processos Crediagora"
+    / "Logs de exportações automatizadas"
+)
 ESTADO_FLUXO = Path(__file__).resolve().parent / "logs" / "ercard_carteira_estado.json"
 VERSAO_FLUXO = 2
 CONSULTAS = [
@@ -90,7 +97,7 @@ def main(argv=None):
     parser.add_argument(
         "--limpar-pasta",
         action="store_true",
-        help="Limpa somente os CSVs exportados da pasta ATT manhã.",
+        help="Limpa somente os CSVs exportados da pasta de logs automatizados.",
     )
     args = parser.parse_args(argv)
     if args.limpar_pasta:

@@ -27,11 +27,11 @@ RELATORIO = SCRIPT_DIR / "logs" / "agente_relatorio_final.json"
 PASTA_TESTE_MIGRACAO = SCRIPT_DIR.parent / "teste_migracao_oficiais"
 
 FLUXOS = {
-    "completo": ["start.py", "--headless"],
-    "ercard-carteira": ["ercard_carteira.py"],
-    "ercard-tabela-contratos": ["ercard_tabela_contratos.py"],
+    "completo": ["completo.py", "--headless"],
+    "ercard-carteira": ["Manha.py"],
+    "ercard-tabela-contratos": ["tabela_contratos.py"],
     "retorno-ligacoes": [
-        "start.py", "--exportacao", "retorno-ligacoes",
+        "completo.py", "--exportacao", "retorno-ligacoes",
         "--sem-ercard", "--sem-gestor", "--headless",
     ],
     "retorno-ligacoes-oficial": ["retorno_ligacoes_oficial.py"],

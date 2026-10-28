@@ -33,7 +33,7 @@ def main() -> int:
     registrar("Iniciando ERCard Carteira.")
     with LOG.open("a", encoding="utf-8") as arquivo_log:
         resultado = subprocess.run(
-            [sys.executable, "-u", "ercard_carteira.py"],
+            [sys.executable, "-u", "Manha.py"],
             cwd=SCRIPT_DIR,
             check=False,
             stdout=arquivo_log,

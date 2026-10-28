@@ -7,14 +7,21 @@ from pathlib import Path
 
 import ercard
 from ercard import executar_fase_ercard
-from start import (
+from completo import (
     criar_configuracao_ercard,
     iniciar_chrome,
     limpar_pagina_para_reinicio,
     log,
 )
 
-PASTA_EXPORTACAO = Path.home() / "Desktop" / "ATT manhã"
+PASTA_EXPORTACAO = (
+    Path.home()
+    / "TJI PROMOTORA DE VENDAS EIRELI"
+    / "Crediagora-doc - dados"
+    / "Automacoes"
+    / "Automatização de processos Crediagora"
+    / "Logs de exportações automatizadas"
+)
 ESTADO_FLUXO = Path(__file__).resolve().parent / "logs" / "ercard_tabela_contratos_estado.json"
 NOME_RELATORIO = "14 - Tabela Contratos"
 CONSULTA = "14 - TABELA CONTRATOS"

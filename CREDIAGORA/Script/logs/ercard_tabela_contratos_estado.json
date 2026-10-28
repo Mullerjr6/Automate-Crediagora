@@ -1,7 +1,7 @@
 {
   "relatorio": "14 - Tabela Contratos",
-  "atualizado_em": "2026-10-27T08:28:27-03:00",
-  "status": "concluido",
-  "arquivo": "C:\\Users\\CREDIAGORA\\Desktop\\ATT manhã\\14 - tabela contratos 27-10-2026 08-07.csv",
-  "duracao_minutos": 21.13
+  "atualizado_em": "2026-10-27T17:31:25-03:00",
+  "status": "erro",
+  "erro": "[ERCARD][ERRO][fase_ercard] Message: no such window: target window already closed\nfrom unknown error: web view not found\n  (Session info: chrome=156.0.8078.48)\nStacktrace:\nSymbols not available. Dumping unresolved backtrace:\n\t(No symbol) [0x7ff760da3f45]\n\t(No symbol) [0x7ff760ca4f90]\n\t(No symbol) [0x7ff760b22c53]\n\t(No symbol) [0x7ff760b103e0]\n\t(No symbol) [0x7ff760b4de76]\n\t(No symbol) [0x7ff760b5230f]\n\t(No symbol) [0x7ff760b37cb9]\n\t(No symbol) [0x7ff760b38ff3]\n\t(No symbol) [0x7ff76125e1a1]\n\t(No symbol) [0x7ff76128181b]\n\t(No symbol) [0x7ff761277ece]\n\t(No symbol) [0x7ff760ecb10e]\n\t(No symbol) [0x7ff760cb3db5]\n\t(No symbol) [0x7ff760cae694]\n\t(No symbol) [0x7ff760cae824]\n\t(No symbol) [0x7ff760c96bdc]\n\t(No symbol) [0x7ffeca0edda7]\n\t(No symbol) [0x7ffecc39ee4c]\n",
+  "duracao_minutos": 0.21
 }

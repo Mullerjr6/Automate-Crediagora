@@ -8,7 +8,7 @@ from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
 
 import ercard
-import start
+import completo
 from teste_confirmar_yes import aguardar_mudanca, digitar_lentamente, log, salvar_png
 
 
@@ -66,8 +66,8 @@ def monitorar_processamento(driver, config, nome_arquivo, imagem_selecionando):
 
 
 def executar():
-    driver = start.iniciar_chrome()
-    config = start.criar_configuracao_ercard()
+    driver = completo.iniciar_chrome()
+    config = completo.criar_configuracao_ercard()
     config.validar()
     nome_arquivo = ercard.gerar_nome_tabela_contratos()
 

@@ -7,7 +7,7 @@ from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
 
 import ercard
-import start
+import completo
 
 
 def log(mensagem):
@@ -36,8 +36,8 @@ def aguardar_mudanca(driver, imagem_antes, timeout=30):
 
 
 def executar():
-    driver = start.iniciar_chrome()
-    config = start.criar_configuracao_ercard()
+    driver = completo.iniciar_chrome()
+    config = completo.criar_configuracao_ercard()
     config.validar()
     nome_arquivo = ercard.gerar_nome_tabela_contratos()
     try:

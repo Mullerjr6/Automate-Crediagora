@@ -2,11 +2,11 @@
 
 ## Arquivos principais
 
-- `start.py`: processo geral de Panorama, ERCard e Gestor.
+- `completo.py`: processo geral de Panorama, ERCard e Gestor.
 - `agente_crediagora.py`: orquestrador com tentativas, estado e relatórios.
 - `retorno_ligacoes_oficial.py`: atualização autorizada somente do Retorno de Ligações oficial.
-- `ercard_carteira.py`: fluxo separado de Contratos, Propostas e Carteira Mifa.
-- `ercard_tabela_contratos.py`: fluxo separado somente do relat?rio 14 ? Tabela Contratos.
+- `Manha.py`: fluxo separado de Contratos, Propostas e Carteira Mifa.
+- `tabela_contratos.py`: fluxo separado somente do relatório 14 - Tabela Contratos.
 
 ## Pastas
 

@@ -432,7 +432,7 @@ def atualizar_planilha_conferencia_att(processos, erros=0):
         else:
             consideracoes = wb.create_sheet("Considerações")
         consideracoes.append(["Considerações da atualização"])
-        consideracoes.append(["Os valores ATUAL são calculados após a execução do start.py."])
+        consideracoes.append(["Os valores ATUAL são calculados após a execução do completo.py."])
         consideracoes.append(["Receita Gerada e Receita Fare usam COMISSAO PREVISTA (ou COMISSAO BANCO LIQUIDO, quando necessário)."])
         consideracoes.append(["Volume Fare considera registros cujo produto, banco ou benefício contém FARE."])
         consideracoes.append([f"Erros registrados no processo: {erros}"])

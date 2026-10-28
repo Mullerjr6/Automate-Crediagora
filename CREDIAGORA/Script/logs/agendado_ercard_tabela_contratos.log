@@ -56,3 +56,13 @@ PermissionError: [WinError 32] O arquivo já está sendo usado por outro processo:
 [AGENTE] Iniciando ercard-tabela-contratos; tentativa 1/2; retomada na etapa inicializacao
 [AGENTE] ercard-tabela-contratos concluído em 19.79 minutos
 [26/10/2026] Agente finalizado com cÃ³digo 0.
+[27/10/2026] Iniciando agente do ERCard â€“ 14 Tabela Contratos.
+[AGENTE] Iniciando ercard-tabela-contratos; tentativa 1/2; retomada na etapa inicializacao
+[AGENTE] ercard-tabela-contratos concluído em 20.61 minutos
+[27/10/2026] Agente finalizado com cÃ³digo 0.
+[27/10/2026] Iniciando agente do ERCard â€“ 14 Tabela Contratos.
+[AGENTE] Iniciando ercard-tabela-contratos; tentativa 1/2; retomada na etapa inicializacao
+[AGENTE] ercard-tabela-contratos terminou com código 1
+[AGENTE] Iniciando ercard-tabela-contratos; tentativa 2/2; retomada na etapa inicializacao
+[AGENTE] ercard-tabela-contratos terminou com código 1
+[27/10/2026] Agente finalizado com cÃ³digo 1.

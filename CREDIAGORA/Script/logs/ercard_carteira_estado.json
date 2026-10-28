@@ -1,11 +1,11 @@
 {
   "versao_fluxo": 2,
-  "inicio": "2026-10-27T07:34:44-03:00",
+  "inicio": "2026-10-28T06:40:08-03:00",
   "relatorios": {},
   "etapa": 1,
   "nome": "14 - Tabela Contratos",
   "status": "erro",
-  "atualizado_em": "2026-10-27T07:34:56-03:00",
-  "erro": "[ERCARD][ERRO][fase_ercard] Message: invalid session id: session deleted as the browser has closed the connection\nfrom disconnected: not connected to DevTools\n  (Session info: chrome=156.0.8078.47); For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#invalidsessionidexception\nStacktrace:\nSymbols not available. Dumping unresolved backtrace:\n\t(No symbol) [0x7ff78aef3f45]\n\t(No symbol) [0x7ff78adf4f90]\n\t(No symbol) [0x7ff78ac72c53]\n\t(No symbol) [0x7ff78ac663e5]\n\t(No symbol) [0x7ff78ac672cf]\n\t(No symbol) [0x7ff78ac730d3]\n\t(No symbol) [0x7ff78ac5fdf5]\n\t(No symbol) [0x7ff78b4e520a]\n\t(No symbol) [0x7ff78ac87cb9]\n\t(No symbol) [0x7ff78ac88ff3]\n\t(No symbol) [0x7ff78b3ae1a1]\n\t(No symbol) [0x7ff78b3d181b]\n\t(No symbol) [0x7ff78b3c7ece]\n\t(No symbol) [0x7ff78b01b10e]\n\t(No symbol) [0x7ff78ae03db5]\n\t(No symbol) [0x7ff78adfe694]\n\t(No symbol) [0x7ff78adfe824]\n\t(No symbol) [0x7ff78ade6bdc]\n\t(No symbol) [0x7ffeca0edda7]\n\t(No symbol) [0x7ffecc39ee4c]\n",
-  "duracao_minutos": 0.2
+  "atualizado_em": "2026-10-28T06:41:04-03:00",
+  "erro": "[ERCARD][ERRO][Consulta] Janela Geração de Dados Gerenciais não apareceu em 20 segundos.",
+  "duracao_minutos": 0.94
 }
