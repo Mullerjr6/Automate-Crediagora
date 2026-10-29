@@ -30,6 +30,7 @@ def main():
         raise RuntimeError("Proteção acionada: o fluxo não está apontando para o Retorno de Ligações oficial.")
     return completo.main([
         "--exportacao", "retorno-ligacoes",
+        "--headless",
         "--sem-ercard",
         "--sem-gestor",
     ])

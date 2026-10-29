@@ -1,0 +1,47 @@
+{
+  "fluxo": "sequencia-exportacoes",
+  "atualizado_em": "2026-10-29T13:22:15-03:00",
+  "status": "erro",
+  "etapa": "finalizado",
+  "fim": "2026-10-29T13:22:15-03:00",
+  "etapas": {
+    "ercard_tabela_contratos": {
+      "status": "erro",
+      "erro": "[ERCARD][ERRO][Conexão] A sessão do Chrome foi encerrada durante a conexão; a próxima tentativa iniciará um navegador limpo.",
+      "duracao_minutos": 0.89,
+      "fim": "2026-10-29T13:19:04.081312"
+    },
+    "panorama_login": {
+      "status": "concluido",
+      "duracao_minutos": 0.22,
+      "fim": "2026-10-29T13:19:17.199032"
+    },
+    "retorno_ligacoes": {
+      "status": "concluido",
+      "duracao_minutos": 0.96,
+      "fim": "2026-10-29T13:20:14.843820"
+    },
+    "volume": {
+      "status": "concluido",
+      "duracao_minutos": 0.6,
+      "fim": "2026-10-29T13:20:50.967044"
+    },
+    "receita": {
+      "status": "erro",
+      "erro": "Não consegui voltar para a tela onde aparece o botão 'Click para ações'. Parei para evitar clicar no lugar errado.",
+      "duracao_minutos": 0.54,
+      "fim": "2026-10-29T13:21:23.658083"
+    },
+    "gestor": {
+      "status": "erro",
+      "erro": "[GESTOR][ERRO][Aviso de seguranca RemoteApp] As opcoes de recursos nao ficaram disponiveis no tempo esperado.",
+      "duracao_minutos": 0.81,
+      "fim": "2026-10-29T13:22:15.199617"
+    }
+  },
+  "falhas": [
+    "[SEQUENCIA][ERRO][ERCARD TABELA CONTRATOS] [ERCARD][ERRO][Conexão] A sessão do Chrome foi encerrada durante a conexão; a próxima tentativa iniciará um navegador limpo.",
+    "[SEQUENCIA][ERRO][RECEITA] Não consegui voltar para a tela onde aparece o botão 'Click para ações'. Parei para evitar clicar no lugar errado.",
+    "[SEQUENCIA][ERRO][GESTOR] [GESTOR][ERRO][Aviso de seguranca RemoteApp] As opcoes de recursos nao ficaram disponiveis no tempo esperado."
+  ]
+}

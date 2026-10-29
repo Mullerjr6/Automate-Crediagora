@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 from datetime import date, datetime
@@ -18,7 +19,7 @@ ESTADO_CONTRATOS = SCRIPT_DIR / "logs" / "ercard_tabela_contratos_estado.json"
 
 
 def registrar(mensagem: str) -> None:
-    linha = f"[{date.today():%d/%m/%Y}] {mensagem}"
+    linha = f"[{datetime.now():%d/%m/%Y %H:%M:%S}] {mensagem}"
     print(linha, flush=True)
     LOG.parent.mkdir(parents=True, exist_ok=True)
     with LOG.open("a", encoding="utf-8") as arquivo:
@@ -210,6 +211,11 @@ def main(argv=None) -> int:
         help="Executa a sequência sem a etapa 14 - Tabela Contratos.",
     )
     args = parser.parse_args(argv)
+
+    registrar(
+        "Tarefa recebida pelo Agendador; "
+        f"pid={os.getpid()} session={os.environ.get('SESSIONNAME', 'desconhecida')}"
+    )
 
     if args.check:
         registrar(

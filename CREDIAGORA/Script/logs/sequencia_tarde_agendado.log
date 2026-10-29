@@ -1,0 +1,403 @@
+[29/10/2026] Iniciando SequÃªncia consolidada da tarde.
+[SEQUENCIA] Ordem: ERCard Tabela Contratos -> Panorama -> Gestor
+[29/10/2026 13:18:15] Travas antigas do perfil removidas: 1.
+[29/10/2026 13:18:24] [ERCARD] Iniciando fase ERCard...
+[29/10/2026 13:18:24] [ERCARD] Abrindo portal...
+[29/10/2026 13:18:33] [ERCARD] Janelas remotas já abertas e ignoradas: 0.
+[29/10/2026 13:18:33] [ERCARD] Verificando autenticação...
+[29/10/2026 13:18:34] [ERCARD] Botão Entrar clicado.
+[29/10/2026 13:18:35] [ERCARD] Nova aba da comunicação detectada e selecionada.
+[29/10/2026 13:18:35] [ERCARD] Login 1 realizado.
+[29/10/2026 13:18:35] [ERCARD] Conexão sendo estabelecida...
+[29/10/2026 13:18:35] [ERCARD] Se o navegador solicitar confirmação, clique em Abrir. Aguardando o ambiente ficar pronto...
+[29/10/2026 13:19:01] [ERCARD] Aguardando comunicação... até 64s restantes.
+[29/10/2026 13:19:01] [ERCARD] Não foi possível salvar screenshot: Message: invalid session id; For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#invalidsessionidexception
+Stacktrace:
+Symbols not available. Dumping unresolved backtrace:
+	(No symbol) [0x7ff60d212e35]
+	(No symbol) [0x7ff60d121dc0]
+	(No symbol) [0x7ff60d504fb1]
+	(No symbol) [0x7ff60cfbb8d3]
+	(No symbol) [0x7ff60cfcdae2]
+	(No symbol) [0x7ff60cfcb983]
+	(No symbol) [0x7ff60cfcb4ec]
+	(No symbol) [0x7ff60cf8d64b]
+	(No symbol) [0x7ff60cf8d822]
+	(No symbol) [0x7ff60cf8da35]
+	(No symbol) [0x7ff60d6a63c1]
+	(No symbol) [0x7ff60d6c987b]
+	(No symbol) [0x7ff60d6be240]
+	(No symbol) [0x7ff60d33b4ee]
+	(No symbol) [0x7ff60d130985]
+	(No symbol) [0x7ff60d768bc3]
+	(No symbol) [0x7ff60cf8c6b4]
+	(No symbol) [0x7ff60d715bef]
+	(No symbol) [0x7ffeca0edda7]
+	(No symbol) [0x7ffecc39ee4c]
+
+[29/10/2026 13:19:04] [SEQUENCIA][ERRO][ERCARD TABELA CONTRATOS] [ERCARD][ERRO][Conexão] A sessão do Chrome foi encerrada durante a conexão; a próxima tentativa iniciará um navegador limpo.
+[SEQUENCIA][ERRO][ERCARD TABELA CONTRATOS] [ERCARD][ERRO][Conexão] A sessão do Chrome foi encerrada durante a conexão; a próxima tentativa iniciará um navegador limpo.
+[29/10/2026 13:19:06] Travas antigas do perfil removidas: 1.
+[29/10/2026 13:19:08] Abrindo site...
+[29/10/2026 13:19:11] Preenchendo usuário...
+[29/10/2026 13:19:11] Preenchendo senha...
+[29/10/2026 13:19:11] Campos de login conferidos antes do envio: usuário com 13 caracteres; senha com 9 caracteres.
+[29/10/2026 13:19:11] Tentando entrar no sistema...
+[29/10/2026 13:19:12] Clique realizado em: botão Entrar do formulário de login
+[29/10/2026 13:19:12] Formulário de login enviado uma única vez.
+[29/10/2026 13:19:12] Aguardando tela principal...
+[29/10/2026 13:19:17] Login realizado com sucesso.
+[SEQUENCIA][OK] panorama_login em 0.2 min
+[29/10/2026 13:19:17] [PANORAMA][RETORNO LIGACOES] [ETAPA 1] Abrindo início > Exportações > contato campanha Normal.
+[29/10/2026 13:19:18] Clique realizado em: X real do aviso automatico de exportacao
+[29/10/2026 13:19:20] [PANORAMA][EXPORTAÇÃO] Avisos automáticos de exportação fechados: 1.
+[29/10/2026 13:19:23] [PANORAMA][RETORNO LIGACOES] [ETAPA 1] Exportação Normal localizada.
+[29/10/2026 13:19:23] [PANORAMA][RETORNO LIGACOES] [ETAPA 1] Download solicitado uma única vez.
+[29/10/2026 13:19:23] [PANORAMA][RETORNO LIGACOES][ETAPA 2] Aguardando ZIP...
+[29/10/2026 13:19:27] [PANORAMA][RETORNO LIGACOES][ETAPA 2] Aguardando ZIP concluído em 3.9s.
+[29/10/2026 13:19:27] [PANORAMA][RETORNO LIGACOES] [ETAPA 2] Download concluído: contato-normal-0a222309-9e36-4eea-8c69-c679e949a7ba.zip
+[29/10/2026 13:19:27] [PANORAMA][RETORNO LIGACOES] Atualizando Excel...
+[29/10/2026 13:19:27] [PANORAMA][RETORNO LIGACOES][ETAPA 3] Lendo dados do CSV...
+[29/10/2026 13:19:27] [PANORAMA][RETORNO LIGACOES][ETAPA 2] CSV identificado: 105146-1793290762489.csv.
+[29/10/2026 13:19:27] [PANORAMA][RETORNO LIGACOES][ETAPA 3] Aviso: o CSV original contÃ©m 4 caracteres de substituiÃ§Ã£o; conteÃºdo preservado sem tentar corrigir nomes.
+[29/10/2026 13:19:28] [PANORAMA][RETORNO LIGACOES][ETAPA 3] Registros com telefones excedentes apÃ³s I: 2; primeiro na linha 13880 (11 colunas).
+[29/10/2026 13:19:28] [PANORAMA][RETORNO LIGACOES][ETAPA 3] CodificaÃ§Ã£o=utf-8-sig; delimitador=';'; colunas=9; registros=23709.
+[29/10/2026 13:19:28] Arquivo liberado para edição: C:\Users\CREDIAGORA\TJI PROMOTORA DE VENDAS EIRELI\Crediagora-doc - dados\tabela fat\fat_retorno_ligacoes.xlsx
+[29/10/2026 13:19:28] [PANORAMA][RETORNO LIGACOES][ETAPA 4] Abrindo Excel e identificando a aba pelos cabeÃ§alhos...
+[29/10/2026 13:19:37] [PANORAMA][RETORNO LIGACOES] Atualizando Excel em andamento... 10s decorridos.
+[29/10/2026 13:19:38] [PANORAMA][RETORNO LIGACOES][ETAPA 3] Status normalizados pela aba validador: 14376.
+[29/10/2026 13:19:38] [PANORAMA][RETORNO LIGACOES][ETAPA 3] Coluna E mantida como data do Excel para as fÃ³rmulas YEAR/MONTH; demais campos preservados como texto.
+[29/10/2026 13:19:38] [PANORAMA][RETORNO LIGACOES][ETAPA 4] Aba de destino: Base; Ãºltima linha anterior: 23322.
+[29/10/2026 13:19:38] [PANORAMA][RETORNO LIGACOES][ETAPA 5] Substituindo valores antigos de A:I e removendo excedentes de J:L...
+[29/10/2026 13:19:40] [PANORAMA][RETORNO LIGACOES][ETAPA 5] Novos registros inseridos: 23709.
+[29/10/2026 13:19:44] [PANORAMA][RETORNO LIGACOES][ETAPA 6] FÃ³rmulas originais preenchidas em J2:L23710.
+[29/10/2026 13:19:44] [PANORAMA][RETORNO LIGACOES][ETAPA 7] Salvando arquivo temporÃ¡rio e conferindo todos os registros e fÃ³rmulas...
+[29/10/2026 13:19:47] [PANORAMA][RETORNO LIGACOES] Atualizando Excel em andamento... 20s decorridos.
+[29/10/2026 13:19:57] [PANORAMA][RETORNO LIGACOES] Atualizando Excel em andamento... 30s decorridos.
+[29/10/2026 13:20:07] [PANORAMA][RETORNO LIGACOES] Atualizando Excel em andamento... 40s decorridos.
+[29/10/2026 13:20:14] Arquivo liberado para edição: C:\Users\CREDIAGORA\TJI PROMOTORA DE VENDAS EIRELI\Crediagora-doc - dados\tabela fat\fat_retorno_ligacoes.xlsx
+[29/10/2026 13:20:14] [PANORAMA][RETORNO LIGACOES][ETAPA 7] Excel validado e salvo no caminho original. Registros=23709; Ãºltima linha=23710.
+[SEQUENCIA][SALVO] C:\Users\CREDIAGORA\TJI PROMOTORA DE VENDAS EIRELI\Crediagora-doc - dados\Automacoes\Automatização de processos Crediagora\Logs de exportações automatizadas\retorno_ligacoes_2026-10-29_13-18-10_importar.zip
+[29/10/2026 13:20:14] [PANORAMA][RETORNO LIGACOES] Atualizando Excel concluído em 47.1s.
+[29/10/2026 13:20:14] [PANORAMA][RETORNO LIGACOES] Processo concluído com sucesso em 1.0 minutos.
+[SEQUENCIA][RETORNO] planilha oficial atualizada
+[SEQUENCIA][OK] retorno_ligacoes em 1.0 min
+[29/10/2026 13:20:17] [PANORAMA][NAVEGAÇÃO] Item Empréstimo visível em conteúdo principal; usando o submenu já aberto sem clicar em Vendas.
+[29/10/2026 13:20:18] Clique realizado em: Empréstimo em conteúdo principal
+[29/10/2026 13:20:20] Confirmando carregamento da tela de Empréstimo...
+[29/10/2026 13:20:23] Tela de Empréstimo confirmada no iframe 0.
+[29/10/2026 13:20:23] Tela de Empréstimo carregada com sucesso.
+[29/10/2026 13:20:23] [PANORAMA][VENDAS] Iniciando geração do layout: Exportação vendas.
+[29/10/2026 13:20:24] Limpando pasta de downloads...
+[29/10/2026 13:20:24] Arquivo removido: contato-normal-0a222309-9e36-4eea-8c69-c679e949a7ba.zip
+[29/10/2026 13:20:24] Limpeza concluída. Arquivos apagados: 1
+[29/10/2026 13:20:24] [PANORAMA][VENDAS] Abrindo Exportações > Exportar Layout Arquivo.
+[29/10/2026 13:20:24] Abrindo Click para ações em modo rápido...
+[29/10/2026 13:20:24] Procurando Click para ações em iframes no modo rápido. Total: 1
+[29/10/2026 13:20:25] Click para ações clicado rapidamente no iframe 0.
+[29/10/2026 13:20:25] Abrindo Exportações...
+[29/10/2026 13:20:26] Exportações clicado usando seletor: div.exportacoes.btnFiltros[descricao='Exportações']
+[29/10/2026 13:20:26] Abrindo Exportar Layout Arquivo...
+[29/10/2026 13:20:27] Exportar Layout Arquivo clicado em contexto atual usando seletor: a.acaoConsulta.exportacao[campo='layoutArquivo'][autocomplete='LayoutArquivo']
+[29/10/2026 13:20:28] [PANORAMA][VENDAS] Selecionando layout Exportação vendas.
+[29/10/2026 13:20:28] Preenchendo layout: Exportação vendas
+[29/10/2026 13:20:28] Campo layoutArquivo encontrado em contexto atual usando seletor: _id_layoutArquivo
+[29/10/2026 13:20:31] Valor atual no campo layoutArquivo: Exportação Vendas
+[29/10/2026 13:20:31] Layout preenchido e selecionado: Exportação vendas
+[29/10/2026 13:20:32] [PANORAMA][VENDAS] Solicitando geração do arquivo.
+[29/10/2026 13:20:32] [PANORAMA][EXPORTACAO] Localizando Executar e acompanhando a resposta.
+[29/10/2026 13:20:34] [PANORAMA][EXPORTACAO] Executar clicado; aguardando geracao sem repetir o envio.
+[29/10/2026 13:20:35] [PANORAMA][EXPORTACAO] Geracao confirmada; lista de arquivos disponivel.
+[29/10/2026 13:20:35] [PANORAMA][VENDAS] Lista de arquivos gerados confirmada; iniciando download.
+[29/10/2026 13:20:35] [PANORAMA][VENDAS] Baixando o arquivo mais recente desta exportação.
+[29/10/2026 13:20:35] Localizando arquivo mais recente para download...
+[29/10/2026 13:20:35] Tentativa 1 de localizar link de download...
+[29/10/2026 13:20:41] Links de arquivo encontrados em contexto atual: 83
+[29/10/2026 13:20:45] Arquivo mais recente definido pela data da linha: 29/10/2026 13:20:32
+[29/10/2026 13:20:45] Href escolhido: https://crediagora.panoramaemprestimos.com.br/layoutArquivo.do?action=exibirDigitalizacao&codigo=&idDigitalizacao=21943451
+[29/10/2026 13:20:45] Title escolhido: usuário: junior.muller
+[29/10/2026 13:20:45] Texto da linha escolhida: 21943451 Exportacao exportacao-489-20261029132031contrato.csv JSON 29/10/2026 13:20:32
+[29/10/2026 13:20:46] Clique no arquivo mais recente realizado.
+[29/10/2026 13:20:47] [PANORAMA][VENDAS] Aguardando o download finalizar...
+[29/10/2026 13:20:48] Download confirmado: C:\Users\CREDIA~1\AppData\Local\Temp\downloads_sequencia_uig226o4\exportacao-489-20261029132031contrato.csv
+[29/10/2026 13:20:48] [PANORAMA][VENDAS] Aguardando o download finalizar concluído em 1.0s.
+[29/10/2026 13:20:48] [PANORAMA][VENDAS] Download concluído: C:\Users\CREDIA~1\AppData\Local\Temp\downloads_sequencia_uig226o4\exportacao-489-20261029132031contrato.csv
+[SEQUENCIA][SALVO] C:\Users\CREDIAGORA\TJI PROMOTORA DE VENDAS EIRELI\Crediagora-doc - dados\Automacoes\Automatização de processos Crediagora\Logs de exportações automatizadas\volume_2026-10-29_13-18-10_importar.csv
+[SEQUENCIA][OK] volume em 0.6 min
+[29/10/2026 13:20:52] [PANORAMA][NAVEGAÇÃO] Retornando para iniciar a próxima exportação.
+[29/10/2026 13:20:55] Navegador voltou uma página.
+[29/10/2026 13:21:03] Procurando Click para ações em iframes após voltar. Total: 1
+[29/10/2026 13:21:15] Segunda tentativa de voltar página realizada.
+[29/10/2026 13:21:23] Print do erro salvo em: C:\Users\CREDIAGORA\Desktop\workspace\Automacoes\crediagora\CREDIAGORA\erros\erro_voltar_para_acoes_2026-10-29_13-21-23.png
+[29/10/2026 13:21:23] HTML do erro salvo em: C:\Users\CREDIAGORA\Desktop\workspace\Automacoes\crediagora\CREDIAGORA\erros\erro_voltar_para_acoes_2026-10-29_13-21-23.html
+[29/10/2026 13:21:23] [SEQUENCIA][ERRO][RECEITA] Não consegui voltar para a tela onde aparece o botão 'Click para ações'. Parei para evitar clicar no lugar errado.
+[SEQUENCIA][ERRO][RECEITA] Não consegui voltar para a tela onde aparece o botão 'Click para ações'. Parei para evitar clicar no lugar errado.
+[29/10/2026 13:21:26] [GESTOR] Inicio da Fase 3: 29/10/2026 16:21:26
+[29/10/2026 13:21:26] [GESTOR] Abrindo o atalho GESTOR NUVEM...
+[29/10/2026 13:22:15] [GESTOR] Screenshot de diagnostico: C:\Users\CREDIAGORA\Desktop\workspace\Automacoes\crediagora\CREDIAGORA\erros\gestor_Aviso_de_seguranca_RemoteApp_2026-10-29_16-22-14.png
+[29/10/2026 13:22:15] [GESTOR] Fase 3 finalizada.
+[29/10/2026 13:22:15] [GESTOR] Fim da Fase 3: 29/10/2026 16:22:15
+[29/10/2026 13:22:15] [SEQUENCIA][ERRO][GESTOR] [GESTOR][ERRO][Aviso de seguranca RemoteApp] As opcoes de recursos nao ficaram disponiveis no tempo esperado.
+[SEQUENCIA][ERRO][GESTOR] [GESTOR][ERRO][Aviso de seguranca RemoteApp] As opcoes de recursos nao ficaram disponiveis no tempo esperado.
+[SEQUENCIA] erro. Arquivos salvos em: C:\Users\CREDIAGORA\TJI PROMOTORA DE VENDAS EIRELI\Crediagora-doc - dados\Automacoes\Automatização de processos Crediagora\Logs de exportações automatizadas
+[29/10/2026] SequÃªncia consolidada da tarde finalizado com cÃ³digo 1.
+[29/10/2026] SequÃªncia com falha; etapas para recuperaÃ§Ã£o: ['ercard_tabela_contratos', 'gestor', 'receita'].
+[29/10/2026] Iniciando Fallback Panorama Vendas e Receita.
+[29/10/2026 13:22:19] ========== INÍCIO PANORAMA - VENDAS E RECEITA ==========
+[29/10/2026 13:22:19] [PANORAMA][DESTINO] C:\Users\CREDIAGORA\TJI PROMOTORA DE VENDAS EIRELI\Crediagora-doc - dados\Automacoes\Automatização de processos Crediagora\Logs de exportações automatizadas
+[29/10/2026 13:22:21] Travas antigas do perfil removidas: 1.
+[29/10/2026 13:22:23] Abrindo site...
+[29/10/2026 13:22:24] Preenchendo usuário...
+[29/10/2026 13:22:24] Preenchendo senha...
+[29/10/2026 13:22:25] Campos de login conferidos antes do envio: usuário com 13 caracteres; senha com 9 caracteres.
+[29/10/2026 13:22:25] Tentando entrar no sistema...
+[29/10/2026 13:22:26] Clique realizado em: botão Entrar do formulário de login
+[29/10/2026 13:22:26] Formulário de login enviado uma única vez.
+[29/10/2026 13:22:26] Aguardando tela principal...
+[29/10/2026 13:22:27] Login realizado com sucesso.
+[29/10/2026 13:22:28] Clique realizado em: X real do aviso automatico de exportacao
+[29/10/2026 13:22:30] [PANORAMA][NAVEGAÇÃO] Avisos automáticos de exportação fechados: 1.
+[29/10/2026 13:22:30] [PANORAMA][NAVEGAÇÃO] Item Empréstimo visível em conteúdo principal; usando o submenu já aberto sem clicar em Vendas.
+[29/10/2026 13:22:31] Clique realizado em: Empréstimo em conteúdo principal
+[29/10/2026 13:22:33] Confirmando carregamento da tela de Empréstimo...
+[29/10/2026 13:22:36] Tela de Empréstimo confirmada no iframe 0.
+[29/10/2026 13:22:36] Tela de Empréstimo carregada com sucesso.
+[29/10/2026 13:22:36] [PANORAMA][INÍCIO] Exportação vendas
+[29/10/2026 13:22:36] [PANORAMA][VENDAS] Iniciando geração do layout: Exportação vendas.
+[29/10/2026 13:22:38] Limpando pasta de downloads...
+[29/10/2026 13:22:38] Limpeza concluída. Arquivos apagados: 0
+[29/10/2026 13:22:38] [PANORAMA][VENDAS] Abrindo Exportações > Exportar Layout Arquivo.
+[29/10/2026 13:22:38] Abrindo Click para ações em modo rápido...
+[29/10/2026 13:22:38] Procurando Click para ações em iframes no modo rápido. Total: 1
+[29/10/2026 13:22:38] Click para ações clicado rapidamente no iframe 0.
+[29/10/2026 13:22:38] Abrindo Exportações...
+[29/10/2026 13:22:39] Exportações clicado usando seletor: div.exportacoes.btnFiltros[descricao='Exportações']
+[29/10/2026 13:22:40] Abrindo Exportar Layout Arquivo...
+[29/10/2026 13:22:40] Exportar Layout Arquivo clicado em contexto atual usando seletor: a.acaoConsulta.exportacao[campo='layoutArquivo'][autocomplete='LayoutArquivo']
+[29/10/2026 13:22:41] [PANORAMA][VENDAS] Selecionando layout Exportação vendas.
+[29/10/2026 13:22:41] Preenchendo layout: Exportação vendas
+[29/10/2026 13:22:42] Campo layoutArquivo encontrado em contexto atual usando seletor: _id_layoutArquivo
+[29/10/2026 13:22:44] Valor atual no campo layoutArquivo: Exportação Vendas
+[29/10/2026 13:22:44] Layout preenchido e selecionado: Exportação vendas
+[29/10/2026 13:22:45] [PANORAMA][VENDAS] Solicitando geração do arquivo.
+[29/10/2026 13:22:45] [PANORAMA][EXPORTACAO] Localizando Executar e acompanhando a resposta.
+[29/10/2026 13:22:47] [PANORAMA][EXPORTACAO] Executar clicado; aguardando geracao sem repetir o envio.
+[29/10/2026 13:22:48] [PANORAMA][EXPORTACAO] Geracao confirmada; lista de arquivos disponivel.
+[29/10/2026 13:22:48] [PANORAMA][VENDAS] Lista de arquivos gerados confirmada; iniciando download.
+[29/10/2026 13:22:48] [PANORAMA][VENDAS] Baixando o arquivo mais recente desta exportação.
+[29/10/2026 13:22:48] Localizando arquivo mais recente para download...
+[29/10/2026 13:22:48] Tentativa 1 de localizar link de download...
+[29/10/2026 13:22:54] Links de arquivo encontrados em contexto atual: 83
+[29/10/2026 13:22:57] Arquivo mais recente definido pela data da linha: 29/10/2026 13:22:45
+[29/10/2026 13:22:57] Href escolhido: https://crediagora.panoramaemprestimos.com.br/layoutArquivo.do?action=exibirDigitalizacao&codigo=&idDigitalizacao=21943464
+[29/10/2026 13:22:57] Title escolhido: usuário: junior.muller
+[29/10/2026 13:22:57] Texto da linha escolhida: 21943464 Exportacao exportacao-489-20261029132244contrato.csv JSON 29/10/2026 13:22:45
+[29/10/2026 13:22:59] Clique no arquivo mais recente realizado.
+[29/10/2026 13:23:00] [PANORAMA][VENDAS] Aguardando o download finalizar...
+[29/10/2026 13:23:01] Download confirmado: C:\Users\CREDIAGORA\Downloads\crediagora\exportacao-489-20261029132244contrato.csv
+[29/10/2026 13:23:01] [PANORAMA][VENDAS] Aguardando o download finalizar concluído em 1.0s.
+[29/10/2026 13:23:01] [PANORAMA][VENDAS] Download concluído: C:\Users\CREDIAGORA\Downloads\crediagora\exportacao-489-20261029132244contrato.csv
+[29/10/2026 13:23:03] [PANORAMA][EXPORTAÇÃO] Exportação vendas: C:\Users\CREDIAGORA\TJI PROMOTORA DE VENDAS EIRELI\Crediagora-doc - dados\Automacoes\Automatização de processos Crediagora\Logs de exportações automatizadas\vendas panorama 29-10-2026 13-23_importar.csv
+[29/10/2026 13:23:05] [PANORAMA][NAVEGAÇÃO] Retornando para iniciar a próxima exportação.
+[29/10/2026 13:23:08] Navegador voltou uma página.
+[29/10/2026 13:23:16] Procurando Click para ações em iframes após voltar. Total: 1
+[29/10/2026 13:23:16] Botão Click para ações encontrado no iframe 0.
+[29/10/2026 13:23:16] Tela pronta para iniciar a próxima exportação.
+[29/10/2026 13:23:16] [PANORAMA][INÍCIO] Receita gerada
+[29/10/2026 13:23:16] [PANORAMA][RECEITA] Iniciando geração do layout: Receita gerada.
+[29/10/2026 13:23:18] Limpando pasta de downloads...
+[29/10/2026 13:23:18] Limpeza concluída. Arquivos apagados: 0
+[29/10/2026 13:23:18] [PANORAMA][RECEITA] Abrindo Exportações > Exportar Layout Arquivo.
+[29/10/2026 13:23:18] Abrindo Click para ações em modo rápido...
+[29/10/2026 13:23:18] Procurando Click para ações em iframes no modo rápido. Total: 1
+[29/10/2026 13:23:18] Click para ações clicado rapidamente no iframe 0.
+[29/10/2026 13:23:18] Abrindo Exportações...
+[29/10/2026 13:23:19] Exportações clicado usando seletor: div.exportacoes.btnFiltros[descricao='Exportações']
+[29/10/2026 13:23:19] Abrindo Exportar Layout Arquivo...
+[29/10/2026 13:23:20] Exportar Layout Arquivo clicado em contexto atual usando seletor: a.acaoConsulta.exportacao[campo='layoutArquivo'][autocomplete='LayoutArquivo']
+[29/10/2026 13:23:21] [PANORAMA][RECEITA] Selecionando layout Receita gerada.
+[29/10/2026 13:23:21] Preenchendo layout: Receita gerada
+[29/10/2026 13:23:21] Campo layoutArquivo encontrado em contexto atual usando seletor: _id_layoutArquivo
+[29/10/2026 13:23:24] Valor atual no campo layoutArquivo: Receita gerada
+[29/10/2026 13:23:24] Layout preenchido e selecionado: Receita gerada
+[29/10/2026 13:23:25] [PANORAMA][RECEITA] Solicitando geração do arquivo.
+[29/10/2026 13:23:25] [PANORAMA][EXPORTACAO] Localizando Executar e acompanhando a resposta.
+[29/10/2026 13:23:27] [PANORAMA][EXPORTACAO] Executar clicado; aguardando geracao sem repetir o envio.
+[29/10/2026 13:23:27] [PANORAMA][EXPORTACAO] Geracao confirmada; lista de arquivos disponivel.
+[29/10/2026 13:23:27] [PANORAMA][RECEITA] Lista de arquivos gerados confirmada; iniciando download.
+[29/10/2026 13:23:27] [PANORAMA][RECEITA] Baixando o arquivo mais recente desta exportação.
+[29/10/2026 13:23:27] Localizando arquivo mais recente para download...
+[29/10/2026 13:23:27] Tentativa 1 de localizar link de download...
+[29/10/2026 13:23:33] Links de arquivo encontrados em contexto atual: 83
+[29/10/2026 13:23:37] Arquivo mais recente definido pela data da linha: 29/10/2026 13:23:25
+[29/10/2026 13:23:37] Href escolhido: https://crediagora.panoramaemprestimos.com.br/layoutArquivo.do?action=exibirDigitalizacao&codigo=&idDigitalizacao=21943468
+[29/10/2026 13:23:37] Title escolhido: usuário: junior.muller
+[29/10/2026 13:23:37] Texto da linha escolhida: 21943468 Exportacao exportacao-489-20261029132324contratos.csv JSON 29/10/2026 13:23:25
+[29/10/2026 13:23:38] Clique no arquivo mais recente realizado.
+[29/10/2026 13:23:39] [PANORAMA][RECEITA] Aguardando o download finalizar...
+[29/10/2026 13:23:40] Download confirmado: C:\Users\CREDIAGORA\Downloads\crediagora\exportacao-489-20261029132324contratos.csv
+[29/10/2026 13:23:40] [PANORAMA][RECEITA] Aguardando o download finalizar concluído em 1.0s.
+[29/10/2026 13:23:40] [PANORAMA][RECEITA] Download concluído: C:\Users\CREDIAGORA\Downloads\crediagora\exportacao-489-20261029132324contratos.csv
+[29/10/2026 13:23:42] [PANORAMA][EXPORTAÇÃO] Receita gerada: C:\Users\CREDIAGORA\TJI PROMOTORA DE VENDAS EIRELI\Crediagora-doc - dados\Automacoes\Automatização de processos Crediagora\Logs de exportações automatizadas\receita panorama 29-10-2026 13-23_importar.csv
+[29/10/2026 13:23:42] ========== FIM PANORAMA em 1.4 minutos ==========
+[29/10/2026 13:23:42] Opção de saída não encontrada; o navegador será fechado normalmente.
+[29/10/2026] Fallback Panorama Vendas e Receita finalizado com cÃ³digo 0.
+[29/10/2026] Iniciando Fallback Gestor oficial.
+[29/10/2026 13:23:48] ======= Iniciando processo de exportação: 2026-10-29 13:23:48 =======
+[29/10/2026 13:23:48] Resumo da configuração:
+[29/10/2026 13:23:48] - Exportação: todas
+[29/10/2026 13:23:48] - URL: https://crediagora.panoramaemprestimos.com.br/login.do?action=sistema
+[29/10/2026 13:23:48] - Usuário: junior.muller
+[29/10/2026 13:23:48] - Origem das credenciais: usuário=perfil do Windows; senha=perfil do Windows
+[29/10/2026 13:23:48] - Senha carregada: sim (comprimento: 9)
+[29/10/2026 13:23:48] - Downloads: C:\Users\CREDIAGORA\Downloads\crediagora
+[29/10/2026 13:23:48] - Tabela fat: C:\Users\CREDIAGORA\Desktop\workspace\Automacoes\crediagora\CREDIAGORA\teste_migracao_oficiais
+[29/10/2026 13:23:48] - Backups/logs/erros: C:\Users\CREDIAGORA\Desktop\workspace\Automacoes\crediagora\CREDIAGORA
+[29/10/2026 13:23:48] - Perfil persistente do Chrome: C:\Users\CREDIAGORA\Desktop\workspace\Automacoes\crediagora\CREDIAGORA\chrome-profile
+[29/10/2026 13:23:48] - Timeout download: 300s
+[29/10/2026 13:23:48] - Timeout Excel: 120s
+[29/10/2026 13:23:48] - Chrome headless: não
+[29/10/2026 13:23:48] - Manter navegador ao final: não
+[29/10/2026 13:23:48] - Manter downloads ao final: não
+[29/10/2026 13:23:48] - Criar backup antes de atualizar: sim
+[29/10/2026 13:23:48] - Fase Gestor: sim; usuario remoto=HJ54; usuario=JUNIORM
+[29/10/2026 13:23:48] - Excel de metas: C:\Users\CREDIAGORA\TJI PROMOTORA DE VENDAS EIRELI\Crediagora-doc - dados\tabela fat\fat_metas_venda_moda_lojas_hoje.xlsx
+[29/10/2026 13:23:48] [GESTOR] Inicio da Fase 3: 29/10/2026 16:23:48
+[29/10/2026 13:23:51] [GESTOR] Abrindo o atalho GESTOR NUVEM...
+[29/10/2026 13:24:13] [GESTOR] Screenshot de diagnostico: C:\Users\CREDIAGORA\Desktop\workspace\Automacoes\crediagora\CREDIAGORA\erros\gestor_Aviso_de_seguranca_RemoteApp_2026-10-29_16-24-13.png
+[29/10/2026 13:24:13] [GESTOR] Fase 3 finalizada.
+[29/10/2026 13:24:13] [GESTOR] Fim da Fase 3: 29/10/2026 16:24:13
+[29/10/2026 13:24:13] ========== ERRO NO PROCESSO ==========
+[29/10/2026 13:24:13] [GESTOR][ERRO][Aviso de seguranca RemoteApp] Controle nao encontrado: Conectar
+[29/10/2026 13:24:13] [RECUPERAÇÃO] Próxima tentativa recomeçará em: gestor.
+[29/10/2026 13:24:13] Arquivos baixados mantidos para diagnóstico porque o processo terminou com erro.
+[29/10/2026 13:24:13] Limpando recursos finais da automação...
+[29/10/2026 13:24:15] ======= Processo de exportação finalizado: 2026-10-29 13:24:15 =======
+[29/10/2026 13:24:15] ====== O processo de exportação foi concluído em 0.5 minutos.======
+Log da execução salvo em: C:\Users\CREDIAGORA\Desktop\workspace\Automacoes\crediagora\CREDIAGORA\logs\log_automacao_crediagora_erro_2026-10-29_13-24-15.txt
+[29/10/2026] Fallback Gestor oficial finalizado com cÃ³digo 1.
+[29/10/2026] Iniciando Fallback 14 - Tabela Contratos.
+[29/10/2026 13:24:17] ========== INÍCIO ERCard - 14 - Tabela Contratos ==========
+[29/10/2026 13:24:17] [ERCard][INÍCIO] 14 - Tabela Contratos
+[29/10/2026 13:24:17] [ERCard][DESTINO] C:\Users\CREDIAGORA\TJI PROMOTORA DE VENDAS EIRELI\Crediagora-doc - dados\Automacoes\Automatização de processos Crediagora\Logs de exportações automatizadas
+[29/10/2026 13:24:20] Travas antigas do perfil removidas: 1.
+[29/10/2026 13:24:23] [ERCARD] Iniciando fase ERCard...
+[29/10/2026 13:24:23] [ERCARD] Abrindo portal...
+[29/10/2026 13:24:26] [ERCARD] Janelas remotas já abertas e ignoradas: 0.
+[29/10/2026 13:24:26] [ERCARD] Verificando autenticação...
+[29/10/2026 13:24:26] [ERCARD] Não foi possível salvar screenshot: Message: invalid session id; For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#invalidsessionidexception
+Stacktrace:
+Symbols not available. Dumping unresolved backtrace:
+	(No symbol) [0x7ff60d212e35]
+	(No symbol) [0x7ff60d121dc0]
+	(No symbol) [0x7ff60d504fb1]
+	(No symbol) [0x7ff60cfbb8d3]
+	(No symbol) [0x7ff60cfcdae2]
+	(No symbol) [0x7ff60cfcb983]
+	(No symbol) [0x7ff60cfcb4ec]
+	(No symbol) [0x7ff60cf8d64b]
+	(No symbol) [0x7ff60cf8d822]
+	(No symbol) [0x7ff60cf8da35]
+	(No symbol) [0x7ff60d6a63c1]
+	(No symbol) [0x7ff60d6c987b]
+	(No symbol) [0x7ff60d6be240]
+	(No symbol) [0x7ff60d33b4ee]
+	(No symbol) [0x7ff60d130985]
+	(No symbol) [0x7ff60d768bc3]
+	(No symbol) [0x7ff60cf8c6b4]
+	(No symbol) [0x7ff60d715bef]
+	(No symbol) [0x7ffeca0edda7]
+	(No symbol) [0x7ffecc39ee4c]
+
+[29/10/2026 13:24:26] [ERCard][ERRO] 14 - Tabela Contratos interrompido após 0.1 minutos: [ERCARD][ERRO][fase_ercard] Message: invalid session id: session deleted as the browser has closed the connection
+from disconnected: not connected to DevTools
+  (Session info: chrome=156.0.8078.73); For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#invalidsessionidexception
+Stacktrace:
+Symbols not available. Dumping unresolved backtrace:
+	(No symbol) [0x7ff60d212e35]
+	(No symbol) [0x7ff60d121dc0]
+	(No symbol) [0x7ff60cfa2d03]
+	(No symbol) [0x7ff60cf96495]
+	(No symbol) [0x7ff60cf9737f]
+	(No symbol) [0x7ff60cfa3183]
+	(No symbol) [0x7ff60cf8fd64]
+	(No symbol) [0x7ff60d7d989a]
+	(No symbol) [0x7ff60cfbbae9]
+	(No symbol) [0x7ff60cfbce13]
+	(No symbol) [0x7ff60d6a63c1]
+	(No symbol) [0x7ff60d6c987b]
+	(No symbol) [0x7ff60d6be240]
+	(No symbol) [0x7ff60d33b4ee]
+	(No symbol) [0x7ff60d130985]
+	(No symbol) [0x7ff60d12b9e4]
+	(No symbol) [0x7ff60d12bb74]
+	(No symbol) [0x7ff60d114bfc]
+	(No symbol) [0x7ffeca0edda7]
+	(No symbol) [0x7ffecc39ee4c]
+
+[29/10/2026] Fallback 14 - Tabela Contratos finalizado com cÃ³digo 1.
+[29/10/2026] [PORTA FINAL] Reprocessamento sem sucesso; executando somente 14 - Tabela Contratos.
+[29/10/2026] Iniciando Porta final 14 - Tabela Contratos.
+[29/10/2026 13:24:31] ========== INÍCIO ERCard - 14 - Tabela Contratos ==========
+[29/10/2026 13:24:31] [ERCard][INÍCIO] 14 - Tabela Contratos
+[29/10/2026 13:24:31] [ERCard][DESTINO] C:\Users\CREDIAGORA\TJI PROMOTORA DE VENDAS EIRELI\Crediagora-doc - dados\Automacoes\Automatização de processos Crediagora\Logs de exportações automatizadas
+[29/10/2026 13:24:33] Travas antigas do perfil removidas: 1.
+[29/10/2026 13:24:43] [ERCARD] Iniciando fase ERCard...
+[29/10/2026 13:24:43] [ERCARD] Abrindo portal...
+[29/10/2026 13:24:45] [ERCARD] Janelas remotas já abertas e ignoradas: 0.
+[29/10/2026 13:24:45] [ERCARD] Verificando autenticação...
+[29/10/2026 13:24:46] [ERCARD] Botão Entrar clicado.
+[29/10/2026 13:24:46] [ERCARD] Não foi possível salvar screenshot: Message: invalid session id; For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#invalidsessionidexception
+Stacktrace:
+Symbols not available. Dumping unresolved backtrace:
+	(No symbol) [0x7ff60d212e35]
+	(No symbol) [0x7ff60d121dc0]
+	(No symbol) [0x7ff60d504fb1]
+	(No symbol) [0x7ff60cfbb8d3]
+	(No symbol) [0x7ff60cfcdae2]
+	(No symbol) [0x7ff60cfcb983]
+	(No symbol) [0x7ff60cfcb4ec]
+	(No symbol) [0x7ff60cf8d64b]
+	(No symbol) [0x7ff60cf8d822]
+	(No symbol) [0x7ff60cf8da35]
+	(No symbol) [0x7ff60d6a63c1]
+	(No symbol) [0x7ff60d6c987b]
+	(No symbol) [0x7ff60d6be240]
+	(No symbol) [0x7ff60d33b4ee]
+	(No symbol) [0x7ff60d130985]
+	(No symbol) [0x7ff60d768bc3]
+	(No symbol) [0x7ff60cf8c6b4]
+	(No symbol) [0x7ff60d715bef]
+	(No symbol) [0x7ffeca0edda7]
+	(No symbol) [0x7ffecc39ee4c]
+
+[29/10/2026 13:24:46] [ERCard][ERRO] 14 - Tabela Contratos interrompido após 0.3 minutos: [ERCARD][ERRO][fase_ercard] Message: invalid session id: session deleted as the browser has closed the connection
+from disconnected: not connected to DevTools
+  (Session info: chrome=156.0.8078.73); For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#invalidsessionidexception
+Stacktrace:
+Symbols not available. Dumping unresolved backtrace:
+	(No symbol) [0x7ff60d212e35]
+	(No symbol) [0x7ff60d121dc0]
+	(No symbol) [0x7ff60cfa2d03]
+	(No symbol) [0x7ff60cf96495]
+	(No symbol) [0x7ff60cf9737f]
+	(No symbol) [0x7ff60cfa3183]
+	(No symbol) [0x7ff60cf8fd64]
+	(No symbol) [0x7ff60d7d989a]
+	(No symbol) [0x7ff60cfbbae9]
+	(No symbol) [0x7ff60cfbce13]
+	(No symbol) [0x7ff60d6a63c1]
+	(No symbol) [0x7ff60d6c987b]
+	(No symbol) [0x7ff60d6be240]
+	(No symbol) [0x7ff60d33b4ee]
+	(No symbol) [0x7ff60d130985]
+	(No symbol) [0x7ff60d12b9e4]
+	(No symbol) [0x7ff60d12bb74]
+	(No symbol) [0x7ff60d114bfc]
+	(No symbol) [0x7ffeca0edda7]
+	(No symbol) [0x7ffecc39ee4c]
+
+[29/10/2026] Porta final 14 - Tabela Contratos finalizado com cÃ³digo 1.
+[29/10/2026] [PORTA FINAL][ERRO] NÃ£o foi possÃ­vel concluir o 14 - Tabela Contratos.
+[29/10/2026 13:39:46] Tarefa recebida pelo Agendador; pid=20072 session=Console
+[29/10/2026 13:39:46] [CHECK] SequÃªncia configurada: exportaÃ§Ãµes + Gestor oficial + Retorno oficial.

@@ -1,11 +1,11 @@
 {
   "fluxo": "panorama-exportacoes-carteira",
-  "atualizado_em": "2026-10-29T09:12:41-03:00",
+  "atualizado_em": "2026-10-29T13:23:42-03:00",
   "status": "concluido",
   "etapa": "finalizado",
   "arquivos": {
-    "vendas": "C:\\Users\\CREDIAGORA\\TJI PROMOTORA DE VENDAS EIRELI\\Crediagora-doc - dados\\Automacoes\\Automatização de processos Crediagora\\Logs de exportações automatizadas\\vendas panorama 29-10-2026 09-12_importar.csv",
-    "receita": "C:\\Users\\CREDIAGORA\\TJI PROMOTORA DE VENDAS EIRELI\\Crediagora-doc - dados\\Automacoes\\Automatização de processos Crediagora\\Logs de exportações automatizadas\\receita panorama 29-10-2026 09-12_importar.csv"
+    "vendas": "C:\\Users\\CREDIAGORA\\TJI PROMOTORA DE VENDAS EIRELI\\Crediagora-doc - dados\\Automacoes\\Automatização de processos Crediagora\\Logs de exportações automatizadas\\vendas panorama 29-10-2026 13-23_importar.csv",
+    "receita": "C:\\Users\\CREDIAGORA\\TJI PROMOTORA DE VENDAS EIRELI\\Crediagora-doc - dados\\Automacoes\\Automatização de processos Crediagora\\Logs de exportações automatizadas\\receita panorama 29-10-2026 13-23_importar.csv"
   },
-  "duracao_minutos": 1.38
+  "duracao_minutos": 1.39
 }

@@ -1,7 +1,7 @@
 {
   "relatorio": "14 - Tabela Contratos",
-  "atualizado_em": "2026-10-28T13:10:11-03:00",
-  "status": "concluido",
-  "arquivo": "C:\\Users\\CREDIAGORA\\TJI PROMOTORA DE VENDAS EIRELI\\Crediagora-doc - dados\\Automacoes\\Automatização de processos Crediagora\\Logs de exportações automatizadas\\14 - tabela contratos 28-10-2026 12-50.csv",
-  "duracao_minutos": 19.43
+  "atualizado_em": "2026-10-29T13:24:46-03:00",
+  "status": "erro",
+  "erro": "[ERCARD][ERRO][fase_ercard] Message: invalid session id: session deleted as the browser has closed the connection\nfrom disconnected: not connected to DevTools\n  (Session info: chrome=156.0.8078.73); For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#invalidsessionidexception\nStacktrace:\nSymbols not available. Dumping unresolved backtrace:\n\t(No symbol) [0x7ff60d212e35]\n\t(No symbol) [0x7ff60d121dc0]\n\t(No symbol) [0x7ff60cfa2d03]\n\t(No symbol) [0x7ff60cf96495]\n\t(No symbol) [0x7ff60cf9737f]\n\t(No symbol) [0x7ff60cfa3183]\n\t(No symbol) [0x7ff60cf8fd64]\n\t(No symbol) [0x7ff60d7d989a]\n\t(No symbol) [0x7ff60cfbbae9]\n\t(No symbol) [0x7ff60cfbce13]\n\t(No symbol) [0x7ff60d6a63c1]\n\t(No symbol) [0x7ff60d6c987b]\n\t(No symbol) [0x7ff60d6be240]\n\t(No symbol) [0x7ff60d33b4ee]\n\t(No symbol) [0x7ff60d130985]\n\t(No symbol) [0x7ff60d12b9e4]\n\t(No symbol) [0x7ff60d12bb74]\n\t(No symbol) [0x7ff60d114bfc]\n\t(No symbol) [0x7ffeca0edda7]\n\t(No symbol) [0x7ffecc39ee4c]\n",
+  "duracao_minutos": 0.26
 }

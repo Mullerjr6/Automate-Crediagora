@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
-from datetime import date
+from datetime import date, datetime
 
 from executar_retorno_ligacoes_oficial_agendado import SCRIPT_DIR, feriados_nacionais
 
@@ -12,7 +13,7 @@ LOG = SCRIPT_DIR / "logs" / "agendado_ercard_carteira.log"
 
 
 def registrar(mensagem: str) -> None:
-    linha = f"[{date.today():%d/%m/%Y}] {mensagem}"
+    linha = f"[{datetime.now():%d/%m/%Y %H:%M:%S}] {mensagem}"
     print(linha, flush=True)
     LOG.parent.mkdir(parents=True, exist_ok=True)
     with LOG.open("a", encoding="utf-8") as arquivo:
@@ -20,6 +21,10 @@ def registrar(mensagem: str) -> None:
 
 
 def main() -> int:
+    registrar(
+        "Tarefa ERCard Carteira recebida pelo Agendador; "
+        f"pid={os.getpid()} session={os.environ.get('SESSIONNAME', 'desconhecida')}"
+    )
     hoje = date.today()
     if hoje.weekday() >= 5:
         registrar("Fim de semana: execução não iniciada.")

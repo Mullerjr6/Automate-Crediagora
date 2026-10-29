@@ -314,7 +314,8 @@ def aguardar_menu_ou_gestor(timeout, anteriores, log=None):
     caso não existe menu intermediário para clicar.
     """
     fim = time.monotonic() + timeout
-    handles_anteriores = set(anteriores)
+    mapa_anteriores = anteriores if isinstance(anteriores, dict) else {}
+    handles_anteriores = set(mapa_anteriores) if mapa_anteriores else set(anteriores or ())
     ultimo_aviso = -15
     while time.monotonic() < fim:
         decorrido = int(timeout - max(0, fim - time.monotonic()))
@@ -325,14 +326,30 @@ def aguardar_menu_ou_gestor(timeout, anteriores, log=None):
                 f"Aguardando o servidor abrir o Gestor ({decorrido}s de {timeout}s).",
             )
         for janela in _enumerar_janelas():
-            if janela["hwnd"] in handles_anteriores:
-                continue
             titulo = normalizar(janela["titulo"])
             classe = normalizar(janela["classe"])
-            if "remote" in titulo and "app" in titulo and "rail_window" in classe:
+            eh_menu_remoteapp = (
+                ("remote" in titulo and "app" in titulo)
+                and classe in {"rail_window", "tscshellcontainerclass"}
+            )
+            eh_gestor_direto = "absgm" in titulo
+            if janela["hwnd"] in handles_anteriores:
+                # A sessao pode mudar de aviso para menu no mesmo hwnd.
+                # _estado_janelas() retorna um mapa titulo; considerar essa
+                # alteracao evita aguardar indefinidamente por uma nova
+                # janela que nunca sera criada.
+                if mapa_anteriores and mapa_anteriores.get(janela["hwnd"]) != titulo:
+                    if eh_menu_remoteapp:
+                        janela["abertura_direta"] = False
+                        return janela
+                    if eh_gestor_direto:
+                        janela["abertura_direta"] = True
+                        return janela
+                continue
+            if eh_menu_remoteapp:
                 janela["abertura_direta"] = False
                 return janela
-            if "absgm" in titulo:
+            if eh_gestor_direto:
                 janela["abertura_direta"] = True
                 return janela
         time.sleep(0.5)
@@ -694,10 +711,46 @@ def _remoteapp_menu_pronto(hwnd):
 def _localizar_menu_remoteapp_existente(log=None):
     """Retorna o menu RAIL já conectado, quando ele ainda está aberto."""
     for janela in _enumerar_janelas():
-        if normalizar(janela["classe"]) != "rail_window":
+        classe = normalizar(janela["classe"])
+        titulo = normalizar(janela["titulo"])
+        # O RemoteApp pode apresentar o menu com RAIL_WINDOW, com
+        # TscShellContainerClass ou sem o texto completo no titulo. Nao
+        # restrinja a busca a uma unica combinacao: a janela ainda pode estar
+        # conectada mesmo quando o aviso de seguranca ja desapareceu.
+        candidato = (
+            classe in {"rail_window", "tscshellcontainerclass"}
+            or "remote app" in titulo
+            or "remoteapp" in titulo
+        )
+        if not candidato:
             continue
-        if "remote app" not in normalizar(janela["titulo"]):
-            continue
+        # Quando o menu RAIL fica parcialmente fora do monitor, o OCR so
+        # captura a faixa visivel e nao encontra "Lojas Hoje". O titulo e a
+        # classe ja identificam com seguranca o menu; devolver a janela agora
+        # permite que preparar_janela_gestor a reposicione antes do OCR.
+        if classe == "rail_window" and "remote app" in titulo:
+            menu = dict(janela)
+            menu["abertura_direta"] = False
+            if log:
+                log_gestor(
+                    log,
+                    "Menu RemoteApp localizado pela janela; sera reposicionado "
+                    f"antes do OCR (hwnd={janela['hwnd']}; retangulo={janela['retangulo']}).",
+                )
+            return menu
+        try:
+            if _remoteapp_menu_pronto(janela["hwnd"]):
+                menu = dict(janela)
+                menu["abertura_direta"] = False
+                if log:
+                    log_gestor(
+                        log,
+                        "RemoteApp ja conectado; menu Lojas Hoje confirmado "
+                        f"pela arvore de controles (hwnd={janela['hwnd']}).",
+                    )
+                return menu
+        except Exception:
+            pass
         try:
             alvo = _localizar_texto_ocr_janela(
                 janela["hwnd"], "Lojas Hoje", timeout=3
@@ -802,6 +855,14 @@ def conectar_remoteapp(config, log):
         log_gestor(log, "RemoteApp já conectado; menu Lojas Hoje detectado sem aviso de recursos.")
         return seguranca
 
+    # Em algumas sessões o aviso e o menu ficam em janelas RAIL diferentes.
+    # Nesse caso o hwnd do aviso nao possui os controles do menu, embora a
+    # sessao ja esteja pronta para uso. Revarrer todas as janelas evita um
+    # falso erro de "opcoes de recursos".
+    menu_existente = _localizar_menu_remoteapp_existente(log)
+    if menu_existente:
+        return menu_existente
+
     # A tela de recursos costuma aparecer em poucos segundos. Limitar esta
     # espera evita deixar uma sessao remota presa por um minuto quando o
     # launcher nao abriu o dialogo correto.
@@ -813,16 +874,34 @@ def conectar_remoteapp(config, log):
             break
         time.sleep(0.5)
     if not checkboxes:
+        # O menu pode ter sido criado/atualizado enquanto aguardavamos as
+        # caixas de recursos. Procure novamente em todas as janelas, e nao
+        # apenas no hwnd originalmente identificado como aviso.
+        menu_existente = _localizar_menu_remoteapp_existente(log)
+        if menu_existente:
+            return menu_existente
+
+        # Algumas politicas do RemoteApp ocultam a lista de recursos, mas
+        # ainda expõem o botao Conectar. Nesse caso nao ha motivo para falhar:
+        # conectar com os recursos padrao e aguardar a sessao normalmente.
         try:
-            _localizar_texto_ocr_janela(seguranca["hwnd"], "Lojas Hoje", timeout=5)
-            seguranca["abertura_direta"] = False
-            log_gestor(log, "RemoteApp conectado; menu Lojas Hoje confirmado por OCR.")
-            return seguranca
-        except Exception:
-            pass
+            botao_conectar = _controle_remoteapp(seguranca["hwnd"], "Conectar")
+        except GestorError:
+            botao_conectar = None
+        if botao_conectar is not None:
+            janelas_antes_menu = _estado_janelas()
+            _invocar_controle(botao_conectar)
+            log_gestor(
+                log,
+                "Aviso RemoteApp sem caixas de recursos; botao Conectar acionado "
+                "com os recursos padrao.",
+            )
+            timeout_servidor = max(config.timeout_janela, 180)
+            return aguardar_menu_ou_gestor(timeout_servidor, janelas_antes_menu, log)
         raise GestorError(
             "Aviso de seguranca RemoteApp",
             "As opcoes de recursos nao ficaram disponiveis no tempo esperado.",
+            hwnd=seguranca.get("hwnd"),
         )
     marcadas = set()
     sem_novidades = 0
@@ -1257,6 +1336,21 @@ def _validar_mudanca_visual_campo(antes, depois, nome):
         )
 
 
+def _reenviar_empresa_acesso(hwnd, config, log):
+    """Confirma a empresa quando o Controle de Acesso reaparece apos o login."""
+    _aguardar_empresas_acesso(hwnd, min(config.timeout_janela, 15))
+    _clicar_canvas_acesso(hwnd, 0.45, 0.50)
+    time.sleep(0.5)
+    _clicar_retangulo_real(hwnd, 0.86, 0.94, cliques=2)
+    log_gestor(
+        log,
+        "Controle de Acesso reapareceu; empresa Lojas Hoje reenviada "
+        "pelo botao Acessar.",
+    )
+    _aguardar_fechar(hwnd, config.timeout_janela)
+    time.sleep(2)
+
+
 def autenticar_comercial(gestor, config, log):
     hwnd_acesso = None
     for tentativa in range(1, 3):
@@ -1354,10 +1448,35 @@ def autenticar_comercial(gestor, config, log):
             etapa="Selecionar local de trabalho",
         )
     except GestorError:
+        # O Gestor pode reabrir a tela de empresas depois que o primeiro
+        # acesso foi aceito. Reenviar a empresa selecionada evita clicar em
+        # Comercial enquanto a sessao ainda esta no formulario de acesso.
+        acesso_reaberto = next(
+            (
+                janela
+                for janela in _enumerar_janelas()
+                if janela["hwnd"] != gestor["hwnd"]
+                and "controle" in normalizar(janela["titulo"])
+                and "acesso" in normalizar(janela["titulo"])
+            ),
+            None,
+        )
+        if acesso_reaberto:
+            try:
+                _reenviar_empresa_acesso(acesso_reaberto["hwnd"], config, log)
+            except GestorError:
+                # Se a janela ainda estiver transitando para o formulario
+                # seguinte, preserva a segunda tentativa original abaixo.
+                log_gestor(
+                    log,
+                    "Nao foi possivel reenviar a empresa na tela reaberta; "
+                    "seguindo para a segunda tentativa de Comercial.",
+                )
         log_gestor(
             log,
             "O primeiro clique apos o login nao abriu os locais; repetindo uma vez no mesmo icone Comercial.",
         )
+        anteriores = _estado_janelas()
         _clicar_modulo_comercial(gestor["hwnd"], log)
         local = aguardar_janela(
             ("selecionar", "local", "trabalho"),
