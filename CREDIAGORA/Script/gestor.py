@@ -625,6 +625,97 @@ def _janela_pywinauto(hwnd, backend="uia"):
     return Application(backend=backend).connect(handle=hwnd).window(handle=hwnd)
 
 
+def _checkboxes_remoteapp(hwnd):
+    """Localiza caixas de recurso tanto na árvore UIA quanto na Win32."""
+    encontrados = []
+    vistos = set()
+    for backend in ("uia", "win32"):
+        try:
+            janela = _janela_pywinauto(hwnd, backend=backend)
+            for tipo in ("CheckBox", "Button"):
+                try:
+                    controles = janela.descendants(control_type=tipo)
+                except Exception:
+                    continue
+                for controle in controles:
+                    try:
+                        if not controle.is_visible():
+                            continue
+                        # CheckBox ja e um recurso valido mesmo quando o
+                        # backend nao expoe get_toggle_state(). O filtro antigo
+                        # descartava todas as caixas nesse caso e causava
+                        # timeout falso.
+                        if tipo.casefold() != "checkbox":
+                            try:
+                                estado = controle.get_toggle_state()
+                            except Exception:
+                                continue
+                            if estado not in (0, 1, 2):
+                                continue
+                        chave = (getattr(controle, "handle", 0), controle.window_text())
+                        if chave in vistos:
+                            continue
+                        vistos.add(chave)
+                        encontrados.append(controle)
+                    except Exception:
+                        continue
+        except Exception:
+            continue
+    return encontrados
+
+
+def _controle_remoteapp(hwnd, texto):
+    """Busca um controle RemoteApp nos backends UIA e Win32."""
+    ultimo_erro = None
+    for backend in ("uia", "win32"):
+        try:
+            return _controle_texto(_janela_pywinauto(hwnd, backend=backend), texto, tipos=("Button",))
+        except Exception as erro:
+            ultimo_erro = erro
+    raise GestorError("Aviso de seguranca RemoteApp", f"Controle nao encontrado: {texto}") from ultimo_erro
+
+
+def _remoteapp_menu_pronto(hwnd):
+    """Detecta o menu já conectado, sem exigir a tela de permissões."""
+    for backend in ("uia", "win32"):
+        try:
+            janela = _janela_pywinauto(hwnd, backend=backend)
+            for texto in ("Lojas Hoje", "Logoff", "Módulo de Relatórios Crys"):
+                try:
+                    _controle_texto(janela, texto)
+                    return True
+                except GestorError:
+                    continue
+        except Exception:
+            continue
+    return False
+
+
+def _localizar_menu_remoteapp_existente(log=None):
+    """Retorna o menu RAIL já conectado, quando ele ainda está aberto."""
+    for janela in _enumerar_janelas():
+        if normalizar(janela["classe"]) != "rail_window":
+            continue
+        if "remote app" not in normalizar(janela["titulo"]):
+            continue
+        try:
+            alvo = _localizar_texto_ocr_janela(
+                janela["hwnd"], "Lojas Hoje", timeout=3
+            )
+        except Exception:
+            continue
+        menu = dict(janela)
+        menu["abertura_direta"] = False
+        if log:
+            log_gestor(
+                log,
+                "RemoteApp já conectado; menu Lojas Hoje confirmado "
+                f"por OCR em ({alvo['x']}, {alvo['y']}).",
+            )
+        return menu
+    return None
+
+
 def _controle_texto(janela, texto, tipos=("Button", "Text", "ListItem", "MenuItem")):
     alvo = normalizar(texto)
     parciais = []
@@ -655,6 +746,10 @@ def _invocar_controle(controle):
 
 
 def conectar_remoteapp(config, log):
+    menu_existente = _localizar_menu_remoteapp_existente(log)
+    if menu_existente:
+        return menu_existente
+
     log_gestor(log, "Abrindo o atalho GESTOR NUVEM...")
     anteriores = _estado_janelas()
     os.startfile(str(config.atalho))
@@ -702,18 +797,29 @@ def conectar_remoteapp(config, log):
             classe="TscShellContainerClass",
             etapa="Aviso de seguranca RemoteApp",
         )
-    janela_seg = _janela_pywinauto(seguranca["hwnd"])
-    fim_checkboxes = time.monotonic() + min(20, config.timeout_janela)
+    if _remoteapp_menu_pronto(seguranca["hwnd"]):
+        seguranca["abertura_direta"] = False
+        log_gestor(log, "RemoteApp já conectado; menu Lojas Hoje detectado sem aviso de recursos.")
+        return seguranca
+
+    # A tela de recursos costuma aparecer em poucos segundos. Limitar esta
+    # espera evita deixar uma sessao remota presa por um minuto quando o
+    # launcher nao abriu o dialogo correto.
+    fim_checkboxes = time.monotonic() + min(30, max(20, config.timeout_janela))
     checkboxes = []
     while time.monotonic() < fim_checkboxes:
-        try:
-            checkboxes = janela_seg.descendants(control_type="CheckBox")
-        except Exception:
-            checkboxes = []
-        if any(caixa.is_visible() for caixa in checkboxes):
+        checkboxes = _checkboxes_remoteapp(seguranca["hwnd"])
+        if checkboxes:
             break
         time.sleep(0.5)
     if not checkboxes:
+        try:
+            _localizar_texto_ocr_janela(seguranca["hwnd"], "Lojas Hoje", timeout=5)
+            seguranca["abertura_direta"] = False
+            log_gestor(log, "RemoteApp conectado; menu Lojas Hoje confirmado por OCR.")
+            return seguranca
+        except Exception:
+            pass
         raise GestorError(
             "Aviso de seguranca RemoteApp",
             "As opcoes de recursos nao ficaram disponiveis no tempo esperado.",
@@ -722,10 +828,7 @@ def conectar_remoteapp(config, log):
     sem_novidades = 0
     for rodada in range(6):
         quantidade_antes = len(marcadas)
-        try:
-            checkboxes = janela_seg.descendants(control_type="CheckBox")
-        except Exception:
-            checkboxes = []
+        checkboxes = _checkboxes_remoteapp(seguranca["hwnd"])
         for caixa in checkboxes:
             try:
                 if not caixa.is_visible():
@@ -774,7 +877,7 @@ def conectar_remoteapp(config, log):
         )
     janelas_antes_menu = _estado_janelas()
     inicio_conexao = time.monotonic()
-    _invocar_controle(_controle_texto(janela_seg, "Conectar", tipos=("Button",)))
+    _invocar_controle(_controle_remoteapp(seguranca["hwnd"], "Conectar"))
     log_gestor(log, f"RemoteApp conectado; {len(marcadas)} recursos permitidos.")
     # A autenticação local costuma ser rápida, mas o servidor do Gestor pode
     # levar mais de um minuto para iniciar a sessão RemoteApp.
@@ -2288,7 +2391,13 @@ def salvar_diagnostico_gestor(config, etapa, log, hwnd=None):
             return None
 
 
-def executar_fase_gestor(config, log):
+def executar_fase_gestor(config, log, atualizar_planilha=True):
+    """Executa o Gestor e retorna os valores extraidos.
+
+    ``atualizar_planilha`` permanece habilitado para o fluxo oficial do
+    ``completo.py``. Fluxos de exportacao podem desabilita-lo para produzir
+    apenas o arquivo de valores, sem alterar qualquer XLSX.
+    """
     inicio = time.monotonic()
     preview = None
     gestor = None
@@ -2325,7 +2434,10 @@ def executar_fase_gestor(config, log):
         log_gestor(log, f"Soma das lojas={formatar_brasileiro(soma)}")
         log_gestor(log, f"TOTAL GERAL={formatar_brasileiro(total)}")
         log_gestor(log, "Validacao do total=OK")
-        atualizar_excel_metas(config.arquivo_excel, valores, config.pasta_backup, log)
+        if atualizar_planilha:
+            atualizar_excel_metas(config.arquivo_excel, valores, config.pasta_backup, log)
+        else:
+            log_gestor(log, "Atualizacao da planilha desativada; somente valores exportados.")
         fechar_report_preview(preview, log)
         preview = None
         duracao = time.monotonic() - inicio

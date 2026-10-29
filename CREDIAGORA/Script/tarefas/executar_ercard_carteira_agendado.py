@@ -30,10 +30,10 @@ def main() -> int:
         registrar(f"Feriado nacional ({feriado}): execução não iniciada.")
         return 0
 
-    registrar("Iniciando ERCard Carteira.")
+    registrar("Iniciando exportacoes Panorama de Vendas e Receita.")
     with LOG.open("a", encoding="utf-8") as arquivo_log:
         resultado = subprocess.run(
-            [sys.executable, "-u", "Manha.py"],
+            [sys.executable, "-u", "panorama_exportacoes_carteira.py"],
             cwd=SCRIPT_DIR,
             check=False,
             stdout=arquivo_log,

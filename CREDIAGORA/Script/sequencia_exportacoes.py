@@ -76,7 +76,9 @@ def main() -> int:
             try:
                 config_gestor = completo.criar_configuracao_gestor()
                 resultado_gestor = gestor.executar_fase_gestor(
-                    config_gestor, completo.log
+                    config_gestor,
+                    completo.log,
+                    atualizar_planilha=False,
                 )
                 arquivo_valores_xlsx = completo.exportar_valores_gestor(
                     resultado_gestor, completo.log, PASTA_DESTINO

@@ -28,7 +28,7 @@ PASTA_TESTE_MIGRACAO = SCRIPT_DIR.parent / "teste_migracao_oficiais"
 
 FLUXOS = {
     "completo": ["completo.py", "--headless"],
-    "ercard-carteira": ["Manha.py"],
+    "ercard-carteira": ["panorama_exportacoes_carteira.py"],
     "ercard-tabela-contratos": ["tabela_contratos.py"],
     "retorno-ligacoes": [
         "completo.py", "--exportacao", "retorno-ligacoes",
@@ -36,9 +36,6 @@ FLUXOS = {
     ],
     "retorno-ligacoes-oficial": ["retorno_ligacoes_oficial.py"],
 }
-VERSAO_ERCARD_CARTEIRA = 2
-
-
 def carregar_configuracao(caminho):
     caminho = Path(caminho)
     if not caminho.exists():
@@ -105,24 +102,24 @@ def notificar(config, mensagem):
 
 def validar_resultado(fluxo):
     if fluxo == "ercard-carteira":
-        estado_fluxo = SCRIPT_DIR / "logs" / "ercard_carteira_estado.json"
+        # O fluxo atual exporta apenas Vendas e Receita do Panorama e grava
+        # seu estado neste arquivo. O caminho antigo era do fluxo ERCard
+        # Carteira e fazia uma execução válida ser marcada como erro.
+        estado_fluxo = SCRIPT_DIR / "logs" / "panorama_exportacoes_carteira_estado.json"
         try:
             estado = json.loads(estado_fluxo.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
             return False
         if estado.get("status") != "concluido":
             return False
-        relatorios = estado.get("relatorios")
-        if not isinstance(relatorios, dict) or set(relatorios) != {"1", "2", "3"}:
+        relatorios = estado.get("arquivos")
+        if not isinstance(relatorios, dict) or set(relatorios) != {"vendas", "receita"}:
             return False
-        for indice in ("1", "2", "3"):
-            dados = relatorios[indice]
-            if not isinstance(dados, dict) or not dados.get("arquivo"):
-                return False
-            arquivo = Path(dados["arquivo"])
+        for chave in ("vendas", "receita"):
+            arquivo = Path(relatorios[chave])
             if not arquivo.is_file():
                 return False
-            if arquivo.stat().st_size <= 0 or "\n" not in arquivo.read_text(encoding="utf-8-sig", errors="replace")[:4096]:
+            if arquivo.stat().st_size <= 0:
                 return False
         return True
     if fluxo == "ercard-tabela-contratos":
@@ -152,6 +149,9 @@ def validar_resultado(fluxo):
 
 
 def criar_backups(config, fluxo=None):
+    if fluxo == "ercard-carteira":
+        # Este fluxo somente exporta CSVs e nao toca em planilhas.
+        return []
     if fluxo == "retorno-ligacoes-oficial":
         destinos = [
             str(
@@ -264,23 +264,10 @@ def executar_fluxo(nome, tentativas, config):
     estado_processo = SCRIPT_DIR / "logs" / "processo_estado.json"
     
     def comando_do_fluxo():
-        comando = list(comando_base)
-        if nome != "ercard-carteira":
-            return comando
-        estado_fluxo = SCRIPT_DIR / "logs" / "ercard_carteira_estado.json"
-        if estado_fluxo.exists():
-            try:
-                estado_fluxo_dados = json.loads(estado_fluxo.read_text(encoding="utf-8"))
-                if (
-                    estado_fluxo_dados.get("versao_fluxo") == VERSAO_ERCARD_CARTEIRA
-                    and estado_fluxo_dados.get("status") in {"erro", "executando"}
-                ):
-                    etapa = int(estado_fluxo_dados.get("etapa", 1))
-                    if etapa in (1, 2, 3):
-                        comando.extend(["--a-partir", str(etapa)])
-            except (OSError, ValueError, json.JSONDecodeError):
-                pass
-        return comando
+        # panorama_exportacoes_carteira.py e deliberadamente idempotente, mas
+        # nao implementa --a-partir. Nunca acrescente argumentos do antigo
+        # fluxo ERCard, pois isso fazia o agente falhar antes de exportar.
+        return list(comando_base)
 
     inicio = time.monotonic()
     base = {

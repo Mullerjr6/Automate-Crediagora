@@ -1,0 +1,159 @@
+[29/10/2026] Iniciando exportaÃ§Ãµes Panorama Vendas e Receita.
+[29/10/2026 09:03:25] ========== INÍCIO PANORAMA - VENDAS E RECEITA ==========
+[29/10/2026 09:03:25] [PANORAMA][DESTINO] C:\Users\CREDIAGORA\TJI PROMOTORA DE VENDAS EIRELI\Crediagora-doc - dados\Automacoes\Automatização de processos Crediagora\Logs de exportações automatizadas
+[29/10/2026 09:03:26] Chrome antigo da automação encerrado: 9 processo(s).
+[29/10/2026 09:03:28] Travas antigas do perfil removidas: 1.
+[29/10/2026 09:03:30] Abrindo site...
+[29/10/2026 09:03:32] Sessão válida encontrada no perfil persistente; novo login dispensado.
+[29/10/2026 09:03:34] [PANORAMA][NAVEGAÇÃO] Item Empréstimo visível em conteúdo principal; usando o submenu já aberto sem clicar em Vendas.
+[29/10/2026 09:03:35] Clique realizado em: Empréstimo em conteúdo principal
+[29/10/2026 09:03:37] Confirmando carregamento da tela de Empréstimo...
+[29/10/2026 09:03:40] Tela de Empréstimo confirmada no iframe 0.
+[29/10/2026 09:03:40] Tela de Empréstimo carregada com sucesso.
+[29/10/2026 09:03:40] [PANORAMA][INÍCIO] Exportação vendas
+[29/10/2026 09:03:40] [PANORAMA][VENDAS] Iniciando geração do layout: Exportação vendas.
+[29/10/2026] Execução de diagnóstico interrompida antes do download.
+[29/10/2026] [CHECK] SequÃªncia configurada: Panorama Vendas/Receita -> Gestor oficial.
+[29/10/2026] Iniciando exportaÃ§Ãµes Panorama Vendas e Receita.
+[29/10/2026 09:11:18] ========== INÍCIO PANORAMA - VENDAS E RECEITA ==========
+[29/10/2026 09:11:18] [PANORAMA][DESTINO] C:\Users\CREDIAGORA\TJI PROMOTORA DE VENDAS EIRELI\Crediagora-doc - dados\Automacoes\Automatização de processos Crediagora\Logs de exportações automatizadas
+[29/10/2026 09:11:19] Chrome antigo da automação encerrado: 9 processo(s).
+[29/10/2026 09:11:21] Travas antigas do perfil removidas: 1.
+[29/10/2026 09:11:23] Abrindo site...
+[29/10/2026 09:11:28] Sessão válida encontrada no perfil persistente; novo login dispensado.
+[29/10/2026 09:11:30] [PANORAMA][NAVEGAÇÃO] Item Empréstimo visível em conteúdo principal; usando o submenu já aberto sem clicar em Vendas.
+[29/10/2026 09:11:31] Clique realizado em: Empréstimo em conteúdo principal
+[29/10/2026 09:11:33] Confirmando carregamento da tela de Empréstimo...
+[29/10/2026 09:11:36] Tela de Empréstimo confirmada no iframe 0.
+[29/10/2026 09:11:36] Tela de Empréstimo carregada com sucesso.
+[29/10/2026 09:11:36] [PANORAMA][INÍCIO] Exportação vendas
+[29/10/2026 09:11:36] [PANORAMA][VENDAS] Iniciando geração do layout: Exportação vendas.
+[29/10/2026 09:11:37] Limpando pasta de downloads...
+[29/10/2026 09:11:37] Arquivo removido: exportacao-489-20261015141228contratos.csv
+[29/10/2026 09:11:37] Arquivo removido: exportacao-489-20261015142621contratos.csv
+[29/10/2026 09:11:37] Arquivo removido: exportacao-489-20261015143905contratos.csv
+[29/10/2026 09:11:37] Arquivo removido: exportacao-489-20261015145311contratos.csv
+[29/10/2026 09:11:37] Arquivo removido: exportacao-489-20261016110217contratos.csv
+[29/10/2026 09:11:37] Arquivo removido: exportacao-489-20261020103422contratos.csv
+[29/10/2026 09:11:37] Arquivo removido: exportacao-489-20261020124146contrato.csv
+[29/10/2026 09:11:37] Arquivo removido: exportacao-489-20261020141957contrato.csv
+[29/10/2026 09:11:37] Arquivo removido: exportacao-489-20261020144056contratos.csv
+[29/10/2026 09:11:37] Arquivo removido: exportacao-489-20261027115703contratos.csv
+[29/10/2026 09:11:37] Arquivo removido: Tabela contratos - Tabela contratos 20-10-2026 07-12.csv
+[29/10/2026 09:11:37] Arquivo removido: contato-normal-2a4812f0-4860-4e11-befd-c83873b647d1.zip
+[29/10/2026 09:11:37] Arquivo removido: contato-normal-959d7fb5-6319-4c52-a475-c4f99615dd77.zip
+[29/10/2026 09:11:37] Arquivo removido: contato-normal-ee0dfdad-82a0-4273-bdac-56558fffab2f.zip
+[29/10/2026 09:11:37] Arquivo removido: exportacao-105146.zip
+[29/10/2026 09:11:37] Limpeza concluída. Arquivos apagados: 15
+[29/10/2026 09:11:37] [PANORAMA][VENDAS] Abrindo Exportações > Exportar Layout Arquivo.
+[29/10/2026 09:11:37] Abrindo Click para ações em modo rápido...
+[29/10/2026 09:11:37] Procurando Click para ações em iframes no modo rápido. Total: 1
+[29/10/2026 09:11:37] Click para ações clicado rapidamente no iframe 0.
+[29/10/2026 09:11:38] Abrindo Exportações...
+[29/10/2026 09:11:39] Exportações clicado usando seletor: div.exportacoes.btnFiltros[descricao='Exportações']
+[29/10/2026 09:11:39] Abrindo Exportar Layout Arquivo...
+[29/10/2026 09:11:40] Exportar Layout Arquivo clicado em contexto atual usando seletor: a.acaoConsulta.exportacao[campo='layoutArquivo'][autocomplete='LayoutArquivo']
+[29/10/2026 09:11:41] [PANORAMA][VENDAS] Selecionando layout Exportação vendas.
+[29/10/2026 09:11:41] Preenchendo layout: Exportação vendas
+[29/10/2026 09:11:41] Campo layoutArquivo encontrado em contexto atual usando seletor: _id_layoutArquivo
+[29/10/2026 09:11:44] Valor atual no campo layoutArquivo: Exportação Vendas
+[29/10/2026 09:11:44] Layout preenchido e selecionado: Exportação vendas
+[29/10/2026 09:11:45] [PANORAMA][VENDAS] Solicitando geração do arquivo.
+[29/10/2026 09:11:45] [PANORAMA][EXPORTACAO] Localizando Executar e acompanhando a resposta.
+[29/10/2026 09:11:47] [PANORAMA][EXPORTACAO] Executar clicado; aguardando geracao sem repetir o envio.
+[29/10/2026 09:11:48] [PANORAMA][EXPORTACAO] Geracao confirmada; lista de arquivos disponivel.
+[29/10/2026 09:11:48] [PANORAMA][VENDAS] Lista de arquivos gerados confirmada; iniciando download.
+[29/10/2026 09:11:48] [PANORAMA][VENDAS] Baixando o arquivo mais recente desta exportação.
+[29/10/2026 09:11:48] Localizando arquivo mais recente para download...
+[29/10/2026 09:11:48] Tentativa 1 de localizar link de download...
+[29/10/2026 09:11:53] Links de arquivo encontrados em contexto atual: 83
+[29/10/2026 09:11:56] Arquivo mais recente definido pela data da linha: 29/10/2026 09:11:45
+[29/10/2026 09:11:56] Href escolhido: https://crediagora.panoramaemprestimos.com.br/layoutArquivo.do?action=exibirDigitalizacao&codigo=&idDigitalizacao=21942455
+[29/10/2026 09:11:56] Title escolhido: usuário: junior.muller
+[29/10/2026 09:11:56] Texto da linha escolhida: 21942455 Exportacao exportacao-489-20261029091144contrato.csv JSON 29/10/2026 09:11:45
+[29/10/2026 09:11:57] Clique no arquivo mais recente realizado.
+[29/10/2026 09:11:58] [PANORAMA][VENDAS] Aguardando o download finalizar...
+[29/10/2026 09:11:59] Download confirmado: C:\Users\CREDIAGORA\Downloads\crediagora\exportacao-489-20261029091144contrato.csv
+[29/10/2026 09:11:59] [PANORAMA][VENDAS] Aguardando o download finalizar concluído em 1.0s.
+[29/10/2026 09:11:59] [PANORAMA][VENDAS] Download concluído: C:\Users\CREDIAGORA\Downloads\crediagora\exportacao-489-20261029091144contrato.csv
+[29/10/2026 09:12:02] [PANORAMA][EXPORTAÇÃO] Exportação vendas: C:\Users\CREDIAGORA\TJI PROMOTORA DE VENDAS EIRELI\Crediagora-doc - dados\Automacoes\Automatização de processos Crediagora\Logs de exportações automatizadas\vendas panorama 29-10-2026 09-12_importar.csv
+[29/10/2026 09:12:03] [PANORAMA][NAVEGAÇÃO] Retornando para iniciar a próxima exportação.
+[29/10/2026 09:12:06] Navegador voltou uma página.
+[29/10/2026 09:12:14] Procurando Click para ações em iframes após voltar. Total: 1
+[29/10/2026 09:12:15] Botão Click para ações encontrado no iframe 0.
+[29/10/2026 09:12:15] Tela pronta para iniciar a próxima exportação.
+[29/10/2026 09:12:15] [PANORAMA][INÍCIO] Receita gerada
+[29/10/2026 09:12:15] [PANORAMA][RECEITA] Iniciando geração do layout: Receita gerada.
+[29/10/2026 09:12:16] Limpando pasta de downloads...
+[29/10/2026 09:12:16] Limpeza concluída. Arquivos apagados: 0
+[29/10/2026 09:12:16] [PANORAMA][RECEITA] Abrindo Exportações > Exportar Layout Arquivo.
+[29/10/2026 09:12:16] Abrindo Click para ações em modo rápido...
+[29/10/2026 09:12:16] Procurando Click para ações em iframes no modo rápido. Total: 1
+[29/10/2026 09:12:16] Click para ações clicado rapidamente no iframe 0.
+[29/10/2026 09:12:17] Abrindo Exportações...
+[29/10/2026 09:12:17] Exportações clicado usando seletor: div.exportacoes.btnFiltros[descricao='Exportações']
+[29/10/2026 09:12:18] Abrindo Exportar Layout Arquivo...
+[29/10/2026 09:12:19] Exportar Layout Arquivo clicado em contexto atual usando seletor: a.acaoConsulta.exportacao[campo='layoutArquivo'][autocomplete='LayoutArquivo']
+[29/10/2026 09:12:20] [PANORAMA][RECEITA] Selecionando layout Receita gerada.
+[29/10/2026 09:12:20] Preenchendo layout: Receita gerada
+[29/10/2026 09:12:20] Campo layoutArquivo encontrado em contexto atual usando seletor: _id_layoutArquivo
+[29/10/2026 09:12:23] Valor atual no campo layoutArquivo: Receita gerada
+[29/10/2026 09:12:23] Layout preenchido e selecionado: Receita gerada
+[29/10/2026 09:12:24] [PANORAMA][RECEITA] Solicitando geração do arquivo.
+[29/10/2026 09:12:24] [PANORAMA][EXPORTACAO] Localizando Executar e acompanhando a resposta.
+[29/10/2026 09:12:25] [PANORAMA][EXPORTACAO] Executar clicado; aguardando geracao sem repetir o envio.
+[29/10/2026 09:12:26] [PANORAMA][EXPORTACAO] Geracao confirmada; lista de arquivos disponivel.
+[29/10/2026 09:12:26] [PANORAMA][RECEITA] Lista de arquivos gerados confirmada; iniciando download.
+[29/10/2026 09:12:26] [PANORAMA][RECEITA] Baixando o arquivo mais recente desta exportação.
+[29/10/2026 09:12:26] Localizando arquivo mais recente para download...
+[29/10/2026 09:12:26] Tentativa 1 de localizar link de download...
+[29/10/2026 09:12:32] Links de arquivo encontrados em contexto atual: 83
+[29/10/2026 09:12:36] Arquivo mais recente definido pela data da linha: 29/10/2026 09:12:23
+[29/10/2026 09:12:36] Href escolhido: https://crediagora.panoramaemprestimos.com.br/layoutArquivo.do?action=exibirDigitalizacao&codigo=&idDigitalizacao=21942457
+[29/10/2026 09:12:36] Title escolhido: usuário: junior.muller
+[29/10/2026 09:12:36] Texto da linha escolhida: 21942457 Exportacao exportacao-489-20261029091223contratos.csv JSON 29/10/2026 09:12:23
+[29/10/2026 09:12:37] Clique no arquivo mais recente realizado.
+[29/10/2026 09:12:38] [PANORAMA][RECEITA] Aguardando o download finalizar...
+[29/10/2026 09:12:39] Download confirmado: C:\Users\CREDIAGORA\Downloads\crediagora\exportacao-489-20261029091223contratos.csv
+[29/10/2026 09:12:39] [PANORAMA][RECEITA] Aguardando o download finalizar concluído em 1.0s.
+[29/10/2026 09:12:39] [PANORAMA][RECEITA] Download concluído: C:\Users\CREDIAGORA\Downloads\crediagora\exportacao-489-20261029091223contratos.csv
+[29/10/2026 09:12:41] [PANORAMA][EXPORTAÇÃO] Receita gerada: C:\Users\CREDIAGORA\TJI PROMOTORA DE VENDAS EIRELI\Crediagora-doc - dados\Automacoes\Automatização de processos Crediagora\Logs de exportações automatizadas\receita panorama 29-10-2026 09-12_importar.csv
+[29/10/2026 09:12:41] ========== FIM PANORAMA em 1.4 minutos ==========
+[29/10/2026 09:12:41] Opção de saída não encontrada; o navegador será fechado normalmente.
+[29/10/2026] exportaÃ§Ãµes Panorama Vendas e Receita finalizado com cÃ³digo 0.
+[29/10/2026] Iniciando Gestor oficial.
+[29/10/2026 09:12:46] ======= Iniciando processo de exportação: 2026-10-29 09:12:46 =======
+[29/10/2026 09:12:46] Resumo da configuração:
+[29/10/2026 09:12:46] - Exportação: todas
+[29/10/2026 09:12:46] - URL: https://crediagora.panoramaemprestimos.com.br/login.do?action=sistema
+[29/10/2026 09:12:46] - Usuário: junior.muller
+[29/10/2026 09:12:46] - Origem das credenciais: usuário=perfil do Windows; senha=perfil do Windows
+[29/10/2026 09:12:46] - Senha carregada: sim (comprimento: 9)
+[29/10/2026 09:12:46] - Downloads: C:\Users\CREDIAGORA\Downloads\crediagora
+[29/10/2026 09:12:46] - Tabela fat: C:\Users\CREDIAGORA\Desktop\workspace\Automacoes\crediagora\CREDIAGORA\teste_migracao_oficiais
+[29/10/2026 09:12:46] - Backups/logs/erros: C:\Users\CREDIAGORA\Desktop\workspace\Automacoes\crediagora\CREDIAGORA
+[29/10/2026 09:12:46] - Perfil persistente do Chrome: C:\Users\CREDIAGORA\Desktop\workspace\Automacoes\crediagora\CREDIAGORA\chrome-profile
+[29/10/2026 09:12:46] - Timeout download: 300s
+[29/10/2026 09:12:46] - Timeout Excel: 120s
+[29/10/2026 09:12:46] - Chrome headless: não
+[29/10/2026 09:12:46] - Manter navegador ao final: não
+[29/10/2026 09:12:46] - Manter downloads ao final: não
+[29/10/2026 09:12:46] - Criar backup antes de atualizar: sim
+[29/10/2026 09:12:46] - Fase Gestor: sim; usuario remoto=HJ54; usuario=JUNIORM
+[29/10/2026 09:12:46] - Excel de metas: C:\Users\CREDIAGORA\TJI PROMOTORA DE VENDAS EIRELI\Crediagora-doc - dados\tabela fat\fat_metas_venda_moda_lojas_hoje.xlsx
+[29/10/2026 09:12:46] [GESTOR] Inicio da Fase 3: 29/10/2026 12:12:46
+[29/10/2026 09:12:46] [GESTOR] Abrindo o atalho GESTOR NUVEM...
+[29/10/2026 09:13:21] [GESTOR] Screenshot de diagnostico: C:\Users\CREDIAGORA\Desktop\workspace\Automacoes\crediagora\CREDIAGORA\erros\gestor_Aviso_de_seguranca_RemoteApp_2026-10-29_12-13-21.png
+[29/10/2026 09:13:21] [GESTOR] Fase 3 finalizada.
+[29/10/2026 09:13:21] [GESTOR] Fim da Fase 3: 29/10/2026 12:13:21
+[29/10/2026 09:13:21] ========== ERRO NO PROCESSO ==========
+[29/10/2026 09:13:21] [GESTOR][ERRO][Aviso de seguranca RemoteApp] As opcoes de recursos nao ficaram disponiveis no tempo esperado.
+[29/10/2026 09:13:21] [RECUPERAÇÃO] Próxima tentativa recomeçará em: gestor.
+[29/10/2026 09:13:21] Arquivos baixados mantidos para diagnóstico porque o processo terminou com erro.
+[29/10/2026 09:13:21] Limpando recursos finais da automação...
+[29/10/2026 09:13:23] ======= Processo de exportação finalizado: 2026-10-29 09:13:23 =======
+[29/10/2026 09:13:23] ====== O processo de exportação foi concluído em 0.6 minutos.======
+Log da execução salvo em: C:\Users\CREDIAGORA\Desktop\workspace\Automacoes\crediagora\CREDIAGORA\logs\log_automacao_crediagora_erro_2026-10-29_09-13-23.txt
+[29/10/2026] Gestor oficial finalizado com cÃ³digo 1.
+[29/10/2026] [CHECK] SequÃªncia configurada: Panorama Vendas/Receita -> Gestor oficial.
+[29/10/2026] [CHECK] SequÃªncia configurada: Panorama Vendas/Receita -> Gestor oficial.
