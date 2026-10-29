@@ -19,8 +19,8 @@ from pathlib import Path
 
 import pandas as pd
 from openpyxl import Workbook, load_workbook
-from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.formula.translate import Translator
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter, range_boundaries
 from selenium import webdriver
 from selenium.common.exceptions import (
@@ -314,20 +314,20 @@ def log(msg):
 def _numero_conferencia(valor):
     """Converte valores monetários das planilhas para Decimal sem perder centavos."""
     if valor is None or valor == "":
-        return Decimal("0")
+        return Decimal(0)
     if isinstance(valor, Decimal):
         return valor
     if isinstance(valor, (int, float)):
         return Decimal(str(valor))
     texto = str(valor).replace("R$", "").replace(" ", "").strip()
     if not texto:
-        return Decimal("0")
+        return Decimal(0)
     if "," in texto:
         texto = texto.replace(".", "").replace(",", ".")
     try:
         return Decimal(texto)
     except (InvalidOperation, ValueError):
-        return Decimal("0")
+        return Decimal(0)
 
 
 def _cabecalhos_planilha(ws):
@@ -347,8 +347,8 @@ def _resumo_valores_conferencia():
     """Calcula os indicadores exibidos na planilha de conferência."""
     valores = {
         "Volume de Vendas": 0,
-        "Receita Gerada": Decimal("0"),
-        "Receita Fare": Decimal("0"),
+        "Receita Gerada": Decimal(0),
+        "Receita Fare": Decimal(0),
         "Volume Fare": 0,
     }
     fontes = []
@@ -397,6 +397,11 @@ def _resumo_valores_conferencia():
     return valores, fontes
 
 
+def _atribuir_valor_celula(celula, valor):
+    """Atribui valor a Cell/MergedCell sem deixar o stub do openpyxl bloquear o fluxo."""
+    setattr(celula, "value", valor)  # noqa: B010 - contorna a tipagem de MergedCell
+
+
 def atualizar_planilha_conferencia_att(processos, erros=0):
     """Atualiza a planilha de conferência sem interromper o processo principal."""
     arquivo = Path(ARQUIVO_CONFERENCIA_ATT)
@@ -420,8 +425,11 @@ def atualizar_planilha_conferencia_att(processos, erros=0):
                 continue
             anterior = ws.cell(linha, 3).value
             if anterior not in (None, ""):
-                ws.cell(linha, 2).value = anterior
-            ws.cell(linha, 3).value = float(valor) if isinstance(valor, Decimal) else valor
+                _atribuir_valor_celula(ws.cell(linha, 2), anterior)
+            _atribuir_valor_celula(
+                ws.cell(linha, 3),
+                float(valor) if isinstance(valor, Decimal) else valor,
+            )
             ws.cell(linha, 3).number_format = "#,##0.00" if isinstance(valor, Decimal) else "#,##0"
 
         status = processos or {}
@@ -430,11 +438,18 @@ def atualizar_planilha_conferencia_att(processos, erros=0):
             if not processo:
                 continue
             concluido = bool(status.get(processo, False))
-            ws.cell(row, 5).value = "01 DE 01" if concluido else "00 DE 01"
-            ws.cell(row, 6).value = datetime.now().strftime("%d/%m/%Y %H:%M:%S") if concluido else ""
-            ws.cell(row, 7).value = 0 if concluido else ""
+            _atribuir_valor_celula(
+                ws.cell(row, 5), "01 DE 01" if concluido else "00 DE 01"
+            )
+            _atribuir_valor_celula(
+                ws.cell(row, 6),
+                datetime.now().strftime("%d/%m/%Y %H:%M:%S") if concluido else "",
+            )
+            _atribuir_valor_celula(ws.cell(row, 7), 0 if concluido else "")
 
-        ws["H2"] = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        _atribuir_valor_celula(
+            ws["H2"], datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        )
         ws["H2"].number_format = "dd/mm/yyyy hh:mm:ss"
         if "Considerações" in wb.sheetnames:
             consideracoes = wb["Considerações"]
@@ -790,6 +805,8 @@ def exportar_valores_gestor(resultado, log, pasta_destino=None):
     workbook = Workbook()
     try:
         planilha = workbook.active
+        if planilha is None:
+            raise RuntimeError("O workbook não criou uma planilha ativa.")
         planilha.title = "Valores Moda"
         planilha.append(["Local", "Venda dia"])
         for local, valor in resultado.valores.items():

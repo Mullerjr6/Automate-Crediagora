@@ -1,11 +1,28 @@
 {
   "versao_fluxo": 2,
-  "inicio": "2026-10-28T06:40:08-03:00",
-  "relatorios": {},
-  "etapa": 1,
-  "nome": "14 - Tabela Contratos",
-  "status": "erro",
-  "atualizado_em": "2026-10-28T06:41:04-03:00",
-  "erro": "[ERCARD][ERRO][Consulta] Janela Geração de Dados Gerenciais não apareceu em 20 segundos.",
-  "duracao_minutos": 0.94
+  "inicio": "2026-10-29T06:40:02-03:00",
+  "relatorios": {
+    "1": {
+      "nome": "14 - Tabela Contratos",
+      "arquivo": "C:\\Users\\CREDIAGORA\\TJI PROMOTORA DE VENDAS EIRELI\\Crediagora-doc - dados\\Automacoes\\Automatização de processos Crediagora\\Logs de exportações automatizadas\\14 - tabela contratos 29-10-2026 06-40.csv",
+      "duracao_minutos": 20.21
+    },
+    "2": {
+      "nome": "06 - Propostas",
+      "arquivo": "C:\\Users\\CREDIAGORA\\TJI PROMOTORA DE VENDAS EIRELI\\Crediagora-doc - dados\\Automacoes\\Automatização de processos Crediagora\\Logs de exportações automatizadas\\06 - propostas 29-10-2026 08-10_importar.csv",
+      "duracao_minutos": 19.59
+    },
+    "3": {
+      "nome": "Carteira Mifa",
+      "arquivo": "C:\\Users\\CREDIAGORA\\TJI PROMOTORA DE VENDAS EIRELI\\Crediagora-doc - dados\\Automacoes\\Automatização de processos Crediagora\\Logs de exportações automatizadas\\Carteira mifa 29-10-2026 07-02.csv",
+      "duracao_minutos": 12.49
+    }
+  },
+  "etapa": 3,
+  "nome": "Carteira Mifa",
+  "status": "cancelado",
+  "atualizado_em": "2026-10-29T08:29:51-03:00",
+  "duracao_minutos": 34.54,
+  "cancelado_em": "2026-10-29T08:32:17-03:00",
+  "motivo": "Execução cancelada manualmente durante a repetição da Carteira Mifa após a correção de Propostas"
 }

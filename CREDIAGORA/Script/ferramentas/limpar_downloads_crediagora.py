@@ -2,7 +2,6 @@ import argparse
 import os
 from pathlib import Path
 
-
 PASTA_DOWNLOAD = Path(
     os.getenv(
         "CREDIAGORA_DOWNLOAD_DIR",
@@ -85,7 +84,7 @@ def limpar_downloads(apenas_conferir=False):
             arquivo.unlink()
             arquivos_apagados += 1
             print(f"Apagado: {arquivo.name}")
-        except Exception as erro:
+        except OSError as erro:
             print(f"Não foi possível apagar {arquivo.name}: {erro}")
 
     print("----------------------------------------")

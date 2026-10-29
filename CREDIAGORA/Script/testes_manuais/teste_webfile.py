@@ -1,12 +1,12 @@
-import _ambiente
 
 import time
 
+import _ambiente  # noqa: F401
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
 
-import ercard
 import completo
+import ercard
 
 
 def log(mensagem):
@@ -71,8 +71,8 @@ def executar():
     finally:
         try:
             driver.quit()
-        except Exception:
-            pass
+        except Exception as erro:  # noqa: BLE001
+            print(f"Falha ao fechar o navegador: {erro}", flush=True)
 
 
 if __name__ == "__main__":

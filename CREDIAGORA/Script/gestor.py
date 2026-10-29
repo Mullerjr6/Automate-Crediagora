@@ -2218,13 +2218,11 @@ def atualizar_excel_metas(arquivo, valores, pasta_backup, log=None):
         shutil.copy2(arquivo, temporario)
         _salvar_metas_com_excel(temporario, valores)
         validar_excel_metas(temporario, valores)
-        ultimo_bloqueio = None
         for tentativa_troca in range(1, 31):
             try:
                 os.replace(temporario, arquivo)
                 break
-            except PermissionError as erro_bloqueio:
-                ultimo_bloqueio = erro_bloqueio
+            except PermissionError:
                 # O antivírus/OneDrive pode manter o arquivo temporário aberto
                 # por alguns segundos depois da validação. Não abandone uma
                 # gravação válida por esse bloqueio transitório.

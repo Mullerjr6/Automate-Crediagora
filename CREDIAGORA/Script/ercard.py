@@ -1473,9 +1473,7 @@ def mover_download_webfile(arquivo_final, config, log):
                     continue
                 if stat.st_size <= 0 or stat.st_mtime < inicio_arquivo:
                     continue
-                if candidato.stem.casefold() == arquivo_final.stem.casefold():
-                    yield candidato
-                elif candidato.stem.casefold().startswith(prefixo):
+                if candidato.stem.casefold() == arquivo_final.stem.casefold() or candidato.stem.casefold().startswith(prefixo):
                     yield candidato
 
     while time.monotonic() < fim:
@@ -1665,12 +1663,46 @@ def exportar_tabela_contratos(ui, config, arquivo_final, log):
     ui.clicar(botao)
 
 
+def _validar_estrutura_csv(arquivo):
+    """Confere se o CSV terminou com todas as colunas em cada registro."""
+    try:
+        with Path(arquivo).open(
+            "r",
+            encoding="utf-8-sig",
+            errors="replace",
+            newline="",
+        ) as csv_file:
+            leitor = csv.reader(csv_file, delimiter=";", strict=True)
+            cabecalho = next(leitor, None)
+            if not cabecalho or len(cabecalho) < 2:
+                return False, "cabeçalho vazio ou com poucas colunas"
+            registros = 0
+            for numero_linha, linha in enumerate(leitor, start=2):
+                if not linha or not any(campo.strip() for campo in linha):
+                    continue
+                registros += 1
+                if len(linha) != len(cabecalho):
+                    return (
+                        False,
+                        (
+                            f"linha {numero_linha} tem {len(linha)} colunas; "
+                            f"esperadas {len(cabecalho)}"
+                        ),
+                    )
+            if registros == 0:
+                return False, "nenhum registro de dados encontrado"
+            return True, f"{registros} registros com {len(cabecalho)} colunas"
+    except (OSError, csv.Error) as erro:
+        return False, f"leitura inválida: {erro}"
+
+
 def validar_csv_exportado(arquivo, pasta_esperada, timeout, log):
     arquivo = Path(arquivo)
     pasta_esperada = Path(pasta_esperada).resolve()
     fim = time.monotonic() + timeout
     ultimo_tamanho = -1
     estavel = 0
+    proximo_aviso_estrutura = 0.0
 
     while time.monotonic() < fim:
         if arquivo.exists() and arquivo.suffix.casefold() == ".csv":
@@ -1678,7 +1710,18 @@ def validar_csv_exportado(arquivo, pasta_esperada, timeout, log):
             if tamanho > 0 and tamanho == ultimo_tamanho:
                 estavel += 1
                 if estavel >= 3:
-                    break
+                    estrutura_ok, detalhe = _validar_estrutura_csv(arquivo)
+                    if estrutura_ok:
+                        break
+                    agora = time.monotonic()
+                    if agora >= proximo_aviso_estrutura:
+                        log_ercard(
+                            log,
+                            "CSV estabilizado, mas ainda incompleto ou inválido: "
+                            f"{detalhe}. Aguardando a exportação terminar.",
+                        )
+                        proximo_aviso_estrutura = agora + 30
+                    estavel = 0
             else:
                 estavel = 0
             ultimo_tamanho = tamanho

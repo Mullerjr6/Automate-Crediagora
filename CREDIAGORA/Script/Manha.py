@@ -8,13 +8,13 @@ from datetime import datetime
 from pathlib import Path
 
 import ercard
-from ercard import executar_fase_ercard
 from completo import (
     criar_configuracao_ercard,
     iniciar_chrome,
     limpar_pagina_para_reinicio,
     log,
 )
+from ercard import executar_fase_ercard
 
 PASTA_EXPORTACAO = (
     Path.home()
@@ -137,7 +137,9 @@ def main(argv=None):
             log(f"[ERCard][DOWNLOAD] Solicitação iniciada: {nome_relatorio}")
             ercard.CONSULTA_CONTRATOS = consulta
             ercard.gerar_nome_tabela_contratos = (
-                lambda agora=None, prefixo=prefixo: f"{prefixo} {(agora or datetime.now()):%d-%m-%Y %H-%M}.csv"
+                lambda agora=None, prefixo=prefixo: (
+                    f"{prefixo} {(agora or datetime.now()):%d-%m-%Y %H-%M}_importar.csv"
+                )
             )
             driver = iniciar_chrome(headless=False, manter_navegador=False)
             arquivo = executar_fase_ercard(driver, config, log)

@@ -1,4 +1,5 @@
 from pathlib import Path
+
 from openpyxl import load_workbook
 
 p = Path.home() / "TJI PROMOTORA DE VENDAS EIRELI" / "Crediagora-doc - dados" / "tabela fat" / "fat_metas_venda_moda_lojas_hoje.xlsx"

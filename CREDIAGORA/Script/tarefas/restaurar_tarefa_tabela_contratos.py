@@ -2,7 +2,6 @@
 
 import subprocess
 
-
 if __name__ == "__main__":
     subprocess.run(
         ["schtasks.exe", "/Change", "/TN", "Crediagora - ERCard Tabela Contratos", "/ENABLE"],

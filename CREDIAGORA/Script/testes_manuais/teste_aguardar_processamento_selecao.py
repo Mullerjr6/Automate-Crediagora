@@ -1,16 +1,15 @@
-import _ambiente
 
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
 
+import _ambiente  # noqa: F401
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
-
-import ercard
-import completo
 from teste_confirmar_yes import aguardar_mudanca, digitar_lentamente, log, salvar_png
 
+import completo
+import ercard
 
 TIMEOUT_PROCESSAMENTO = 5 * 60
 INTERVALO_MONITORAMENTO = 2
@@ -200,8 +199,8 @@ def executar():
     finally:
         try:
             driver.quit()
-        except Exception:
-            pass
+        except Exception as erro:  # noqa: BLE001
+            print(f"Falha ao fechar o navegador: {erro}", flush=True)
 
 
 if __name__ == "__main__":

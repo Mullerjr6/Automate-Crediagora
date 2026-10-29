@@ -1,14 +1,13 @@
-import _ambiente
 
 import time
 from datetime import datetime
-from pathlib import Path
 
+import _ambiente  # noqa: F401
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
 
-import ercard
 import completo
+import ercard
 
 
 def log(mensagem):

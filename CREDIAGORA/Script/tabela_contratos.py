@@ -6,13 +6,13 @@ from datetime import datetime
 from pathlib import Path
 
 import ercard
-from ercard import executar_fase_ercard
 from completo import (
     criar_configuracao_ercard,
     iniciar_chrome,
     limpar_pagina_para_reinicio,
     log,
 )
+from ercard import executar_fase_ercard
 
 PASTA_EXPORTACAO = (
     Path.home()
